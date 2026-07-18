@@ -412,15 +412,6 @@ overflow: hidden;
 width: 100%;
 min-height: 440px;
 box-sizing: border-box;
-/* Safari/WebKit sometimes fails to clip a filtered descendant
-(.hunt-dex-flap::after uses drop-shadow) to this element's own
-border-radius, leaving the top edge looking flat/pointy instead of
-curved on iOS. This explicit clip-path (redundant with
-border-radius+overflow on Chrome, but load-bearing on Safari) makes
-it properly clip the flap's shadow and square top corners to the
-card's true rounded shape. */
--webkit-clip-path: inset(0 round 30px);
-clip-path: inset(0 round 30px);
 }
 /* pin feature removed */
 /* Hinge: vertical strip along the entire right edge of the card, ~10%
@@ -443,7 +434,6 @@ background: linear-gradient(
 #93100f 100%
 );
 border-left: 3px solid var(--line);
-border-top-right-radius: 30px;
 z-index: 3;
 }
 .hunt-dex-hinge::before {
@@ -488,12 +478,6 @@ align-items: center;
 gap: 12px;
 padding: 0 60px 0 20px;
 z-index: 4;
-/* Moved here from ::after: Safari fails to render a drop-shadow
-filter on an element that also has its own clip-path, which was
-making the flap look flat/paper-like. This element has no
-clip-path of its own, so the shadow renders correctly here. */
-filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.65))
-drop-shadow(0 10px 10px rgba(20, 4, 4, 0.5));
 }
 .hunt-dex-flap::before,
 .hunt-dex-flap::after {
@@ -507,8 +491,6 @@ left: -3px;
 right: -3px;
 bottom: -3px;
 background: var(--line);
-border-top-left-radius: 33px;
-border-top-right-radius: 33px;
 z-index: -2;
 }
 .hunt-dex-flap::after {
@@ -522,13 +504,13 @@ background: linear-gradient(
 var(--red-shell) 38%,
 var(--red-shell-dark) 100%
 );
-border-top-left-radius: 30px;
-border-top-right-radius: 30px;
 box-shadow:
 inset 0 3px 0 rgba(255, 255, 255, 0.3),
 inset 0 0 0 4px var(--red-shell-dark),
 inset 0 -14px 16px -10px rgba(0, 0, 0, 0.4);
 z-index: -1;
+filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.65))
+drop-shadow(0 10px 10px rgba(20, 4, 4, 0.5));
 }
 /* Fold shadow along the two real interior cut-lines: the horizontal
 step (65%->100% at y:52%) and the diagonal drop (65%,52% -> 50%,95%).
@@ -1634,7 +1616,7 @@ border: 3px solid var(--line);
 border-radius: 24px;
 padding: 26px;
 width: 100%;
-max-width: 440px;
+max-width: 470px;
 max-height: 88vh;
 overflow-y: auto;
 box-shadow: 0 8px 0 rgba(43, 35, 32, 0.25);
@@ -1677,18 +1659,6 @@ font-weight: 600;
 .field textarea:focus {
 outline: none;
 border-color: var(--blue);
-}
-/* iOS Safari auto-zooms the whole page when a focused input/select/
-textarea has a font-size under 16px, and often doesn't zoom back
-out cleanly afterward. Bumping just these to 16px on small screens
-(where iOS is actually in play) stops the zoom without changing
-how they look on desktop. */
-@media (max-width: 600px) {
-.field input,
-.field select,
-.field textarea {
-font-size: 16px;
-}
 }
 .odds-display {
 background: var(--bg-panel-raised);
@@ -1772,11 +1742,15 @@ margin-right: auto;
 /* ---------- Shiny Found modal: TCG-card confirmation ---------- */
 /* Replaces the old ".modal.modal-found" through ".found-hero-name" block. */
 
+.overlay:has(.modal-found) {
+  padding: 8px;
+}
 .modal.modal-found {
   border-color: var(--yellow);
   box-shadow: 0 8px 0 rgba(43, 35, 32, 0.25), 0 0 0 4px rgba(255, 203, 5, 0.25);
-  height: 92vh;
-  max-height: 92vh;
+  max-width: min(560px, 98vw);
+  height: 96vh;
+  max-height: 96vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1819,25 +1793,19 @@ margin-right: auto;
 
 .tcg-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px 2px; flex-shrink: 0; }
 .tcg-header-left { display: flex; flex-direction: column; gap: 4px; }
-.tcg-tag {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: var(--bg-panel); border: 2px solid var(--line); border-radius: 8px;
-  padding: 2px 8px 3px; font-family: var(--hud); font-size: 10.5px; font-weight: 800;
-  letter-spacing: 0.5px; text-transform: uppercase; color: var(--red); width: fit-content;
-}
-.tcg-name { font-family: var(--hud); font-size: 21px; font-weight: 800; letter-spacing: 0.2px; margin: 0; color: var(--ink); }
+.tcg-name { font-family: var(--hud); font-size: 21px; font-weight: 800; letter-spacing: 0.2px; margin: 0; color: #000; }
+.modal h3.tcg-name { color: #000; margin: 0; }
+.tcg-evo-stage { display: inline-block; width: fit-content; font-family: var(--hud); font-size: 9.5px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; color: var(--ink-dim); background: var(--bg-panel-raised); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+.tcg-evo-line { font-size: 10.5px; font-weight: 700; font-style: italic; color: var(--ink-dim); }
 
 .tcg-hp { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
 .tcg-hp-label { font-family: var(--hud); font-size: 10.5px; font-weight: 800; color: var(--ink-dim); letter-spacing: 0.4px; text-align: right; }
 .tcg-hp-value { font-family: var(--hud); font-size: 21px; font-weight: 800; color: var(--ink); text-align: right; }
 .tcg-hp-icon {
   width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
-  background: linear-gradient(180deg, var(--type-color) 50%, #fff 50%);
-  border: 2px solid var(--line); position: relative;
-}
-.tcg-hp-icon::before {
-  content: ""; position: absolute; inset: 0; margin: auto; width: 7px; height: 7px;
-  background: #fff; border: 2px solid var(--line); border-radius: 50%;
+  border: 2px solid var(--line);
+  box-shadow: inset 0 2px 3px rgba(255,255,255,.35), inset 0 -2px 4px rgba(0,0,0,.15);
 }
 
 .tcg-subbar {
@@ -1851,10 +1819,11 @@ margin-right: auto;
 
 .tcg-art {
   position: relative; margin: -18px 2px 10px; border-radius: 12px; border: 2.5px solid var(--line);
-  flex: 1 1 0; min-height: 110px; max-height: 320px; overflow: hidden;
+  flex: 1 1 0; min-height: 130px; max-height: 340px; overflow: hidden;
   background: radial-gradient(circle at 50% 38%, #fff9e2 0%, var(--type-color) 130%);
   display: flex; align-items: center; justify-content: center;
 }
+.tcg-card.has-evo .tcg-art, .tcg-card.has-stage .tcg-art { margin-top: 0; }
 .tcg-art-rays {
   position: absolute; top: 50%; left: 50%; width: 400px; height: 400px; transform: translate(-50%, -50%);
   background: repeating-conic-gradient(rgba(255,255,255,.55) 0deg 6deg, rgba(255,255,255,0) 6deg 18deg);
@@ -1867,16 +1836,33 @@ margin-right: auto;
   animation: tcg-art-pulse 3s ease-in-out infinite;
 }
 @keyframes tcg-art-pulse { 0%,100% { opacity:.5; transform: translate(-50%,-50%) scale(1); } 50% { opacity:1; transform: translate(-50%,-50%) scale(1.1); } }
-.tcg-sprite-wrap { position: relative; z-index: 2; width: min(70%, 180px); height: min(70%, 180px); animation: tcg-sprite-pop .55s cubic-bezier(.34,1.56,.64,1); cursor: pointer; transition: transform .15s ease; }
-.tcg-sprite-wrap:hover { transform: scale(1.06); }
+.tcg-preevo {
+  position: absolute; z-index: 4; top: 8px; left: 8px;
+  width: 44px; height: 44px; border-radius: 8px;
+  background: radial-gradient(circle at 50% 38%, #fff9e2 0%, var(--type-color) 130%);
+  border: 2px solid var(--line); box-shadow: 0 2px 4px rgba(43,35,32,.3);
+  align-items: center; justify-content: center; overflow: hidden;
+}
+.tcg-preevo img { width: 85%; height: 85%; object-fit: contain; image-rendering: pixelated; }
+.tcg-preevo .fallback-letter { font-family: var(--hud); font-size: 16px; font-weight: 800; color: var(--ink); }
+
+.tcg-sprite-wrap {
+  position: relative; z-index: 2; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  animation: tcg-sprite-pop .55s cubic-bezier(.34,1.56,.64,1); cursor: pointer;
+  transition: transform .15s ease;
+}
+.tcg-sprite-wrap:hover { transform: scale(1.04); }
 .tcg-sprite-wrap:active { transform: scale(0.97); }
 @keyframes tcg-sprite-pop { 0% { transform: scale(.5) rotate(-8deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
-.tcg-sprite {
-  width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,.6);
-  border: 3px solid var(--line); box-shadow: 0 4px 0 rgba(43,35,32,.2), inset 0 2px 4px rgba(255,255,255,.7);
-  display: flex; align-items: center; justify-content: center; font-size: 15px; overflow: hidden;
+.tcg-sprite-wrap img {
+  width: min(78%, 260px); height: min(78%, 260px); object-fit: contain; image-rendering: pixelated;
+  filter: drop-shadow(0 6px 8px rgba(43,35,32,.3));
 }
-.tcg-sprite img { width: 72%; height: 72%; object-fit: contain; image-rendering: pixelated; }
+.tcg-sprite-wrap .fallback-letter {
+  font-family: var(--hud); font-size: 48px; font-weight: 800; color: var(--ink);
+  text-shadow: 0 2px 0 rgba(255,255,255,.5);
+}
 .tcg-spark {
   position: absolute; z-index: 3; font-size: 22px; color: #fff1b8;
   text-shadow: 0 0 6px #fff, 0 0 12px #ffcb05, 0 0 18px rgba(255, 203, 5, 0.9), 0 1px 2px rgba(43, 35, 32, 0.4);
@@ -1887,31 +1873,70 @@ margin-right: auto;
 .tcg-spark.s3 { bottom: 10%; left: 18%; animation-delay: 1.3s; font-size: 18px; }
 @keyframes tcg-twinkle { 0%,100% { opacity:.65; transform: scale(.85) rotate(0); } 50% { opacity:1; transform: scale(1.3) rotate(15deg); } }
 
-.tcg-dexbar {
+.tcg-dexline {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: 10.5px; font-weight: 700; color: var(--ink-dim);
+  margin: 0 6px 6px; flex-shrink: 0;
+}
+
+.tcg-dates {
+  font-size: 10.5px; font-weight: 700; color: var(--ink-dim);
+  margin: -4px 6px 10px; flex-shrink: 0;
+}
+
+.tcg-attack { display: flex; align-items: center; gap: 10px; margin: 0 4px 8px; padding-top: 8px; border-top: 1.5px dashed rgba(43,35,32,.25); flex-shrink: 0; }
+.tcg-attack:first-of-type { border-top: none; padding-top: 0; }
+.tcg-attack-cost { display: flex; gap: 3px; flex-shrink: 0; width: 44px; }
+.tcg-energy {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid var(--line); box-shadow: inset 0 1px 1px rgba(255,255,255,.6), 0 1px 0 rgba(43,35,32,.2);
+}
+.tcg-attack-name { font-family: var(--hud); font-weight: 700; font-size: 13px; color: var(--ink); flex: 1; }
+.tcg-attack-dmg { font-family: var(--hud); font-weight: 800; font-size: 17px; color: var(--ink); text-align: right; }
+
+.tcg-wr {
+  display: flex;
   background: linear-gradient(180deg, #fdfdfd, #efece4); border: 2px solid var(--line); border-radius: 8px;
-  padding: 5px 10px; margin: 0 2px 10px; font-size: 10.5px; font-weight: 700; color: var(--ink-dim);
-  display: flex; flex-direction: column; gap: 4px;
-  flex-shrink: 0;
+  overflow: hidden; margin: 4px 4px 0; flex-shrink: 0;
 }
-.tcg-dexbar-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tcg-wrr-cell { flex: 1; padding: 3px 10px; display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; overflow: hidden; }
+.tcg-wrr-cell + .tcg-wrr-cell { border-left: 1.5px solid rgba(43,35,32,.25); }
+.tcg-wrr-label { font-size: 8.5px; font-weight: 800; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.4px; flex-shrink: 0; }
+.tcg-wrr-value { font-family: var(--hud); font-size: 11.5px; font-weight: 800; color: var(--ink); white-space: nowrap; }
 
-.tcg-stat { display: flex; align-items: center; gap: 10px; margin: 0 4px 8px; padding-top: 8px; border-top: 1.5px dashed rgba(43,35,32,.25); flex-shrink: 0; }
-.tcg-stat:first-of-type { border-top: none; padding-top: 0; }
-.tcg-stat-icon {
-  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--line);
-  background: var(--type-color); color: #fff;
-  display: flex; align-items: center; justify-content: center; font-size: 11px;
+.tcg-stats-table {
+  width: calc(100% - 8px); margin: 8px 4px 0; border-collapse: separate; border-spacing: 0;
+  background: linear-gradient(180deg, #fdfdfd, #efece4); border: 2px solid var(--line); border-radius: 10px;
+  overflow: hidden; flex-shrink: 0; table-layout: fixed;
 }
-.tcg-stat-name { font-family: var(--hud); font-weight: 700; font-size: 13px; color: var(--ink); flex: 1; }
-.tcg-stat-value { font-family: var(--hud); font-weight: 800; font-size: 15px; color: var(--ink); }
+.tcg-stats-table tr + tr td { border-top: 1.5px solid rgba(43,35,32,.2); }
+.tcg-stats-table td { padding: 6px 8px; vertical-align: middle; }
+.tcg-stats-icon {
+  width: 26px; text-align: center; font-size: 13px;
+}
+.tcg-stats-label {
+  width: 30%; font-size: 9px; font-weight: 800; color: var(--ink-dim);
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.tcg-stats-value {
+  font-family: var(--hud); font-size: 12px; font-weight: 800; color: var(--ink);
+  white-space: normal; word-break: break-word; text-align: right;
+}
+.tcg-stats-row-active td { background: linear-gradient(180deg, #fff9df, #ffe9a8); }
+.tcg-stats-row-active .tcg-stats-value { color: #7a5a00; }
 
-.tcg-footer { display: flex; margin: 12px 4px 0; background: linear-gradient(180deg, #fdfdfd, #efece4); border: 2px solid var(--line); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
-.tcg-footer-cell { flex: 1; padding: 6px 8px; text-align: center; }
-.tcg-footer-cell + .tcg-footer-cell { border-left: 1.5px solid rgba(43,35,32,.25); }
-.tcg-footer-label { font-size: 8.5px; font-weight: 800; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 2px; }
-.tcg-footer-value { font-family: var(--hud); font-size: 12px; font-weight: 800; color: var(--ink); }
-
-.tcg-credit { text-align: center; margin: 8px 4px 4px; font-size: 9.5px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--ink-dim); font-weight: 800; flex-shrink: 0; }
+.tcg-credit {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  margin: 8px 4px 4px; flex-shrink: 0;
+}
+.tcg-credit-row {
+  display: flex; align-items: center; justify-content: flex-start; gap: 5px;
+  font-size: 9.5px; letter-spacing: 0.4px; text-transform: uppercase;
+  color: var(--ink-dim); font-weight: 800;
+}
+.tcg-credit-sep { opacity: .5; }
+.tcg-credit-num { font-size: 11px; letter-spacing: 0.6px; white-space: nowrap; }
+.tcg-rarity { color: var(--yellow); font-size: 12px; text-shadow: 0 1px 0 rgba(43,35,32,.4); }
 
 .tcg-editnote { font-size: 11.5px; font-weight: 700; color: var(--ink-dim); margin: 0 2px 12px; flex-shrink: 0; }
 
@@ -3306,9 +3331,12 @@ display: flex;
 flex-direction: column;
 justify-content: space-between;
 gap: 12px;
-min-height: 653px;
+height: 653px;
 box-sizing: border-box;
 clip-path: var(--log-shell-cut);
+filter:
+drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5))
+drop-shadow(0 10px 12px rgba(20, 4, 4, 0.4));
 z-index: 0;
 }
 /* CSS-18: true mirror of .hunt-dex-flap's --flap-cut, not just moved
@@ -3350,19 +3378,9 @@ top: 0;
 left: 0;
 right: 0;
 bottom: 0;
-background:
-linear-gradient(
-155deg,
-rgba(255, 255, 255, 0.4) 0%,
-rgba(255, 255, 255, 0) 24%
-),
-linear-gradient(180deg, #ff5252 70px, var(--red-shell) 118px, var(--red-shell-dark) 196px);
-/* The "0 8px 0" resting shadow that used to be here got silently
-clipped away by this element's own clip-path (same issue as the
-filter bug: a shadow needs to paint outside the element's edge,
-and clip-path prevents that on the same element). Moved to
-.log-dex-shell-wrap as a drop-shadow instead, further down. */
+background: linear-gradient(180deg, #ff5252 70px, var(--red-shell) 118px, var(--red-shell-dark) 196px);
 box-shadow:
+0 8px 0 rgba(43, 35, 32, 0.32),
 inset 0 2px 0 rgba(255, 255, 255, 0.35),
 inset 0 -20px 26px -18px rgba(0, 0, 0, 0.28),
 inset 0 0 0 4px var(--red-shell-dark);
@@ -3433,91 +3451,9 @@ clip-path: polygon(
 background: rgba(0, 0, 0, 0.6);
 filter: blur(1.5px);
 }
-/* Rim-light: a bright ribbon tracing the exact same curve as the
-crease above, offset toward the flat-top side instead of straddling
-the fold. Reads as light catching the edge of the top surface all
-along the curve (not just the flat portion), the way the hunt
-card's flap edge does. Same offset-ribbon-then-blur technique as
-the crease, just shifted up ~4-10px and recolored bright. */
-.log-dex-shell-rim-wrap {
-position: absolute;
-inset: 0;
-clip-path: var(--log-shell-cut);
-pointer-events: none;
-z-index: 0;
-}
-.log-dex-shell-rim {
-position: absolute;
-inset: 0;
-clip-path: polygon(
-100% 99.62px,
-99.68% 103.25px,
-98.72% 106.07px,
-97.12% 108.09px,
-94.88% 109.30px,
-92.00% 109.70px,
-83.40% 108.91px,
-75.54% 106.70px,
-68.34% 103.30px,
-61.70% 98.96px,
-55.56% 93.90px,
-49.81% 88.38px,
-44.38% 82.61px,
-39.17% 76.84px,
-34.11% 71.32px,
-29.11% 66.26px,
-24.09% 61.92px,
-18.95% 58.52px,
-13.62% 56.31px,
-8.00% 55.52px,
-5.12% 55.12px,
-2.88% 53.91px,
-1.28% 51.89px,
-0.32% 49.07px,
-0.00% 45.44px,
-0.00% 51.44px,
-0.32% 55.07px,
-1.28% 57.89px,
-2.88% 59.91px,
-5.12% 61.12px,
-8.00% 61.52px,
-13.62% 62.31px,
-18.95% 64.52px,
-24.09% 67.92px,
-29.11% 72.26px,
-34.11% 77.32px,
-39.17% 82.84px,
-44.38% 88.61px,
-49.81% 94.38px,
-55.56% 99.90px,
-61.70% 104.96px,
-68.34% 109.30px,
-75.54% 112.70px,
-83.40% 114.91px,
-92.00% 115.70px,
-94.88% 115.30px,
-97.12% 114.09px,
-98.72% 112.07px,
-99.68% 109.25px,
-100.00% 105.62px
-);
-background: rgba(255, 255, 255, 0.55);
-filter: blur(3px);
-}
 .log-dex-shell-wrap {
 position: relative;
 margin-bottom: 20px;
-/* Moved here from .log-dex-shell: Safari fails to render a
-drop-shadow filter on an element that also has its own clip-path,
-which was making the shell's top curve look flat. This wrapper has
-no clip-path of its own, so the shadow renders correctly here.
-The third drop-shadow (0 8px 0, no blur) recreates the hunt card's
-solid "resting on a surface" shadow, which was getting silently
-clipped away when it lived on .log-dex-shell::after as a box-shadow. */
-filter:
-drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5))
-drop-shadow(0 10px 12px rgba(20, 4, 4, 0.4))
-drop-shadow(0 8px 0 rgba(43, 35, 32, 0.32));
 }
 .log-dex-screen {
 background: var(--screen);
