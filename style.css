@@ -1752,15 +1752,11 @@ margin-right: auto;
 /* ---------- Shiny Found modal: TCG-card confirmation ---------- */
 /* Replaces the old ".modal.modal-found" through ".found-hero-name" block. */
 
-.overlay:has(.modal-found) {
-  padding: 8px;
-}
 .modal.modal-found {
   border-color: var(--yellow);
   box-shadow: 0 8px 0 rgba(43, 35, 32, 0.25), 0 0 0 4px rgba(255, 203, 5, 0.25);
-  max-width: min(560px, 98vw);
-  height: 96vh;
-  max-height: 96vh;
+  height: 92vh;
+  max-height: 92vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
