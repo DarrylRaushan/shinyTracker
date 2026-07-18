@@ -1,40 +1,26 @@
 (function() {
 var STORE_KEY = 'shinyTracker.v1';
-var db = firebase.firestore();
-var docRef = db.collection('shinyTracker').doc('state');
-
-function normalizeState(s) {
-  if (!s) s = { hunts: [], collection: [] };
-  if (!s.livingDex) s.livingDex = {};
-  if (!s.livingDexShiny) s.livingDexShiny = {};
-  if (!s.lastHuntPrefs) s.lastHuntPrefs = null;
-  return s;
+var state = load();
+function load() {
+var s = null;
+try {
+var raw = localStorage.getItem(STORE_KEY);
+if (raw) s = JSON.parse(raw);
+} catch (e) {}
+if (!s) s = {
+hunts: [],
+collection: []
+};
+if (!s.livingDex) s.livingDex = {};
+if (!s.livingDexShiny) s.livingDexShiny = {};
+if (!s.lastHuntPrefs) s.lastHuntPrefs = null;
+return s;
 }
-
-// Start with whatever we last saw locally so the app isn't blank while
-// we wait on the network. Firestore corrects this a moment later.
-var state = normalizeState((function() {
-  try {
-    var raw = localStorage.getItem(STORE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) { return null; }
-})());
-
 function save() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
-  docRef.set(state).catch(function(e) { console.error('Cloud save failed:', e); });
+try {
+localStorage.setItem(STORE_KEY, JSON.stringify(state));
+} catch (e) {}
 }
-
-// Live sync: whenever the data changes (on this device or another),
-// pull it in and re-render. Ignore our own pending local writes so an
-// open form doesn't get yanked out from under you mid-edit.
-docRef.onSnapshot(function(doc) {
-  if (doc.metadata.hasPendingWrites) return;
-  state = normalizeState(doc.exists ? doc.data() : null);
-  renderAll();
-}, function(err) {
-  console.error('Cloud sync error:', err);
-});
 var GAMES = ["Scarlet/Violet", "Legends Arceus", "Sword/Shield", "Let's Go Pikachu/Eevee",
 "Ultra Sun/Ultra Moon", "Sun/Moon", "Omega Ruby/Alpha Sapphire", "X/Y",
 "Black 2/White 2", "Black/White", "HeartGold/SoulSilver", "Platinum",
@@ -194,6 +180,69 @@ return types.map(function(t) {
 var color = TYPE_COLORS[t] || '#999';
 return '<span class="type-badge" style="background:' + color + '">' + t + '</span>';
 }).join('');
+}
+// Simplified single-type "weak against" table, in the spirit of the classic
+// TCG's simplified weakness line (not the full 18-type damage chart).
+var TYPE_WEAKNESS = {
+"Normal": "Fighting", "Fire": "Water", "Water": "Electric", "Electric": "Ground",
+"Grass": "Fire", "Ice": "Fire", "Fighting": "Flying", "Poison": "Psychic",
+"Ground": "Water", "Flying": "Electric", "Psychic": "Dark", "Bug": "Fire",
+"Rock": "Fighting", "Ghost": "Dark", "Dragon": "Ice", "Dark": "Fighting",
+"Steel": "Fighting", "Fairy": "Steel"
+};
+function weaknessValue(types) {
+var primary = types && types[0];
+var weak = primary ? TYPE_WEAKNESS[primary] : null;
+if (!weak) return '<span class="tcg-wrr-value">None</span>';
+var color = TYPE_COLORS[weak] || '#999';
+return '<span class="type-badge" style="background:' + color + '">' + weak + '</span><span class="tcg-wrr-value">&nbsp;&times;2</span>';
+}
+// Weakness/Resistance renders as a plain bordered container, one line of
+// info apiece.
+function weaknessResistanceBar(types) {
+return '<div class="tcg-wr">' +
+'<div class="tcg-wrr-cell"><span class="tcg-wrr-label">Weakness</span>' + weaknessValue(types) + '</div>' +
+'<div class="tcg-wrr-cell"><span class="tcg-wrr-label">Resistance</span><span class="tcg-wrr-value">None</span></div>' +
+'</div>';
+}
+// Small circular energy-cost icon used on attack rows.
+function energyIcon(color) {
+return '<span class="tcg-energy" style="background:' + color + '"></span>';
+}
+// Rarity, loosely mapped from the hunt's odds denominator, mimicking a TCG
+// set's rarity marker. glyph mirrors the real convention: common circle,
+// uncommon diamond, rare star, ultra-rare double star.
+function rarityInfo(denom) {
+if (!denom) return { glyph: '●', label: 'Common' };
+if (denom >= 8000) return { glyph: '✦✦', label: 'Ultra Rare' };
+if (denom >= 4000) return { glyph: '★', label: 'Rare' };
+if (denom >= 1000) return { glyph: '◆', label: 'Uncommon' };
+return { glyph: '●', label: 'Common' };
+}
+function rarityGlyphMarkup(denom) {
+var info = rarityInfo(denom);
+return '<span class="tcg-rarity" title="' + info.label + '">' + info.glyph + '</span>';
+}
+// HP box icon, styled identically to the attack-row energy/cost icons
+// (a plain type-colored circle) instead of a distinct glyph — keeps the
+// HP icon and move costs visually consistent, like they're the same energy.
+function hpTypeIcon(types, color) {
+return '<div class="tcg-hp-icon" style="background:' + color + '"></div>';
+}
+// Total known species across all generations in this app's dex data,
+// used for the "007/1025"-style card-number tag. Computed lazily and
+// cached since GEN_DATA is a large literal.
+var _totalSpeciesCache = null;
+function totalSpeciesCount() {
+if (_totalSpeciesCache !== null) return _totalSpeciesCache;
+var total = 0;
+for (var i = 0; i < GEN_DATA.length; i++) total += GEN_DATA[i].species.length;
+_totalSpeciesCache = total;
+return total;
+}
+function ordinal(n) {
+var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+return n + (s[(v - 20) % 10] || s[v] || s[0]);
 }
 function fmtDate(d) {
 if (!d) return '—';
@@ -2561,6 +2610,7 @@ return pokemonSlug(name);
 // Paldean-exclusive species/forms, which postdate PokeSprite's last sync)
 // fall back to HOME's 3D render. Pass shiny=true for the Shiny Living Dex
 // tab to use the shiny variant.
+
 function dexEntrySpriteUrls(name, shiny) {
 var slug = pokemonSlug(name);
 if (!slug) return [];
@@ -2568,6 +2618,98 @@ var pixelSlug = pokespriteSlug(name);
 var pixel = 'https://cdn.jsdelivr.net/gh/msikma/pokesprite@master/pokemon-gen8/' + (shiny ? 'shiny' : 'regular') + '/' + pixelSlug + '.png';
 var home = 'https://img.pokemondb.net/sprites/home/' + (shiny ? 'shiny' : 'normal') + '/' + slug + '.png';
 return [pixel, home];
+}
+// Live "evolves from" lookup via PokeAPI, used for the catch confirmation
+// card. This app doesn't carry a hand-built evolution chain table (that's
+// impractical to maintain for 1000+ species by hand), so instead this
+// makes a single lightweight request per species to a free, CORS-enabled
+// public API and reads evolves_from_species off the response. Regional
+// variant tags like "(Alolan)" are stripped since PokeAPI's evolution
+// data lives on the base species. Results are cached in-memory so a given
+// species is only ever fetched once per session, and any failure (offline,
+// unmapped slug, etc.) resolves to null rather than throwing, so callers
+// can just hide the line rather than show an error.
+var _evolvesFromCache = {};
+function fetchEvolvesFrom(name) {
+var m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(String(name || '').trim());
+var base = m ? m[1] : name;
+var slug = pokemonSlug(base);
+if (!slug) return Promise.resolve(null);
+if (Object.prototype.hasOwnProperty.call(_evolvesFromCache, slug)) {
+return Promise.resolve(_evolvesFromCache[slug]);
+}
+return fetch('https://pokeapi.co/api/v2/pokemon-species/' + slug + '/')
+.then(function(res) {
+if (!res.ok) throw new Error('pokeapi lookup failed');
+return res.json();
+})
+.then(function(data) {
+var from = data && data.evolves_from_species ? data.evolves_from_species.name : null;
+var pretty = from ? from.charAt(0).toUpperCase() + from.slice(1).replace(/-/g, ' ') : null;
+_evolvesFromCache[slug] = pretty;
+return pretty;
+})
+.catch(function() {
+return null;
+});
+}
+// Walks a PokeAPI evolution-chain tree looking for the node whose species
+// slug matches targetSlug, returning its depth (0 = the base/basic form,
+// 1 = first evolution, 2 = second evolution, etc). Returns null if the
+// species isn't found in the chain (shouldn't normally happen).
+function findStageInChain(node, targetSlug, depth) {
+if (!node) return null;
+if (node.species && node.species.name === targetSlug) return depth;
+var evolvesTo = node.evolves_to || [];
+for (var i = 0; i < evolvesTo.length; i++) {
+var found = findStageInChain(evolvesTo[i], targetSlug, depth + 1);
+if (found !== null) return found;
+}
+return null;
+}
+function stageLabel(stage) {
+if (stage === 0) return 'Basic';
+if (stage === null || stage === undefined) return null;
+return 'Stage ' + stage;
+}
+// Like fetchEvolvesFrom, but also resolves which stage of its evolution
+// line the species is (Basic / Stage 1 / Stage 2...) by fetching the
+// evolution chain and walking it. One extra request per species (cached
+// alongside the "evolves from" lookup, in-memory, per session), and any
+// failure just resolves stage to null so callers can hide the badge.
+var _evoStageCache = {};
+function fetchEvoStage(name) {
+var m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(String(name || '').trim());
+var base = m ? m[1] : name;
+var slug = pokemonSlug(base);
+if (!slug) return Promise.resolve(null);
+if (Object.prototype.hasOwnProperty.call(_evoStageCache, slug)) {
+return Promise.resolve(_evoStageCache[slug]);
+}
+return fetch('https://pokeapi.co/api/v2/pokemon-species/' + slug + '/')
+.then(function(res) {
+if (!res.ok) throw new Error('pokeapi lookup failed');
+return res.json();
+})
+.then(function(data) {
+var chainUrl = data && data.evolution_chain ? data.evolution_chain.url : null;
+if (!chainUrl) return null;
+return fetch(chainUrl)
+.then(function(res2) {
+if (!res2.ok) throw new Error('evolution chain lookup failed');
+return res2.json();
+})
+.then(function(chainData) {
+return findStageInChain(chainData.chain, slug, 0);
+});
+})
+.then(function(stage) {
+_evoStageCache[slug] = stage;
+return stage;
+})
+.catch(function() {
+return null;
+});
 }
 // Per-generation zoom factor for sprite images. Different sprite sets
 // (animated Black & White, Showdown's animated gifs, HOME renders...) have
@@ -3866,21 +4008,24 @@ function openFoundModal(hunt) {
   var dateEndedStr = fmtDate(new Date());
   var genLabel = info && info.gen ? ('Generation ' + info.gen) : '';
 
+  var cardNumStr = (dexNum ? String(dexNum).padStart(3, '0') : '???') + '/' + totalSpeciesCount();
+
   var overlay = openModal(
     '<div class="tcg-card" style="--type-color:' + typeColor + '">' +
       '<div class="tcg-inner">' +
 
         '<div class="tcg-header">' +
           '<div class="tcg-header-left">' +
-            '<span class="tcg-tag">✦ Shiny</span>' +
             '<h3 class="tcg-name">' + escapeHtml(hunt.pokemon) + '</h3>' +
+            '<div class="tcg-evo-stage" id="tcg-evo-stage" style="display:none;"></div>' +
+            '<div class="tcg-evo-line" id="tcg-evo-line" style="display:none;"></div>' +
           '</div>' +
           '<div class="tcg-hp">' +
             '<div>' +
               '<div class="tcg-hp-label">' + hpUnitLabel + '</div>' +
               '<div class="tcg-hp-value">' + (hunt.encounters || 0) + '</div>' +
             '</div>' +
-            '<div class="tcg-hp-icon"></div>' +
+            hpTypeIcon(types, typeColor) +
           '</div>' +
         '</div>' +
 
@@ -3890,34 +4035,56 @@ function openFoundModal(hunt) {
           '<span class="tcg-spark s1">✦</span>' +
           '<span class="tcg-spark s2">✧</span>' +
           '<span class="tcg-spark s3">✦</span>' +
+          '<div class="tcg-preevo" id="tcg-preevo" style="display:none;"></div>' +
           '<div class="tcg-sprite-wrap" id="tcg-confirm-sprite" title="Click to add to your collection" role="button" tabindex="0" aria-label="Confirm and add to collection">' +
-            '<div class="tcg-sprite">' + spriteMarkup(hunt.pokemon) + '</div>' +
+            spriteMarkup(hunt.pokemon) +
           '</div>' +
         '</div>' +
 
-        '<div class="tcg-dexbar">' +
-          '<div class="tcg-dexbar-row">' + dexNumStr + '&nbsp;•&nbsp;' + typeBadges(types) + '</div>' +
-          '<div class="tcg-dexbar-row">Began ' + fmtDate(hunt.createdAt) + '&nbsp;•&nbsp;Caught ' + dateEndedStr + '</div>' +
+        '<div class="tcg-dexline">' + dexNumStr + '&nbsp;•&nbsp;' + typeBadges(types) + '</div>' +
+        '<div class="tcg-dates">Began ' + fmtDate(hunt.createdAt) + '&nbsp;•&nbsp;Caught ' + dateEndedStr + '</div>' +
+
+        '<div class="tcg-attack">' +
+          '<div class="tcg-attack-cost">' + energyIcon(typeColor) + '</div>' +
+          '<div class="tcg-attack-name">Time Hunted</div>' +
+          '<div class="tcg-attack-dmg">' + timeHunted + '</div>' +
+        '</div>' +
+        '<div class="tcg-attack">' +
+          '<div class="tcg-attack-cost">' + energyIcon('#c9c2b4') + energyIcon('#c9c2b4') + '</div>' +
+          '<div class="tcg-attack-name">Odds of Encounter</div>' +
+          '<div class="tcg-attack-dmg">' + oddsStr + '</div>' +
         '</div>' +
 
-        '<div class="tcg-stat">' +
-          '<div class="tcg-stat-icon">⏱</div>' +
-          '<div class="tcg-stat-name">Time Hunted</div>' +
-          '<div class="tcg-stat-value">' + timeHunted + '</div>' +
-        '</div>' +
-        '<div class="tcg-stat">' +
-          '<div class="tcg-stat-icon">🎯</div>' +
-          '<div class="tcg-stat-name">Odds</div>' +
-          '<div class="tcg-stat-value">' + oddsStr + '</div>' +
-        '</div>' +
+        weaknessResistanceBar(types) +
 
-        '<div class="tcg-footer">' +
-          '<div class="tcg-footer-cell"><span class="tcg-footer-label">Game</span><span class="tcg-footer-value">' + escapeHtml(hunt.game) + '</span></div>' +
-          '<div class="tcg-footer-cell"><span class="tcg-footer-label">Method</span><span class="tcg-footer-value">' + escapeHtml(hunt.method) + '</span></div>' +
-          '<div class="tcg-footer-cell"><span class="tcg-footer-label">Charm</span><span class="tcg-footer-value">' + (hunt.shinyCharm ? 'Yes' : 'No') + '</span></div>' +
-        '</div>' +
+        '<table class="tcg-stats-table">' +
+          '<tr>' +
+            '<td class="tcg-stats-icon">🎮</td>' +
+            '<td class="tcg-stats-label">Game</td>' +
+            '<td class="tcg-stats-value">' + escapeHtml(hunt.game) + '</td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td class="tcg-stats-icon">🎯</td>' +
+            '<td class="tcg-stats-label">Method</td>' +
+            '<td class="tcg-stats-value">' + escapeHtml(hunt.method) + '</td>' +
+          '</tr>' +
+          '<tr' + (hunt.shinyCharm ? ' class="tcg-stats-row-active"' : '') + '>' +
+            '<td class="tcg-stats-icon">✨</td>' +
+            '<td class="tcg-stats-label">Charm</td>' +
+            '<td class="tcg-stats-value">' + (hunt.shinyCharm ? 'Yes' : 'No') + '</td>' +
+          '</tr>' +
+        '</table>' +
 
-        (genLabel ? '<div class="tcg-credit">' + escapeHtml(genLabel) + '</div>' : '') +
+        '<div class="tcg-credit">' +
+          '<div class="tcg-credit-row">' +
+            '<span class="tcg-credit-illus">Illus. Shiny Tracker</span>' +
+            (genLabel ? ('<span class="tcg-credit-sep">•</span><span class="tcg-credit-gen">' + escapeHtml(genLabel) + '</span>') : '') +
+          '</div>' +
+          '<div class="tcg-credit-row tcg-credit-num">' +
+            '<span>' + cardNumStr + '</span>' +
+            rarityGlyphMarkup(hunt.denom) +
+          '</div>' +
+        '</div>' +
 
       '</div>' +
     '</div>',
@@ -3958,6 +4125,35 @@ function openFoundModal(hunt) {
     var tabBtn = document.querySelector('nav.tabs button[data-tab="collection"]');
     tabBtn.click();
   }
+
+  fetchEvolvesFrom(hunt.pokemon).then(function(fromName) {
+    var evoEl = overlay.querySelector('#tcg-evo-line');
+    var preEvoEl = overlay.querySelector('#tcg-preevo');
+    var cardEl = overlay.querySelector('.tcg-card');
+    if (fromName) {
+      if (cardEl) cardEl.classList.add('has-evo');
+      if (evoEl) {
+        evoEl.textContent = 'Evolves from ' + fromName;
+        evoEl.style.display = '';
+      }
+      if (preEvoEl) {
+        preEvoEl.innerHTML = spriteMarkup(fromName);
+        preEvoEl.style.display = 'flex';
+      }
+    }
+  });
+
+  fetchEvoStage(hunt.pokemon).then(function(stage) {
+    var label = stageLabel(stage);
+    if (!label) return;
+    var stageEl = overlay.querySelector('#tcg-evo-stage');
+    var cardEl = overlay.querySelector('.tcg-card');
+    if (cardEl) cardEl.classList.add('has-stage');
+    if (stageEl) {
+      stageEl.textContent = label;
+      stageEl.style.display = '';
+    }
+  });
 
   var confirmSprite = overlay.querySelector('#tcg-confirm-sprite');
   confirmSprite.addEventListener('click', confirmFound);
