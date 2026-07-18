@@ -1673,6 +1673,18 @@ font-weight: 600;
 outline: none;
 border-color: var(--blue);
 }
+/* iOS Safari auto-zooms the whole page when a focused input/select/
+textarea has a font-size under 16px, and often doesn't zoom back
+out cleanly afterward. Bumping just these to 16px on small screens
+(where iOS is actually in play) stops the zoom without changing
+how they look on desktop. */
+@media (max-width: 600px) {
+.field input,
+.field select,
+.field textarea {
+font-size: 16px;
+}
+}
 .odds-display {
 background: var(--bg-panel-raised);
 border: 2px solid var(--line);
