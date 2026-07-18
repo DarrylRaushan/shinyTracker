@@ -249,6 +249,26 @@
         </div>
       </div>
     </div>
+    <!-- Firebase (used to sync your tracker data across devices via Firestore) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script>
+      // Firebase project config (Firebase console > Project settings > General).
+      var firebaseConfig = {
+        apiKey: "AIzaSyDX0UpFkZWQH98w8GuzU9PAD0UJRQte8do",
+        authDomain: "shinytracker-9128f.firebaseapp.com",
+        projectId: "shinytracker-9128f",
+        storageBucket: "shinytracker-9128f.firebasestorage.app",
+        messagingSenderId: "465878753061",
+        appId: "1:465878753061:web:8f17830985c56a2ec444cc",
+        measurementId: "G-77C8511J0P"
+      };
+      try {
+        firebase.initializeApp(firebaseConfig);
+      } catch (e) {
+        console.error('Firebase init failed - check firebaseConfig', e);
+      }
+    </script>
     <script src="script.js"></script>
   </body>
 </html>
