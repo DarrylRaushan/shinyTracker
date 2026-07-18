@@ -54,25 +54,32 @@ console.error('Firestore save failed', e);
 }
 function syncFromCloud() {
 if (!CLOUD_DOC) return;
-CLOUD_DOC.get().then(function(doc) {
-if (doc.exists && doc.data() && doc.data().payload) {
+CLOUD_DOC.onSnapshot(function(doc) {
+if (!doc.exists) {
+// No cloud doc yet - seed it with whatever's currently local.
+pushToCloud();
+return;
+}
+// A write we just made locally echoes back through this listener before
+// it's confirmed by the server (hasPendingWrites). Our local state
+// already reflects that write, so skip re-applying it to avoid clobbering
+// anything the person is doing right this moment (e.g. mid-typing).
+if (doc.metadata.hasPendingWrites) return;
+var data = doc.data();
+if (!data || !data.payload) return;
 try {
-var remote = JSON.parse(doc.data().payload);
+var remote = JSON.parse(data.payload);
 if (!remote.livingDex) remote.livingDex = {};
 if (!remote.livingDexShiny) remote.livingDexShiny = {};
 if (!remote.lastHuntPrefs) remote.lastHuntPrefs = null;
 state = remote;
-localStorage.setItem(STORE_KEY, doc.data().payload);
+localStorage.setItem(STORE_KEY, data.payload);
 renderAll();
 } catch (e) {
 console.error('Failed to parse cloud data', e);
 }
-} else {
-// No cloud doc yet - seed it with whatever's currently local.
-pushToCloud();
-}
-}).catch(function(e) {
-console.error('Firestore load failed', e);
+}, function(e) {
+console.error('Firestore sync error', e);
 });
 }
 var GAMES = ["Scarlet/Violet", "Legends Arceus", "Sword/Shield", "Let's Go Pikachu/Eevee",
