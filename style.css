@@ -415,12 +415,10 @@ box-sizing: border-box;
 /* Safari/WebKit sometimes fails to clip a filtered descendant
 (.hunt-dex-flap::after uses drop-shadow) to this element's own
 border-radius, leaving the top edge looking flat/pointy instead of
-curved on iOS. The mask forces a repaint that clips the shadow;
-the explicit clip-path (redundant with border-radius+overflow on
-Chrome, but load-bearing on Safari) makes it also clip the flap's
-own square top corners to the rounded shape. */
--webkit-mask-image: -webkit-radial-gradient(white, black);
-mask-image: radial-gradient(white, black);
+curved on iOS. This explicit clip-path (redundant with
+border-radius+overflow on Chrome, but load-bearing on Safari) makes
+it properly clip the flap's shadow and square top corners to the
+card's true rounded shape. */
 -webkit-clip-path: inset(0 round 30px);
 clip-path: inset(0 round 30px);
 }
