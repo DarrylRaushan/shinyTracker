@@ -409,10 +409,18 @@ inset 0 2px 0 rgba(255, 255, 255, 0.35),
 inset 0 -20px 26px -18px rgba(0, 0, 0, 0.28);
 position: relative;
 overflow: hidden;
--webkit-mask-image: -webkit-radial-gradient(white, black);
 width: 100%;
 min-height: 440px;
 box-sizing: border-box;
+/* Safari/WebKit sometimes fails to clip a filtered descendant
+(.hunt-dex-flap::after uses drop-shadow) to this element's own
+border-radius, leaving the top edge looking flat/pointy instead of
+curved on iOS. This explicit clip-path (redundant with
+border-radius+overflow on Chrome, but load-bearing on Safari) makes
+it properly clip the flap's shadow and square top corners to the
+card's true rounded shape. */
+-webkit-clip-path: inset(0 round 30px);
+clip-path: inset(0 round 30px);
 }
 /* pin feature removed */
 /* Hinge: vertical strip along the entire right edge of the card, ~10%
