@@ -1660,6 +1660,16 @@ font-weight: 600;
 outline: none;
 border-color: var(--blue);
 }
+/* iOS Safari zooms the page in whenever a focused input's font-size is
+   under 16px. Bumping it to 16px specifically on mobile-width screens
+   stops that zoom without changing the slightly denser desktop look. */
+@media (max-width: 700px) {
+.field input,
+.field select,
+.field textarea {
+font-size: 16px;
+}
+}
 .odds-display {
 background: var(--bg-panel-raised);
 border: 2px solid var(--line);
