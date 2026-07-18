@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shiny Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <div id="stars"></div>
+    <div class="app">
+      <header class="top">
+        <div class="brand">
+          <div class="top-lens"></div>
+          <div class="top-lights">
+            <span class="top-light g lit"></span>
+            <span class="top-light y"></span>
+          </div>
+          <div class="brand-text">
+            <h1>Shiny Tracker</h1>
+            <div class="sub">gotta track 'em all</div>
+          </div>
+        </div>
+        <nav class="tabs">
+          <div class="tabs-screen">
+            <button data-tab="hunts" class="active">
+              <span class="tab-dot"></span>
+              Active Hunts
+            </button>
+            <button data-tab="collection">
+              <span class="tab-dot"></span>
+              Shiny Log
+            </button>
+            <button data-tab="livingdex">
+              <span class="tab-dot"></span>
+              Living Dex
+            </button>
+          </div>
+        </nav>
+      </header>
+
+      <div class="dex-clamshell" id="dex-clamshell" data-active="hunts">
+        <div class="dex-frame">
+          <div class="dex-track">
+          <div id="view-hunts" class="dex-page">
+            <div class="section-head">
+              <h2>Active Hunts</h2>
+              <button class="primary" id="btn-new-hunt">+ Start a Hunt</button>
+            </div>
+            <div class="hunts" id="hunts-list"></div>
+          </div>
+
+          <div id="view-collection" class="dex-page">
+            <div class="section-head">
+              <h2>Shiny Log</h2>
+              <div class="section-head-actions">
+                <button class="ghost" id="btn-toggle-log-edit">✎ Edit</button>
+                <button class="primary" id="btn-log-catch">+ Log a Shiny</button>
+              </div>
+            </div>
+            <div class="log-dex-shell-wrap">
+              <div class="log-dex-shell">
+                <div class="log-dex-shell-crease-wrap"><div class="log-dex-shell-crease"></div></div>
+                <div class="log-dex-screen" id="log-latest-screen"></div>
+                <div class="log-dex-grid" aria-hidden="true">
+                  <span></span><span></span><span></span><span></span><span></span>
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="log-dex-bars-group" aria-hidden="true">
+                  <span class="log-dex-bar"></span>
+                  <span class="log-dex-bar"></span>
+                  <span class="log-dex-bar"></span>
+                </div>
+                <div class="log-dex-row" aria-hidden="true">
+                  <span class="log-dex-pill"></span>
+                  <span class="log-dex-pill"></span>
+                  <span class="log-dex-dot-wrap"><span class="log-dex-dot"></span></span>
+                </div>
+                <div class="log-dex-nav">
+                  <button class="log-dex-nav-btn" id="log-screen-prev" aria-label="Show previous catch">◀</button>
+                  <button class="log-dex-nav-btn" id="log-screen-next" aria-label="Show next catch">▶</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-livingdex" style="display:none">
+        <div class="section-head">
+          <h2>Living Dex</h2>
+        </div>
+        <div class="pc-scene">
+          <div class="pc-monitor">
+            <!-- Handheld Pokédex chrome: hidden on desktop, shown only at the
+                 mobile breakpoint (see style.css) where the PC monitor is swapped
+                 for a red clamshell Pokédex shape instead. Purely decorative - no
+                 ids, no script.js dependency. -->
+            <div class="dex-handheld-topbar">
+              <div class="dex-handheld-lens"><span class="dex-handheld-lens-glint"></span></div>
+              <div class="dex-handheld-lights">
+                <span class="dex-handheld-light g lit"></span>
+                <span class="dex-handheld-light y"></span>
+                <span class="dex-handheld-light r"></span>
+              </div>
+              <div class="dex-handheld-brand">POKÉDEX</div>
+            </div>
+            <div class="pc-monitor-vents">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="pc-monitor-topbar">
+              <div class="pc-brand-text">POKÉMON STORAGE SYSTEM</div>
+              <div class="pc-power">
+                <span class="pc-power-light"></span>
+                <span class="pc-power-label">ON</span>
+              </div>
+            </div>
+            <div class="pc-screen-bezel">
+              <div class="pc-screen">
+                <div class="pc-screen-content">
+                  <div class="dex-mode-toggle" id="dex-mode-toggle">
+                    <button data-mode="living" class="active">Living Dex</button>
+                    <button data-mode="shiny">Shiny Living Dex</button>
+                  </div>
+                  <div class="dex-summary" id="dex-summary"></div>
+                  <div class="dex-grid" id="dex-grid"></div>
+                </div>
+                <div class="pc-scanlines"></div>
+                <div class="pc-screen-glare"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pc-keyboard-tray">
+            <!-- Decorative D-pad + A/B buttons for the mobile handheld Pokédex
+                 layout (hidden on desktop, where the QWERTY deco-keys below are
+                 used instead). Purely decorative, no script.js dependency. -->
+            <div class="dex-handheld-controls" aria-hidden="true">
+              <div class="dex-handheld-dpad">
+                <span class="dpad-up"></span>
+                <span class="dpad-right"></span>
+                <span class="dpad-down"></span>
+                <span class="dpad-left"></span>
+                <span class="dpad-center"></span>
+              </div>
+              <div class="dex-handheld-ab">
+                <span class="dex-handheld-btn a">A</span>
+                <span class="dex-handheld-btn b">B</span>
+              </div>
+            </div>
+            <div class="pc-keyboard-slit"></div>
+            <div class="pc-deco-keys" aria-hidden="true">
+              <div class="pc-deco-row">
+                <span>Q</span><span>W</span><span>E</span><span>R</span><span>T</span>
+                <span>Y</span><span>U</span><span>I</span><span>O</span><span>P</span>
+              </div>
+              <div class="pc-deco-row pc-deco-row-2">
+                <span>A</span><span>S</span><span>D</span><span>F</span><span>G</span>
+                <span>H</span><span>J</span><span>K</span><span>L</span>
+              </div>
+              <div class="pc-deco-row pc-deco-row-3">
+                <span>Z</span><span>X</span><span>C</span><span>V</span><span>B</span><span>N</span><span>M</span>
+              </div>
+            </div>
+            <div class="pc-key-row pc-key-row-space">
+              <div class="pc-key pc-key-search">
+                <div class="field dex-search-field">
+                  <input type="text" id="dex-search" placeholder="␣ jump to a species...">
+                </div>
+              </div>
+            </div>
+            <div class="pc-key-row pc-key-row-fn">
+              <div class="pc-key pc-key-fn">
+                <span class="pc-key-label">Sort</span>
+                <div class="dex-select-wrap" id="dex-sort-wrap">
+                  <button class="ghost" id="btn-dex-sort" type="button">Sort: Dex Number ▾</button>
+                  <div class="dex-select-panel" id="dex-sort-panel">
+                    <div class="dex-select-option active" data-value="dex">Dex Number</div>
+                    <div class="dex-select-option" data-value="alpha">A--Z</div>
+                    <div class="dex-select-option" data-value="uncaught">Uncaught First</div>
+                  </div>
+                </div>
+              </div>
+              <div class="pc-key pc-key-fn">
+                <span class="pc-key-label">Type</span>
+                <div class="dex-select-wrap" id="dex-type-wrap">
+                  <button class="ghost" id="btn-dex-type-filter" type="button">Filter: All Types ▾</button>
+                  <div class="dex-select-panel" id="dex-type-panel">
+                    <div class="dex-select-option active" data-value="">All Types</div>
+                    <div class="dex-select-option" data-value="Normal"><span class="type-swatch" style="background:#A8A878"></span>Normal</div>
+                    <div class="dex-select-option" data-value="Fire"><span class="type-swatch" style="background:#F08030"></span>Fire</div>
+                    <div class="dex-select-option" data-value="Water"><span class="type-swatch" style="background:#6890F0"></span>Water</div>
+                    <div class="dex-select-option" data-value="Electric"><span class="type-swatch" style="background:#F8D030"></span>Electric</div>
+                    <div class="dex-select-option" data-value="Grass"><span class="type-swatch" style="background:#78C850"></span>Grass</div>
+                    <div class="dex-select-option" data-value="Ice"><span class="type-swatch" style="background:#98D8D8"></span>Ice</div>
+                    <div class="dex-select-option" data-value="Fighting"><span class="type-swatch" style="background:#C03028"></span>Fighting</div>
+                    <div class="dex-select-option" data-value="Poison"><span class="type-swatch" style="background:#A040A0"></span>Poison</div>
+                    <div class="dex-select-option" data-value="Ground"><span class="type-swatch" style="background:#E0C068"></span>Ground</div>
+                    <div class="dex-select-option" data-value="Flying"><span class="type-swatch" style="background:#A890F0"></span>Flying</div>
+                    <div class="dex-select-option" data-value="Psychic"><span class="type-swatch" style="background:#F85888"></span>Psychic</div>
+                    <div class="dex-select-option" data-value="Bug"><span class="type-swatch" style="background:#A8B820"></span>Bug</div>
+                    <div class="dex-select-option" data-value="Rock"><span class="type-swatch" style="background:#B8A038"></span>Rock</div>
+                    <div class="dex-select-option" data-value="Ghost"><span class="type-swatch" style="background:#705898"></span>Ghost</div>
+                    <div class="dex-select-option" data-value="Dragon"><span class="type-swatch" style="background:#7038F8"></span>Dragon</div>
+                    <div class="dex-select-option" data-value="Dark"><span class="type-swatch" style="background:#705848"></span>Dark</div>
+                    <div class="dex-select-option" data-value="Steel"><span class="type-swatch" style="background:#B8B8D0"></span>Steel</div>
+                    <div class="dex-select-option" data-value="Fairy"><span class="type-swatch" style="background:#EE99AC"></span>Fairy</div>
+                  </div>
+                </div>
+              </div>
+              <div class="pc-key pc-key-fn">
+                <span class="pc-key-label">Forms</span>
+                <div class="variant-filter-wrap" id="variant-filter-wrap">
+                  <button class="ghost" id="btn-variant-filter" type="button">Filter: Variants ▾</button>
+                  <div class="variant-filter-panel" id="variant-filter-panel">
+                    <div class="variant-filter-option">
+                      <input type="checkbox" id="vf-original" checked>
+                      <label for="vf-original">Original</label>
+                    </div>
+                    <div class="variant-filter-option">
+                      <input type="checkbox" id="vf-alolan" checked>
+                      <label for="vf-alolan"><span class="dex-chip-tag dex-chip-tag-alolan">ALOLAN</span></label>
+                    </div>
+                    <div class="variant-filter-option">
+                      <input type="checkbox" id="vf-galarian" checked>
+                      <label for="vf-galarian"><span class="dex-chip-tag dex-chip-tag-galarian">GALARIAN</span></label>
+                    </div>
+                    <div class="variant-filter-option">
+                      <input type="checkbox" id="vf-hisuian" checked>
+                      <label for="vf-hisuian"><span class="dex-chip-tag dex-chip-tag-hisuian">HISUIAN</span></label>
+                    </div>
+                    <div class="variant-filter-option">
+                      <input type="checkbox" id="vf-paldean" checked>
+                      <label for="vf-paldean"><span class="dex-chip-tag dex-chip-tag-paldean">PALDEAN</span></label>
+                    </div>
+                    <div class="variant-filter-actions">
+                      <button type="button" class="ghost" id="vf-select-all">All</button>
+                      <button type="button" class="ghost" id="vf-select-none">None</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script>
+      var firebaseConfig = {
+        apiKey: "AIzaSyDX0UpFkZWQH98w8GuzU9PAD0UJRQte8do",
+        authDomain: "shinytracker-9128f.firebaseapp.com",
+        projectId: "shinytracker-9128f",
+        storageBucket: "shinytracker-9128f.firebasestorage.app",
+        messagingSenderId: "465878753061",
+        appId: "1:465878753061:web:8f17830985c56a2ec444cc"
+      };
+      firebase.initializeApp(firebaseConfig);
+    </script>
+    <script src="script.js"></script>
+  </body>
+</html>

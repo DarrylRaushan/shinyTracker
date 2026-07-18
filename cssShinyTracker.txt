@@ -1,0 +1,3649 @@
+:root {
+--bg: #fff3cf;
+--bg-panel: #ffffff;
+--bg-panel-raised: #fff2b8;
+--line: #2b2320;
+--ink: #2b2320;
+--ink-dim: #8a7a68;
+--red: #ee1515;
+--red-shell: #d81c1c;
+--red-shell-dark: #9c1212;
+--screen: #e4f2df;
+--red-dark: #a80f0f;
+--blue: #2a3aa0;
+--blue-dark: #16205c;
+--yellow: #ffcb05;
+--yellow-dark: #a5760a;
+--green: #4caf50;
+--green-dark: #256b28;
+--radius: 20px;
+--hud: "Baloo 2", "Segoe UI", sans-serif;
+--body: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+--mono: "Share Tech Mono", "Courier New", monospace;
+}
+* {
+box-sizing: border-box;
+}
+html,
+body {
+margin: 0;
+padding: 0;
+background: var(--bg);
+color: var(--ink);
+font-family: var(--body);
+min-height: 100vh;
+transition: background-color 0.3s ease;
+}
+body.bg-hunts {
+background-image: url("images/bg-dex.png");
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+background-attachment: fixed;
+background-color: #30adff;
+}
+body.bg-log {
+background-image: url("images/bg-log1.jpg");
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+background-attachment: fixed;
+background-color: #313131;
+}
+body.bg-dex {
+background-image: url("images/bg-hunts.png");
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+background-attachment: fixed;
+background-color: #239cd0;
+}
+#stars {
+position: fixed;
+inset: 0;
+z-index: 0;
+pointer-events: none;
+overflow: hidden;
+}
+.star {
+position: absolute;
+width: 10px;
+height: 10px;
+border-radius: 50%;
+background: conic-gradient(from 90deg, var(--red) 50%, #fff 50%);
+border: 1.5px solid rgba(43, 35, 32, 0.55);
+opacity: 0.28;
+animation: bob 5s ease-in-out infinite;
+}
+.star:nth-child(3n) {
+background: conic-gradient(from 90deg, var(--blue) 50%, #fff 50%);
+}
+.star:nth-child(5n) {
+background: conic-gradient(from 90deg, var(--yellow) 50%, #fff 50%);
+width: 7px;
+height: 7px;
+}
+@keyframes bob {
+0%,
+100% {
+transform: translateY(0) rotate(0deg);
+opacity: 0.18;
+}
+50% {
+transform: translateY(-14px) rotate(25deg);
+opacity: 0.4;
+}
+}
+.app {
+position: relative;
+z-index: 1;
+max-width: 1320px;
+margin: 0 auto;
+padding: 0 24px 80px;
+}
+/* CSS-1: HEADER (Pokédex shell bar)Reuses the same "hunt-dex" visual language already establishedon the Active Hunts cards elsewhere in the app - the blue lens,the red/green/yellow shell colors, the two small status LEDs,and the sunken mint "screen" with scanlines - so the headerreads as the top bumper of the same device the hunt cards arebuilt to look like, instead of a generic flat app bar. — full rationale in NOTES.md */
+header.top {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin: 0 -24px 26px;
+flex-wrap: wrap;
+gap: 14px;
+background: linear-gradient(180deg, var(--red-shell), var(--red-shell-dark));
+padding: 16px 24px 20px;
+border-bottom: 4px solid var(--line);
+box-shadow:
+0 6px 0 rgba(43, 35, 32, 0.3),
+inset 0 2px 0 rgba(255, 255, 255, 0.22);
+position: relative;
+}
+.brand {
+display: flex;
+align-items: center;
+gap: 12px;
+}
+.top-lens {
+width: 34px;
+height: 34px;
+border-radius: 50%;
+flex-shrink: 0;
+background: radial-gradient(circle at 35% 30%, #bfe8ff, #2a6fd6 55%, #0f3a80);
+border: 2.5px solid var(--line);
+box-shadow:
+inset 0 0 0 2px rgba(255, 255, 255, 0.35),
+0 2px 0 rgba(43, 35, 32, 0.3);
+animation: lens-glint 4s ease-in-out infinite;
+}
+@keyframes lens-glint {
+0%,
+100% {
+box-shadow:
+inset 0 0 0 2px rgba(255, 255, 255, 0.35),
+0 2px 0 rgba(43, 35, 32, 0.3);
+}
+50% {
+box-shadow:
+inset 0 0 0 2px rgba(255, 255, 255, 0.65),
+0 2px 0 rgba(43, 35, 32, 0.3),
+0 0 10px 2px rgba(191, 232, 255, 0.55);
+}
+}
+.top-lights {
+display: flex;
+flex-direction: column;
+gap: 5px;
+}
+.top-light {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+border: 1.5px solid rgba(43, 35, 32, 0.5);
+opacity: 0.4;
+flex-shrink: 0;
+}
+.top-light.g {
+background: #3ddc4a;
+}
+.top-light.y {
+background: var(--yellow);
+}
+.top-light.lit {
+opacity: 1;
+box-shadow: 0 0 5px 1px rgba(61, 220, 74, 0.85);
+}
+.brand h1 {
+font-family: var(--hud);
+letter-spacing: 0.5px;
+font-size: 25px;
+margin: 0;
+font-weight: 800;
+color: #fff;
+-webkit-text-stroke: 0.6px var(--line);
+text-shadow: 0 2px 0 rgba(43, 35, 32, 0.35);
+}
+.brand .sub {
+color: rgba(255, 255, 255, 0.82);
+font-size: 12px;
+letter-spacing: 0.3px;
+font-weight: 700;
+}
+nav.tabs {
+display: flex;
+}
+.tabs-screen {
+display: flex;
+gap: 4px;
+background: var(--screen);
+padding: 6px;
+border-radius: 16px;
+border: 3px solid var(--line);
+position: relative;
+overflow: hidden;
+box-shadow: inset 0 2px 5px rgba(43, 35, 32, 0.3);
+}
+.tabs-screen::before {
+content: "";
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 0;
+background: repeating-linear-gradient(
+180deg,
+rgba(43, 35, 32, 0.045) 0px,
+rgba(43, 35, 32, 0.045) 1px,
+transparent 1px,
+transparent 3px
+);
+}
+.tabs-screen button {
+position: relative;
+z-index: 1;
+display: flex;
+align-items: center;
+gap: 7px;
+font-family: var(--hud);
+font-size: 12.5px;
+letter-spacing: 0.3px;
+background: transparent;
+border: none;
+color: var(--green-dark);
+padding: 9px 16px;
+border-radius: 11px;
+cursor: pointer;
+font-weight: 700;
+transition: all 0.15s ease;
+}
+.tab-dot {
+width: 7px;
+height: 7px;
+border-radius: 50%;
+background: currentColor;
+opacity: 0.35;
+flex-shrink: 0;
+transition: all 0.15s ease;
+}
+.tabs-screen button.active {
+background: var(--ink);
+color: #9dffb0;
+box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+}
+.tabs-screen button.active .tab-dot {
+opacity: 1;
+background: #3ddc4a;
+box-shadow: 0 0 5px 1px rgba(61, 220, 74, 0.85);
+}
+.tabs-screen button:hover:not(.active) {
+color: var(--ink);
+}
+@media (max-width: 560px) {
+header.top {
+padding: 14px 18px 18px;
+}
+.tabs-screen {
+width: 100%;
+}
+.tabs-screen button {
+flex: 1;
+padding: 9px 8px;
+justify-content: center;
+}
+.tabs-screen button span.tab-dot {
+display: none;
+}
+}
+.section-head {
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin: 8px 0 16px;
+flex-wrap: wrap;
+gap: 10px;
+}
+.section-head h2 {
+font-family: var(--hud);
+font-size: 18px;
+letter-spacing: 0.3px;
+color: var(--ink);
+margin: 0;
+font-weight: 800;
+background: var(--bg-panel);
+border: 2.5px solid var(--line);
+border-radius: 12px;
+padding: 8px 16px;
+box-shadow: 0 4px 0 rgba(43, 35, 32, 0.14);
+}
+.section-head-actions {
+display: flex;
+gap: 10px;
+align-items: center;
+}
+.section-head-actions .ghost.active {
+background: var(--blue);
+color: #fff;
+border-color: var(--line);
+}
+.section-head-actions .ghost.active:hover {
+color: #fff;
+border-color: var(--line);
+}
+button.primary {
+background: var(--red);
+color: #fff;
+border: 2px solid var(--line);
+font-weight: 800;
+padding: 11px 20px;
+border-radius: 999px;
+cursor: pointer;
+font-size: 14px;
+font-family: var(--hud);
+box-shadow: 0 4px 0 var(--red-dark);
+transition: transform 0.08s ease;
+}
+button.primary:hover {
+filter: brightness(1.05);
+}
+button.primary:active {
+transform: translateY(4px);
+box-shadow: none;
+}
+.ghost {
+background: #fff;
+border: 2px solid var(--line);
+color: var(--ink);
+padding: 9px 16px;
+border-radius: 999px;
+cursor: pointer;
+font-size: 13.5px;
+font-weight: 700;
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.35);
+}
+.ghost:hover {
+border-color: var(--blue);
+color: var(--blue);
+}
+.ghost:active {
+transform: translateY(3px);
+box-shadow: none;
+}
+button.ghost.danger {
+color: var(--red-dark);
+}
+button.ghost.danger:hover {
+border-color: var(--red);
+color: var(--red);
+}
+select.ghost {
+font-family: var(--body);
+font-weight: 600;
+-webkit-tap-highlight-color: transparent;
+}
+select.ghost:active {
+transform: none;
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.35);
+}
+select.ghost:focus {
+outline: none;
+border-color: var(--blue);
+}
+.empty {
+border: 3px dashed var(--line);
+border-radius: var(--radius);
+padding: 46px 20px;
+text-align: center;
+color: var(--ink-dim);
+background: var(--bg-panel);
+}
+.empty .glyph {
+font-size: 30px;
+margin-bottom: 10px;
+}
+.empty p {
+margin: 4px 0;
+font-size: 14px;
+}
+.empty .lead {
+color: var(--ink);
+font-weight: 800;
+font-size: 16px;
+font-family: var(--hud);
+}
+.hunts {
+display: flex;
+flex-direction: column;
+gap: 20px;
+}
+.hunt-card {
+background:
+linear-gradient(
+155deg,
+rgba(255, 255, 255, 0.4) 0%,
+rgba(255, 255, 255, 0) 24%
+),
+linear-gradient(180deg, var(--red-shell), var(--red-shell-dark));
+border: 3px solid var(--line);
+border-radius: 30px;
+padding: 0;
+box-shadow:
+0 8px 0 rgba(43, 35, 32, 0.32),
+inset 0 2px 0 rgba(255, 255, 255, 0.35),
+inset 0 -20px 26px -18px rgba(0, 0, 0, 0.28);
+position: relative;
+overflow: hidden;
+width: 100%;
+min-height: 440px;
+box-sizing: border-box;
+}
+/* pin feature removed */
+/* Hinge: vertical strip along the entire right edge of the card, ~10%
+of the total width. A conic-style highlight down its left-center
+fakes cylindrical 3D volume, and two dividers split it into a small
+top cap, the long shaft, and a small bottom cap. */
+.hunt-dex-hinge {
+position: absolute;
+top: 0;
+right: 0;
+bottom: 0;
+width: 10%;
+min-width: 34px;
+background: linear-gradient(
+90deg,
+#a51010 0%,
+#e02c2c 28%,
+#f47f7f 45%,
+#e02c2c 60%,
+#93100f 100%
+);
+border-left: 3px solid var(--line);
+z-index: 3;
+}
+.hunt-dex-hinge::before {
+content: "";
+position: absolute;
+left: 40%;
+top: 3%;
+bottom: 3%;
+width: 20%;
+background: rgba(255, 255, 255, 0.38);
+border-radius: 2px;
+}
+.hunt-dex-hinge-sep {
+position: absolute;
+left: 0;
+right: 0;
+height: 3px;
+background: var(--line);
+}
+.hunt-dex-hinge-sep.top {
+top: 18%;
+}
+.hunt-dex-hinge-sep.bottom {
+top: 90%;
+}
+/* Top flap: flat red panel covering the top of the main body
+(everything left of the hinge). Bottom edge is stepped: flat for
+the left 40%, a sharp 45-degree diagonal rise across the next 50%,
+then flat again at a higher baseline for the remaining 10% until
+it meets the hinge. ::before is the black outline (a uniformly-
+scaled-up copy of the same clip-path shape), ::after is the red
+fill sitting on top of it, so the outline and the drop shadow both
+follow the diagonal cut instead of the flap's rectangular box. */
+.hunt-dex-flap {
+--flap-cut: polygon(0 0, 100% 0, 100.00% 44.00%, 99.68% 46.88%, 98.72% 49.12%, 97.12% 50.72%, 94.88% 51.68%, 92.00% 52.00%, 86.38% 52.63%, 81.05% 54.38%, 75.91% 57.08%, 70.89% 60.52%, 65.89% 64.54%, 60.83% 68.92%, 55.62% 73.50%, 50.19% 78.08%, 44.44% 82.46%, 38.30% 86.48%, 31.66% 89.92%, 24.46% 92.62%, 16.60% 94.37%, 8.00% 95.00%, 5.12% 94.68%, 2.88% 93.72%, 1.28% 92.12%, 0.32% 89.88%, 0.00% 87.00%);
+position: relative;
+width: 100%;
+height: 126px;
+box-sizing: border-box;
+display: flex;
+align-items: center;
+gap: 12px;
+padding: 0 60px 0 20px;
+z-index: 4;
+}
+.hunt-dex-flap::before,
+.hunt-dex-flap::after {
+content: "";
+position: absolute;
+clip-path: var(--flap-cut);
+}
+.hunt-dex-flap::before {
+top: -3px;
+left: -3px;
+right: -3px;
+bottom: -3px;
+background: var(--line);
+z-index: -2;
+}
+.hunt-dex-flap::after {
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(
+180deg,
+#ff5252 0%,
+var(--red-shell) 38%,
+var(--red-shell-dark) 100%
+);
+box-shadow:
+inset 0 3px 0 rgba(255, 255, 255, 0.3),
+inset 0 0 0 4px var(--red-shell-dark),
+inset 0 -14px 16px -10px rgba(0, 0, 0, 0.4);
+z-index: -1;
+filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.65))
+drop-shadow(0 10px 10px rgba(20, 4, 4, 0.5));
+}
+/* Fold shadow along the two real interior cut-lines: the horizontal
+step (65%->100% at y:52%) and the diagonal drop (65%,52% -> 50%,95%).
+A ribbon-shaped clip-path traces just those two edges, blurred to a
+soft band, instead of a rectangular gradient patch — a rectangular
+patch's own box edge shows up as a fake straight line wherever it
+crosses open (non-edge) parts of the flap, which is the "divider"
+this replaces. Wrapped so the flap's own clip-path also constrains
+it, otherwise the blur could smear past the flap's true outline. */
+.hunt-dex-flap-crease-wrap {
+position: absolute;
+inset: 0;
+clip-path: var(--flap-cut);
+pointer-events: none;
+z-index: 0;
+}
+.hunt-dex-flap-crease {
+position: absolute;
+inset: 0;
+clip-path: polygon(
+100.00% calc(44.00% - 6px),
+99.68% calc(46.88% - 6px),
+98.72% calc(49.12% - 6px),
+97.12% calc(50.72% - 6px),
+94.88% calc(51.68% - 6px),
+92.00% calc(52.00% - 6px),
+86.38% calc(52.63% - 6px),
+81.05% calc(54.38% - 6px),
+75.91% calc(57.08% - 6px),
+70.89% calc(60.52% - 6px),
+65.89% calc(64.54% - 6px),
+60.83% calc(68.92% - 6px),
+55.62% calc(73.50% - 6px),
+50.19% calc(78.08% - 6px),
+44.44% calc(82.46% - 6px),
+38.30% calc(86.48% - 6px),
+31.66% calc(89.92% - 6px),
+24.46% calc(92.62% - 6px),
+16.60% calc(94.37% - 6px),
+8.00% calc(95.00% - 6px),
+5.12% calc(94.68% - 6px),
+2.88% calc(93.72% - 6px),
+1.28% calc(92.12% - 6px),
+0.32% calc(89.88% - 6px),
+0.00% calc(87.00% - 6px),
+0.00% calc(87.00% + 6px),
+0.32% calc(89.88% + 6px),
+1.28% calc(92.12% + 6px),
+2.88% calc(93.72% + 6px),
+5.12% calc(94.68% + 6px),
+8.00% calc(95.00% + 6px),
+16.60% calc(94.37% + 6px),
+24.46% calc(92.62% + 6px),
+31.66% calc(89.92% + 6px),
+38.30% calc(86.48% + 6px),
+44.44% calc(82.46% + 6px),
+50.19% calc(78.08% + 6px),
+55.62% calc(73.50% + 6px),
+60.83% calc(68.92% + 6px),
+65.89% calc(64.54% + 6px),
+70.89% calc(60.52% + 6px),
+75.91% calc(57.08% + 6px),
+81.05% calc(54.38% + 6px),
+86.38% calc(52.63% + 6px),
+92.00% calc(52.00% + 6px),
+94.88% calc(51.68% + 6px),
+97.12% calc(50.72% + 6px),
+98.72% calc(49.12% + 6px),
+99.68% calc(46.88% + 6px),
+100.00% calc(44.00% + 6px)
+);
+background: rgba(0, 0, 0, 0.45);
+filter: blur(4px);
+}
+.hunt-dex-lens-wrap {
+position: relative;
+flex-shrink: 0;
+width: 30%;
+max-width: 112px;
+aspect-ratio: 1 / 1;
+margin-top: -9px;
+}
+.hunt-dex-flap-lens {
+width: 100%;
+height: 100%;
+border-radius: 50%;
+position: relative;
+background: #fdfdfb;
+border: 4px solid var(--line);
+flex-shrink: 0;
+padding: 4px;
+display: flex;
+box-shadow: 0 3px 0 rgba(0, 0, 0, 0.22);
+box-sizing: border-box;
+}
+.hunt-dex-flap-lens-inner {
+display: block;
+width: 100%;
+height: 100%;
+border-radius: 50%;
+position: relative;
+overflow: hidden;
+background: radial-gradient(
+circle at 32% 26%,
+#eaf9ff 0%,
+#8ed6ff 20%,
+var(--blue) 58%,
+#0e2f78 100%
+);
+box-shadow: inset 0 -7px 9px rgba(0, 0, 0, 0.25);
+}
+.hunt-dex-flap-lens-inner::after {
+content: "";
+position: absolute;
+top: 15%;
+left: 18%;
+width: 40%;
+height: 24%;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.88);
+transform: rotate(-20deg);
+pointer-events: none;
+}
+.hunt-dex-flap-lights {
+position: absolute;
+top: 2px;
+left: 100%;
+margin-left: 8px;
+display: flex;
+gap: 10px;
+padding: 3px 6px;
+border-radius: 999px;
+z-index: 2;
+}
+.hunt-dex-light {
+width: 15px;
+height: 15px;
+border-radius: 50%;
+border: 1.5px solid var(--line);
+opacity: 0.85;
+padding: 1;
+position: relative;
+overflow: hidden;
+box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.hunt-dex-light::after {
+content: "";
+position: absolute;
+top: 12%;
+left: 20%;
+width: 42%;
+height: 30%;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.9);
+transform: rotate(-20deg);
+pointer-events: none;
+}
+.hunt-dex-light.g {
+background: radial-gradient(
+circle at 32% 26%,
+#eafce4 0%,
+#3ddc4a 55%,
+#1c8a27 100%
+);
+}
+.hunt-dex-light.y {
+background: radial-gradient(
+circle at 32% 26%,
+#fff6d8 0%,
+var(--yellow) 55%,
+#b98a00 100%
+);
+opacity: 1;
+}
+.hunt-dex-light.r {
+background: radial-gradient(
+circle at 32% 26%,
+#ffe1e1 0%,
+#ff5c5c 55%,
+#a51010 100%
+);
+}
+.hunt-dex-light.lit {
+opacity: 1;
+box-shadow:
+0 1px 2px rgba(0, 0, 0, 0.45),
+0 0 5px 1px rgba(61, 220, 74, 0.85);
+animation: hunt-dex-light-flicker 5.5s ease-in-out infinite;
+}
+.hunt-dex-light.g.lit {
+animation-duration: 4.9s;
+animation-delay: 1.6s;
+}
+@keyframes hunt-dex-light-flicker {
+0%,
+90%,
+100% {
+opacity: 1;
+filter: brightness(1);
+}
+91% {
+opacity: 0.45;
+filter: brightness(0.6);
+}
+92% {
+opacity: 1;
+filter: brightness(1.2);
+}
+93% {
+opacity: 0.55;
+filter: brightness(0.7);
+}
+94%,
+100% {
+opacity: 1;
+filter: brightness(1);
+}
+}
+@media (prefers-reduced-motion: reduce) {
+.hunt-dex-light.lit {
+animation: none;
+}
+}
+/* CSS-2: The red light doubles as the abandon/cancel control — full rationale in NOTES.md */
+button.hunt-dex-light {
+appearance: none;
+-webkit-appearance: none;
+font: inherit;
+cursor: pointer;
+transition:
+transform 0.15s ease,
+opacity 0.15s ease;
+}
+button.hunt-dex-light:hover {
+transform: scale(1.25);
+}
+button.hunt-dex-light:active {
+transform: scale(0.9);
+}
+/* Body: everything below the flap keeps the card's original 16px
+padding, with extra right padding so content clears the hinge. */
+.hunt-dex-body {
+padding: 1px calc(10% + 16px) 10px 16px;
+position: relative;
+}
+/* Bezel: thin strip of red plastic between the flap and the screen,
+carrying the two small screws visible above the screen in the
+reference photo. */
+.hunt-dex-bezel {
+position: relative;
+padding-top: 12px;
+}
+.hunt-dex-bezel-dots {
+position: absolute;
+top: 0;
+left: 16px;
+display: flex;
+gap: 10px;
+}
+.hunt-dex-bezel-dots span {
+width: 6px;
+height: 6px;
+border-radius: 50%;
+background: #7a1f1f;
+box-shadow:
+inset 0 1px 1px rgba(0, 0, 0, 0.4),
+0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.hunt-dex-screen {
+background: var(--screen);
+border: 3px solid var(--line);
+border-radius: 16px;
+padding: 14px;
+position: relative;
+overflow: hidden;
+box-shadow:
+inset 0 3px 10px rgba(0, 0, 0, 0.22),
+inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+.hunt-dex-screen::before {
+content: "";
+position: absolute;
+inset: 0;
+pointer-events: none;
+background: repeating-linear-gradient(
+180deg,
+rgba(43, 35, 32, 0.035) 0px,
+rgba(43, 35, 32, 0.035) 1px,
+transparent 1px,
+transparent 3px
+);
+}
+.hunt-dex-entry-row {
+display: flex;
+justify-content: space-between;
+align-items: center;
+font-family: var(--mono);
+font-size: 11px;
+color: var(--green-dark);
+margin-bottom: 8px;
+}
+.hunt-dex-running {
+display: flex;
+align-items: center;
+gap: 5px;
+}
+.hunt-dex-rec-dot {
+width: 7px;
+height: 7px;
+border-radius: 50%;
+background: var(--red);
+animation: huntDexPulse 1.4s ease-in-out infinite;
+display: inline-block;
+}
+@keyframes huntDexPulse {
+0%,
+100% {
+opacity: 1;
+}
+50% {
+opacity: 0.25;
+}
+}
+.hunt-dex-main {
+display: flex;
+gap: 20px;
+align-items: center;
+padding: 6px 0 4px;
+}
+.hunt-dex-portrait {
+width: 160px;
+height: 160px;
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.hunt-dex-portrait img {
+width: 100%;
+height: 100%;
+object-fit: contain;
+filter: drop-shadow(0 3px 3px rgba(43, 35, 32, 0.3));
+image-rendering: pixelated;
+image-rendering: crisp-edges;
+}
+.hunt-dex-portrait .fallback-letter {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 56px;
+color: var(--ink-dim);
+}
+.hunt-dex-id-block {
+min-width: 0;
+}
+.hunt-dex-id {
+font-family: var(--mono);
+font-size: 11px;
+color: var(--green-dark);
+margin-bottom: 2px;
+}
+.hunt-dex-name {
+font-family: var(--hud);
+font-size: 21px;
+font-weight: 800;
+color: var(--ink);
+margin: 0 0 6px;
+}
+.tag-row {
+display: flex;
+gap: 5px;
+flex-wrap: wrap;
+}
+.tag {
+font-family: var(--body);
+font-size: 10px;
+font-weight: 800;
+background: #fff;
+border: 1.5px solid var(--line);
+color: var(--ink);
+padding: 2px 8px;
+border-radius: 6px;
+}
+.hunt-dex-readout {
+margin-top: 12px;
+background: var(--ink);
+border-radius: 10px;
+padding: 10px 6px;
+display: flex;
+font-family: var(--mono);
+color: #9dffb0;
+}
+.hunt-dex-readout .cell {
+flex: 1;
+text-align: center;
+border-right: 1px solid rgba(157, 255, 176, 0.15);
+}
+.hunt-dex-readout .cell:last-child {
+border-right: none;
+}
+.hunt-dex-readout .num {
+font-size: 17px;
+font-weight: 700;
+letter-spacing: 0.5px;
+}
+.hunt-dex-readout .lbl {
+font-size: 7.5px;
+color: #5c9e6a;
+text-transform: uppercase;
+letter-spacing: 0.6px;
+margin-top: 2px;
+font-family: var(--body);
+font-weight: 700;
+}
+.hunt-dex-bar-track {
+margin-top: 10px;
+height: 9px;
+border-radius: 999px;
+background: #fff;
+border: 1.5px solid var(--line);
+overflow: hidden;
+}
+.hunt-dex-bar-fill {
+height: 100%;
+background: linear-gradient(90deg, var(--green), var(--yellow));
+transition: width 0.3s ease;
+}
+.hunt-dex-bar-caption {
+display: flex;
+justify-content: space-between;
+font-family: var(--mono);
+font-size: 9.5px;
+color: var(--green-dark);
+margin-top: 4px;
+}
+.hunt-dex-actions {
+display: flex;
+align-items: center;
+gap: 10px;
+margin-top: 14px;
+flex-wrap: wrap;
+}
+.hunt-dex-btn {
+font-family: var(--hud);
+font-weight: 800;
+border: 2px solid var(--line);
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition:
+transform 0.05s ease,
+box-shadow 0.05s ease;
+}
+.hunt-dex-btn-ghost {
+background: #fff;
+color: var(--ink);
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.25);
+}
+.hunt-dex-btn-ghost:active {
+transform: translateY(3px);
+box-shadow: none;
+}
+.hunt-dex-btn-found {
+background: linear-gradient(180deg, var(--green), var(--green-dark));
+color: #fff;
+box-shadow:
+0 4px 0 rgba(43, 35, 32, 0.4),
+inset 0 1px 0 rgba(255, 255, 255, 0.25);
+flex: 1;
+height: 52px;
+border-radius: 26px;
+font-size: 15px;
+}
+.hunt-dex-btn-found:active {
+transform: translateY(4px);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+/* CSS-3: Buttons are styled as the physical keycaps from the referenc — full rationale in NOTES.md */
+.hunt-dex-btn-step {
+width: 50px;
+height: 50px;
+flex: none;
+border-radius: 50%;
+font-size: 22px;
+background: linear-gradient(180deg, #52565f, #2b2d33);
+color: #fff;
+box-shadow:
+0 4px 0 rgba(0, 0, 0, 0.45),
+inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.hunt-dex-btn-step:active {
+transform: translateY(4px);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.hunt-dex-btn-x5 {
+width: 46px;
+height: 46px;
+flex: none;
+border-radius: 50%;
+font-size: 12px;
+background: linear-gradient(180deg, #4a63e0, #1f37a0);
+color: #fff;
+box-shadow:
+0 4px 0 rgba(0, 0, 0, 0.35),
+inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.hunt-dex-btn-x5:active {
+transform: translateY(4px);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.hunt-dex-btn-timer {
+width: 46px;
+height: 46px;
+flex: none;
+border-radius: 50%;
+font-size: 18px;
+background: linear-gradient(180deg, var(--yellow), var(--yellow-dark));
+color: var(--ink);
+box-shadow:
+0 4px 0 rgba(0, 0, 0, 0.3),
+inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.hunt-dex-btn-timer:active {
+transform: translateY(4px);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.hunt-dex-pokeball-row {
+display: flex;
+justify-content: center;
+margin-top: 4px;
+}
+.hunt-dex-grille {
+display: flex;
+justify-content: center;
+gap: 6px;
+margin-top: 4px;
+}
+.hunt-dex-grille span {
+width: 7px;
+height: 7px;
+border-radius: 50%;
+background: rgba(0, 0, 0, 0.22);
+box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+/* CSS-4: Mobile handheld controls: below ~600px the card drops the de — full rationale in NOTES.md */
+.hunt-dex-handheld-controls {
+display: none;
+align-items: center;
+justify-content: space-between;
+gap: 10px;
+margin-top: 14px;
+padding: 4px 6px 0;
+}
+.hunt-dex-joystick-wrap {
+position: relative;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 5px;
+flex-shrink: 0;
+margin-top: -30px;
+}
+.hunt-dex-joystick-socket {
+position: relative;
+width: 84px;
+height: 84px;
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+}
+.hunt-dex-joystick-plate {
+position: absolute;
+inset: 0;
+border-radius: 50%;
+background: rgba(0, 0, 0, 0.15);
+box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+.hunt-dex-round-btn {
+width: 84px;
+height: 84px;
+border-radius: 50%;
+flex-shrink: 0;
+cursor: pointer;
+background: transparent;
+border: none;
+color: #2b2320;
+font-size: 20px;
+line-height: 1;
+padding: 0;
+position: relative;
+isolation: isolate;
+z-index: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: transform 0.1s ease, box-shadow 0.1s ease;
+box-shadow:
+0 3px 0 rgba(0, 0, 0, 0.4),
+inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.hunt-dex-round-btn::after {
+content: "";
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 48px;
+height: 48px;
+border-radius: 50%;
+background:
+radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.65), transparent 55%),
+repeating-radial-gradient(circle at center, #a7abb3 0px, #a7abb3 1px, transparent 1px, transparent 4px),
+linear-gradient(180deg, #d7dade, #a9adb6);
+border: 2px solid #7d818a;
+box-shadow:
+0 3px 4px rgba(0, 0, 0, 0.4),
+inset 0 1px 2px rgba(255, 255, 255, 0.6), inset 0 -2px 3px rgba(0, 0, 0, 0.25);
+z-index: -1;
+}
+.hunt-dex-round-btn:active {
+transform: translateY(4px) scale(0.94);
+box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.12), inset 0 -3px 5px rgba(0, 0, 0, 0.5);
+}
+.hunt-dex-round-btn.is-pressing {
+animation: hh-btn-press 0.18s ease-out;
+}
+@keyframes hh-btn-press {
+0% {
+transform: translateY(0) scale(1);
+}
+40% {
+transform: translateY(4px) scale(0.9);
+}
+100% {
+transform: translateY(0) scale(1);
+}
+}
+.hunt-dex-pokeball-btn {
+width: 27px;
+height: 17px;
+border-radius: 9px;
+position: relative;
+background: linear-gradient(
+180deg,
+var(--red) 0%,
+var(--red) 46%,
+var(--line) 46%,
+var(--line) 54%,
+#f5f5f5 54%,
+#f5f5f5 100%
+);
+border: 1px solid var(--line);
+padding: 0;
+cursor: pointer;
+appearance: none;
+-webkit-appearance: none;
+transform: scale(1.9) translateY(-5px);
+transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hunt-dex-pokeball-btn:hover {
+transform: scale(2) translateY(-5px);
+box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.5);
+}
+.hunt-dex-pokeball-btn:active {
+transform: scale(1.8) translateY(-5px) rotate(-8deg);
+}
+.hunt-dex-pokeball-btn.is-pressing {
+animation: hh-pokeball-press 0.18s ease-out;
+}
+@keyframes hh-pokeball-press {
+0% {
+transform: scale(1.9) translateY(-5px);
+}
+40% {
+transform: scale(1.65) translateY(-3px);
+}
+100% {
+transform: scale(1.9) translateY(-5px);
+}
+}
+.hunt-dex-pokeball-btn::after {
+content: "";
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 7px;
+height: 7px;
+border-radius: 50%;
+background: #f5f5f5;
+border: 1.5px solid var(--line);
+}
+.hunt-dex-mini-col {
+display: flex;
+flex-direction: column;
+gap: 6px;
+flex: 1;
+min-width: 0;
+margin-top: -20px;
+}
+.hunt-dex-count-row {
+display: none;
+gap: 6px;
+margin-top: -6px;
+}
+.hunt-dex-pill {
+flex: 1;
+height: 10px;
+border-radius: 13px;
+cursor: pointer;
+font-family: var(--hud);
+font-weight: 800;
+font-size: 12px;
+background: linear-gradient(180deg, #2030e5, #2030e5);
+color: #c00f0f;
+border: 3px solid #2a09e3;
+box-shadow:
+0 3px 0 rgba(0, 0, 0, 0.55),
+inset 0 2px 0 rgba(255, 255, 255, 0.12), inset 0 -2px 4px rgba(0, 0, 0, 0.5);
+}
+.hunt-dex-pill:active {
+transform: translateY(3px);
+box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.12), inset 0 -2px 4px rgba(0, 0, 0, 0.5);
+}
+.hunt-dex-count-row .hunt-dex-pill:first-child {
+background: linear-gradient(180deg, var(--red), var(--red));
+border: 3px solid var(--red-dark);
+}
+.hunt-dex-count-row .hunt-dex-pill:last-child {
+border: none;
+}
+.hunt-dex-mini-screen {
+display: none;
+align-items: baseline;
+justify-content: space-between;
+gap: 6px;
+margin-top: 10px;
+height: 44px;
+width: 96px;
+padding: 0 10px;
+border-radius: 6px;
+background: var(--screen);
+border: 2px solid var(--line);
+box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+.hunt-dex-mini-screen .mini-num {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 13px;
+color: var(--ink);
+}
+.hunt-dex-mini-screen .mini-lbl {
+font-family: var(--hud);
+font-size: 9px;
+letter-spacing: 0.03em;
+color: var(--muted);
+}
+.hunt-dex-dpad {
+position: relative;
+width: 100px;
+height: 100px;
+flex-shrink: 0;
+}
+.dpad-plate {
+position: absolute;
+inset: 6px;
+border-radius: 50%;
+background: rgba(0, 0, 0, 0.15);
+box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
+}
+.hunt-dex-dpad .hdpad-btn {
+position: absolute;
+background: linear-gradient(180deg, #52565f, #2b2d33);
+color: #fff;
+border: 2px solid var(--line);
+font-family: var(--hud);
+font-weight: 800;
+font-size: 14px;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 0;
+z-index: 1;
+box-shadow:
+0 3px 0 rgba(0, 0, 0, 0.4),
+inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.hunt-dex-dpad button.hdpad-btn {
+cursor: pointer;
+appearance: none;
+-webkit-appearance: none;
+transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.hunt-dex-dpad button.hdpad-btn:active {
+transform: translateY(3px) scale(0.93);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+.hunt-dex-dpad button.hdpad-btn.is-pressing {
+animation: hh-btn-press 0.18s ease-out;
+}
+.hunt-dex-dpad .dpad-up,
+.hunt-dex-dpad .dpad-down {
+width: 30px;
+height: 34px;
+left: 35px;
+border-radius: 7px;
+}
+.hunt-dex-dpad .dpad-up {
+top: 0;
+}
+.hunt-dex-dpad .dpad-down {
+bottom: 0;
+}
+.hunt-dex-dpad .dpad-left,
+.hunt-dex-dpad .dpad-right {
+width: 34px;
+height: 30px;
+top: 35px;
+border-radius: 7px;
+}
+.hunt-dex-dpad .dpad-left {
+left: 0;
+}
+.hunt-dex-dpad .dpad-right {
+right: 0;
+}
+.hunt-dex-dpad .dpad-center {
+position: absolute;
+width: 30px;
+height: 30px;
+left: 35px;
+top: 35px;
+border-radius: 6px;
+z-index: 1;
+background: linear-gradient(180deg, #3a3c42, #1e2024);
+border: 2px solid var(--line);
+}
+.sparkle {
+position: absolute;
+pointer-events: none;
+font-size: 16px;
+color: var(--yellow-dark);
+animation: rise 0.8s ease-out forwards;
+}
+@keyframes rise {
+0% {
+transform: translateY(0) scale(0.6) rotate(0deg);
+opacity: 1;
+}
+100% {
+transform: translateY(-38px) scale(1.2) rotate(30deg);
+opacity: 0;
+}
+}
+.log-wrap {
+background: var(--bg-panel);
+border: 2.5px solid var(--line);
+border-radius: var(--radius);
+box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
+overflow: hidden;
+}
+.log-wrap .empty {
+border: none;
+box-shadow: none;
+}
+.log-list {
+display: flex;
+flex-direction: column;
+}
+.log-card {
+display: flex;
+align-items: flex-start;
+gap: 12px;
+padding: 12px 14px;
+border-bottom: 2px dashed rgba(43, 35, 32, 0.25);
+}
+.log-card:last-child {
+border-bottom: none;
+}
+.log-card:hover {
+background: rgba(255, 203, 5, 0.12);
+}
+.log-card-sprite {
+width: 56px;
+height: 56px;
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.log-card-sprite img {
+width: 100%;
+height: 100%;
+object-fit: contain;
+image-rendering: pixelated;
+image-rendering: crisp-edges;
+}
+.log-card-sprite .fallback-letter {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 22px;
+color: var(--ink-dim);
+}
+.log-card-body {
+flex: 1;
+min-width: 0;
+}
+.log-card-top {
+display: flex;
+align-items: baseline;
+justify-content: space-between;
+gap: 10px;
+}
+.log-card-name {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 14.5px;
+color: var(--blue-dark);
+white-space: normal;
+overflow-wrap: break-word;
+}
+.log-card-count {
+font-family: var(--hud);
+font-weight: 800;
+color: var(--red);
+font-size: 13.5px;
+flex-shrink: 0;
+white-space: nowrap;
+}
+.log-card-count .unit {
+font-family: var(--body);
+font-weight: 600;
+color: var(--ink-dim);
+font-size: 10.5px;
+margin-left: 3px;
+}
+.log-card-types {
+display: flex;
+gap: 4px;
+flex-wrap: wrap;
+margin-top: 4px;
+}
+.log-card-meta {
+font-size: 11px;
+color: var(--ink-dim);
+font-weight: 600;
+margin-top: 4px;
+white-space: normal;
+overflow-wrap: break-word;
+}
+.log-card-notes {
+font-size: 11px;
+color: var(--ink-dim);
+font-style: italic;
+font-weight: 600;
+margin-top: 4px;
+white-space: normal;
+}
+.log-card-actions {
+display: none;
+flex-shrink: 0;
+gap: 2px;
+}
+.log-wrap.edit-mode .log-card-actions {
+display: flex;
+}
+.icon-btn {
+background: transparent;
+border: none;
+color: var(--ink-dim);
+cursor: pointer;
+font-size: 17px;
+padding: 4px 6px;
+}
+.icon-btn:hover {
+color: var(--red);
+}
+.log-card-actions .icon-btn {
+font-size: 15px;
+padding: 4px 5px;
+}
+.log-card-actions .icon-btn:first-child:hover {
+color: var(--blue);
+}
+.type-badge {
+display: inline-block;
+font-size: 10.5px;
+font-weight: 800;
+letter-spacing: 0.3px;
+color: #fff;
+padding: 3px 9px;
+border-radius: 999px;
+border: 1.5px solid var(--line);
+margin-right: 4px;
+text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+.type-badge.type-unknown {
+background: #ccc;
+color: var(--ink-dim);
+text-shadow: none;
+}
+@media (max-width: 480px) {
+.log-card {
+gap: 10px;
+padding: 10px 12px;
+}
+.log-card-sprite {
+width: 44px;
+height: 44px;
+}
+.log-card-name {
+font-size: 13.5px;
+}
+.log-dex-shell {
+padding: 80px 14px 20px;
+}
+}
+.stat-cards {
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+gap: 14px;
+margin-bottom: 24px;
+}
+.stat-card {
+background: var(--bg-panel);
+border: 2.5px solid var(--line);
+border-radius: var(--radius);
+padding: 18px;
+text-align: center;
+box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
+}
+.stat-card .num {
+font-family: var(--hud);
+font-size: 30px;
+font-weight: 800;
+color: var(--red);
+}
+.stat-card .lbl {
+font-size: 11px;
+color: var(--ink-dim);
+text-transform: uppercase;
+letter-spacing: 1px;
+margin-top: 6px;
+font-weight: 700;
+}
+.method-breakdown {
+background: var(--bg-panel);
+border: 2.5px solid var(--line);
+border-radius: var(--radius);
+padding: 18px;
+box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
+}
+.method-row {
+display: flex;
+align-items: center;
+gap: 12px;
+padding: 9px 0;
+border-bottom: 2px dashed var(--line);
+}
+.method-row:last-child {
+border-bottom: none;
+}
+.method-row .name {
+width: 150px;
+font-size: 13px;
+flex-shrink: 0;
+font-weight: 700;
+}
+.method-row .track {
+flex: 1;
+height: 10px;
+background: #fff;
+border: 2px solid var(--line);
+border-radius: 999px;
+overflow: hidden;
+}
+.method-row .fill {
+height: 100%;
+background: linear-gradient(90deg, var(--blue), var(--yellow));
+}
+.method-row .count {
+font-family: var(--hud);
+font-size: 13px;
+color: var(--ink);
+width: 26px;
+text-align: right;
+font-weight: 800;
+}
+.overlay {
+position: fixed;
+inset: 0;
+background: rgba(43, 35, 32, 0.55);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 50;
+padding: 20px;
+}
+.modal {
+background: var(--bg-panel);
+border: 3px solid var(--line);
+border-radius: 24px;
+padding: 26px;
+width: 100%;
+max-width: 440px;
+max-height: 88vh;
+overflow-y: auto;
+box-shadow: 0 8px 0 rgba(43, 35, 32, 0.25);
+}
+.modal h3 {
+margin: 0 0 18px;
+font-family: var(--hud);
+letter-spacing: 0.3px;
+font-size: 19px;
+color: var(--red);
+font-weight: 800;
+}
+.field {
+margin-bottom: 14px;
+}
+.field label {
+display: block;
+font-size: 11.5px;
+color: var(--ink-dim);
+text-transform: uppercase;
+letter-spacing: 0.8px;
+margin-bottom: 6px;
+font-weight: 800;
+}
+.field input,
+.field select,
+.field textarea {
+width: 100%;
+background: #fff;
+border: 2px solid var(--line);
+border-radius: 12px;
+color: var(--ink);
+padding: 9px 11px;
+font-size: 13.5px;
+font-family: var(--body);
+font-weight: 600;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+outline: none;
+border-color: var(--blue);
+}
+.odds-display {
+background: var(--bg-panel-raised);
+border: 2px solid var(--line);
+border-radius: 12px;
+padding: 9px 11px;
+font-size: 14px;
+font-weight: 800;
+color: var(--red);
+font-family: var(--hud);
+}
+.field-row {
+display: flex;
+gap: 10px;
+}
+.field-row .field {
+flex: 1;
+}
+.field-autocomplete {
+position: relative;
+}
+.autocomplete-list {
+display: none;
+position: absolute;
+top: 100%;
+left: 0;
+right: 0;
+margin-top: 4px;
+background: #fff;
+border: 2px solid var(--line);
+border-radius: 12px;
+max-height: 220px;
+overflow-y: auto;
+z-index: 60;
+box-shadow: 0 4px 0 rgba(43, 35, 32, 0.14);
+}
+.autocomplete-item {
+padding: 8px 12px;
+font-size: 13.5px;
+font-weight: 600;
+cursor: pointer;
+color: var(--ink);
+}
+.autocomplete-item:hover,
+.autocomplete-item.active {
+background: var(--bg-panel-raised);
+}
+.autocomplete-item:first-child {
+border-radius: 10px 10px 0 0;
+}
+.autocomplete-item:last-child {
+border-radius: 0 0 10px 10px;
+}
+.checkbox-field {
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.checkbox-field input {
+width: auto;
+}
+.checkbox-field label {
+margin: 0;
+}
+.field-hint {
+font-size: 11px;
+color: var(--ink-dim);
+font-weight: 600;
+margin-top: 4px;
+}
+.modal-actions {
+display: flex;
+justify-content: flex-end;
+gap: 10px;
+margin-top: 20px;
+}
+.modal-actions .danger {
+margin-right: auto;
+}
+/* ---------- Shiny Found modal: celebratory sprite header ---------- */
+/* ---------- Shiny Found modal: TCG-card confirmation ---------- */
+/* Replaces the old ".modal.modal-found" through ".found-hero-name" block. */
+
+.modal.modal-found {
+  border-color: var(--yellow);
+  box-shadow: 0 8px 0 rgba(43, 35, 32, 0.25), 0 0 0 4px rgba(255, 203, 5, 0.25);
+  height: 92vh;
+  max-height: 92vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal.modal-found .tcg-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tcg-card {
+  --type-color: var(--yellow);
+  position: relative;
+  margin: -26px;
+  padding: 12px;
+  border-radius: 21px;
+  background: linear-gradient(115deg, #fff9df 0%, var(--type-color) 30%, #fff3c2 45%, var(--type-color) 68%, #fff9df 100%);
+  background-size: 220% 220%;
+  animation: tcg-holo-sweep 5.5s ease-in-out infinite;
+}
+@keyframes tcg-holo-sweep {
+  0%, 100% { background-position: 0% 30%; }
+  50% { background-position: 100% 70%; }
+}
+
+.tcg-inner {
+  background: var(--bg-panel);
+  border: 2.5px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  position: relative;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tcg-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px 2px; flex-shrink: 0; }
+.tcg-header-left { display: flex; flex-direction: column; gap: 4px; }
+.tcg-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--bg-panel); border: 2px solid var(--line); border-radius: 8px;
+  padding: 2px 8px 3px; font-family: var(--hud); font-size: 10.5px; font-weight: 800;
+  letter-spacing: 0.5px; text-transform: uppercase; color: var(--red); width: fit-content;
+}
+.tcg-name { font-family: var(--hud); font-size: 21px; font-weight: 800; letter-spacing: 0.2px; margin: 0; color: var(--ink); }
+
+.tcg-hp { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tcg-hp-label { font-family: var(--hud); font-size: 10.5px; font-weight: 800; color: var(--ink-dim); letter-spacing: 0.4px; text-align: right; }
+.tcg-hp-value { font-family: var(--hud); font-size: 21px; font-weight: 800; color: var(--ink); text-align: right; }
+.tcg-hp-icon {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(180deg, var(--type-color) 50%, #fff 50%);
+  border: 2px solid var(--line); position: relative;
+}
+.tcg-hp-icon::before {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 7px; height: 7px;
+  background: #fff; border: 2px solid var(--line); border-radius: 50%;
+}
+
+.tcg-subbar {
+  background: linear-gradient(180deg, #fdfdfd, #efece4);
+  border: 2px solid var(--line); border-radius: 8px;
+  padding: 5px 10px; margin: 2px 2px 10px;
+  font-size: 11.5px; font-weight: 700; color: var(--ink-dim);
+  flex-shrink: 0;
+}
+.tcg-subbar b { color: var(--ink); font-weight: 800; }
+
+.tcg-art {
+  position: relative; margin: -18px 2px 10px; border-radius: 12px; border: 2.5px solid var(--line);
+  flex: 1 1 0; min-height: 110px; max-height: 320px; overflow: hidden;
+  background: radial-gradient(circle at 50% 38%, #fff9e2 0%, var(--type-color) 130%);
+  display: flex; align-items: center; justify-content: center;
+}
+.tcg-art-rays {
+  position: absolute; top: 50%; left: 50%; width: 400px; height: 400px; transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(rgba(255,255,255,.55) 0deg 6deg, rgba(255,255,255,0) 6deg 18deg);
+  opacity: .6; animation: tcg-art-spin 18s linear infinite;
+}
+@keyframes tcg-art-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.tcg-art-glow {
+  position: absolute; top: 50%; left: 50%; width: 250px; height: 250px; transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 70%);
+  animation: tcg-art-pulse 3s ease-in-out infinite;
+}
+@keyframes tcg-art-pulse { 0%,100% { opacity:.5; transform: translate(-50%,-50%) scale(1); } 50% { opacity:1; transform: translate(-50%,-50%) scale(1.1); } }
+.tcg-sprite-wrap { position: relative; z-index: 2; width: min(70%, 180px); height: min(70%, 180px); animation: tcg-sprite-pop .55s cubic-bezier(.34,1.56,.64,1); cursor: pointer; transition: transform .15s ease; }
+.tcg-sprite-wrap:hover { transform: scale(1.06); }
+.tcg-sprite-wrap:active { transform: scale(0.97); }
+@keyframes tcg-sprite-pop { 0% { transform: scale(.5) rotate(-8deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+.tcg-sprite {
+  width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,.6);
+  border: 3px solid var(--line); box-shadow: 0 4px 0 rgba(43,35,32,.2), inset 0 2px 4px rgba(255,255,255,.7);
+  display: flex; align-items: center; justify-content: center; font-size: 15px; overflow: hidden;
+}
+.tcg-sprite img { width: 72%; height: 72%; object-fit: contain; image-rendering: pixelated; }
+.tcg-spark {
+  position: absolute; z-index: 3; font-size: 22px; color: #fff1b8;
+  text-shadow: 0 0 6px #fff, 0 0 12px #ffcb05, 0 0 18px rgba(255, 203, 5, 0.9), 0 1px 2px rgba(43, 35, 32, 0.4);
+  animation: tcg-twinkle 2.2s ease-in-out infinite;
+}
+.tcg-spark.s1 { top: 10%; left: 12%; animation-delay: .1s; }
+.tcg-spark.s2 { top: 16%; right: 10%; animation-delay: .7s; font-size: 16px; }
+.tcg-spark.s3 { bottom: 10%; left: 18%; animation-delay: 1.3s; font-size: 18px; }
+@keyframes tcg-twinkle { 0%,100% { opacity:.65; transform: scale(.85) rotate(0); } 50% { opacity:1; transform: scale(1.3) rotate(15deg); } }
+
+.tcg-dexbar {
+  background: linear-gradient(180deg, #fdfdfd, #efece4); border: 2px solid var(--line); border-radius: 8px;
+  padding: 5px 10px; margin: 0 2px 10px; font-size: 10.5px; font-weight: 700; color: var(--ink-dim);
+  display: flex; flex-direction: column; gap: 4px;
+  flex-shrink: 0;
+}
+.tcg-dexbar-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.tcg-stat { display: flex; align-items: center; gap: 10px; margin: 0 4px 8px; padding-top: 8px; border-top: 1.5px dashed rgba(43,35,32,.25); flex-shrink: 0; }
+.tcg-stat:first-of-type { border-top: none; padding-top: 0; }
+.tcg-stat-icon {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--line);
+  background: var(--type-color); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 11px;
+}
+.tcg-stat-name { font-family: var(--hud); font-weight: 700; font-size: 13px; color: var(--ink); flex: 1; }
+.tcg-stat-value { font-family: var(--hud); font-weight: 800; font-size: 15px; color: var(--ink); }
+
+.tcg-footer { display: flex; margin: 12px 4px 0; background: linear-gradient(180deg, #fdfdfd, #efece4); border: 2px solid var(--line); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+.tcg-footer-cell { flex: 1; padding: 6px 8px; text-align: center; }
+.tcg-footer-cell + .tcg-footer-cell { border-left: 1.5px solid rgba(43,35,32,.25); }
+.tcg-footer-label { font-size: 8.5px; font-weight: 800; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.4px; display: block; margin-bottom: 2px; }
+.tcg-footer-value { font-family: var(--hud); font-size: 12px; font-weight: 800; color: var(--ink); }
+
+.tcg-credit { text-align: center; margin: 8px 4px 4px; font-size: 9.5px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--ink-dim); font-weight: 800; flex-shrink: 0; }
+
+.tcg-editnote { font-size: 11.5px; font-weight: 700; color: var(--ink-dim); margin: 0 2px 12px; flex-shrink: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tcg-card, .tcg-art-rays, .tcg-art-glow, .tcg-sprite-wrap, .tcg-spark, .is-pressing { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+.found-hero-glow,
+.found-hero-rays,
+.found-hero-ring,
+.found-hero-spark,
+.found-hero-sprite-wrap {
+animation: none;
+}
+}
+/* ---------- Living Dex ---------- */
+.dex-mode-toggle {
+display: inline-flex;
+gap: 6px;
+background: var(--bg-panel-raised);
+padding: 5px;
+border-radius: 999px;
+border: 2px solid var(--line);
+margin-bottom: 16px;
+}
+.dex-mode-toggle button {
+font-family: var(--hud);
+font-size: 12.5px;
+letter-spacing: 0.3px;
+background: transparent;
+border: none;
+color: var(--ink-dim);
+padding: 8px 16px;
+border-radius: 999px;
+cursor: pointer;
+font-weight: 700;
+transition: all 0.15s ease;
+}
+.dex-mode-toggle button.active {
+background: var(--blue);
+color: #fff;
+box-shadow: 0 3px 0 var(--blue-dark);
+}
+.dex-mode-toggle button:hover:not(.active) {
+color: var(--ink);
+}
+.dex-toolbar {
+display: flex;
+align-items: flex-end;
+gap: 12px;
+flex-wrap: wrap;
+margin-bottom: 16px;
+}
+.dex-search-field {
+flex: 1;
+min-width: 200px;
+margin-bottom: 0;
+}
+.dex-toolbar-actions {
+display: flex;
+gap: 10px;
+align-items: center;
+flex-wrap: wrap;
+}
+.variant-filter-wrap {
+position: relative;
+}
+.dex-select-wrap {
+position: relative;
+}
+.dex-select-wrap.open .dex-select-panel {
+display: block;
+}
+.dex-select-wrap .ghost.active {
+border-color: var(--blue);
+color: var(--blue);
+}
+.dex-select-panel {
+display: none;
+position: absolute;
+top: 100%;
+left: 0;
+margin-top: 6px;
+background: #fff;
+border: 2px solid var(--line);
+border-radius: 14px;
+padding: 6px;
+min-width: 180px;
+max-height: 260px;
+overflow-y: auto;
+z-index: 60;
+box-shadow: 0 4px 0 rgba(43, 35, 32, 0.14);
+}
+.dex-select-option {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 8px 10px;
+font-size: 13px;
+font-weight: 700;
+cursor: pointer;
+color: var(--ink);
+border-radius: 10px;
+}
+.dex-select-option:hover {
+background: var(--bg-panel-raised);
+}
+.dex-select-option.active {
+background: var(--blue);
+color: #fff;
+}
+.type-swatch {
+display: inline-block;
+width: 10px;
+height: 10px;
+border-radius: 50%;
+border: 1.5px solid var(--line);
+flex-shrink: 0;
+}
+#btn-variant-filter.active {
+border-color: var(--blue);
+color: var(--blue);
+}
+.variant-filter-panel {
+display: none;
+position: absolute;
+top: 100%;
+right: 0;
+margin-top: 6px;
+background: #fff;
+border: 2px solid var(--line);
+border-radius: 14px;
+padding: 12px;
+min-width: 190px;
+z-index: 60;
+box-shadow: 0 4px 0 rgba(43, 35, 32, 0.14);
+}
+.variant-filter-wrap.open .variant-filter-panel {
+display: block;
+}
+.variant-filter-option {
+display: flex;
+align-items: center;
+gap: 8px;
+padding: 6px 2px;
+}
+.variant-filter-option input {
+width: auto;
+cursor: pointer;
+}
+.variant-filter-option label {
+cursor: pointer;
+font-size: 13px;
+font-weight: 700;
+color: var(--ink);
+}
+.variant-filter-actions {
+display: flex;
+gap: 8px;
+margin-top: 8px;
+padding-top: 10px;
+border-top: 2px dashed var(--line);
+}
+.variant-filter-actions button {
+flex: 1;
+padding: 6px 8px;
+font-size: 12px;
+}
+.dex-chip.variant-hidden {
+display: none;
+}
+/* ---------- Living Dex: Pokémon Center PC scene ---------- */
+.pc-scene {
+margin: 4px 0 22px;
+}
+.pc-monitor {
+background: linear-gradient(180deg, #f1f2f6 0%, #d3d6de 60%, #c2c5cf 100%);
+border: 3px solid var(--line);
+border-radius: 24px 24px 8px 8px;
+padding: 14px 14px 20px;
+position: relative;
+box-shadow:
+0 7px 0 rgba(43, 35, 32, 0.2),
+inset 0 -6px 10px rgba(0, 0, 0, 0.06);
+}
+.pc-monitor::before,
+.pc-monitor::after {
+content: "";
+position: absolute;
+top: 9px;
+width: 7px;
+height: 7px;
+border-radius: 50%;
+background: radial-gradient(circle at 35% 35%, #fff, #8d909b 70%, #6b6e78);
+box-shadow: inset 0 0 0 1px rgba(43, 35, 32, 0.4);
+}
+.pc-monitor::before {
+left: 11px;
+}
+.pc-monitor::after {
+right: 11px;
+}
+.pc-monitor-vents {
+display: flex;
+gap: 5px;
+justify-content: center;
+margin-bottom: 10px;
+}
+.pc-monitor-vents span {
+width: 24px;
+height: 4px;
+border-radius: 2px;
+background: rgba(43, 35, 32, 0.22);
+}
+.pc-monitor-topbar {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 0 6px;
+margin-bottom: 9px;
+}
+.pc-brand-text {
+font-family: var(--hud);
+font-size: 10.5px;
+letter-spacing: 1.4px;
+color: var(--ink-dim);
+font-weight: 800;
+}
+.pc-power {
+display: flex;
+align-items: center;
+gap: 5px;
+}
+.pc-power-light {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+background: #3ee06a;
+box-shadow:
+0 0 5px #3ee06a,
+0 0 2px #3ee06a;
+animation: pc-power-blink 2.8s infinite ease-in-out;
+}
+.pc-power-label {
+font-family: var(--mono);
+font-size: 9px;
+color: var(--ink-dim);
+letter-spacing: 1px;
+}
+@keyframes pc-power-blink {
+0%,
+100% {
+opacity: 1;
+box-shadow:
+0 0 6px #3ee06a,
+0 0 2px #3ee06a;
+}
+50% {
+opacity: 0.4;
+box-shadow: 0 0 2px #3ee06a;
+}
+}
+.pc-screen-bezel {
+background: linear-gradient(160deg, #2c2c2e, #131315);
+border-radius: 15px;
+padding: 12px;
+box-shadow:
+inset 0 0 0 2px rgba(255, 255, 255, 0.05),
+inset 0 5px 14px rgba(0, 0, 0, 0.55);
+}
+.pc-screen {
+position: relative;
+overflow: hidden;
+border-radius: 8px;
+padding: 16px 14px 18px;
+background: radial-gradient(
+120% 100% at 28% 0%,
+#e4f7ea 0%,
+#c3ecd8 42%,
+#9fdcc4 100%
+);
+box-shadow: inset 0 0 34px rgba(0, 45, 25, 0.28);
+}
+/* CSS-5: Caps the visible screen to roughly 3 collapsed generation ca — full rationale in NOTES.md */
+.pc-screen-content {
+position: relative;
+z-index: 2;
+max-height: 600px;
+overflow-y: auto;
+overflow-x: hidden;
+padding-right: 4px;
+margin-right: -4px;
+scrollbar-width: thin;
+scrollbar-color: rgba(0, 50, 25, 0.4) transparent;
+}
+.pc-screen-content::-webkit-scrollbar {
+width: 6px;
+}
+.pc-screen-content::-webkit-scrollbar-track {
+background: transparent;
+}
+.pc-screen-content::-webkit-scrollbar-thumb {
+background: rgba(0, 50, 25, 0.35);
+border-radius: 3px;
+}
+.pc-scanlines {
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 3;
+background: repeating-linear-gradient(
+180deg,
+rgba(0, 20, 10, 0.09) 0px,
+rgba(0, 20, 10, 0.09) 1px,
+transparent 2px,
+transparent 3px
+);
+animation: pc-flicker 6.5s infinite;
+}
+.pc-screen-glare {
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 4;
+background: linear-gradient(
+135deg,
+rgba(255, 255, 255, 0.32) 0%,
+rgba(255, 255, 255, 0) 32%
+);
+}
+@keyframes pc-flicker {
+0%,
+100% {
+opacity: 0.85;
+}
+44% {
+opacity: 0.85;
+}
+45% {
+opacity: 0.55;
+}
+46% {
+opacity: 0.85;
+}
+71% {
+opacity: 0.8;
+}
+72% {
+opacity: 1;
+}
+73% {
+opacity: 0.8;
+}
+}
+.pc-screen .dex-mode-toggle {
+background: rgba(255, 255, 255, 0.55);
+}
+.pc-screen .dex-summary {
+box-shadow: 0 5px 0 rgba(0, 30, 15, 0.18);
+}
+/* CSS-6: dex-card — full rationale in NOTES.md */
+.pc-screen .dex-card.expanded {
+margin-left: 0;
+margin-right: 0;
+}
+/* ---------- keyboard ---------- */
+.pc-keyboard-tray {
+margin: -6px auto 0;
+width: 96%;
+padding: 22px 16px 18px;
+position: relative;
+}
+.pc-keyboard-tray::before {
+content: "";
+position: absolute;
+inset: 0;
+z-index: 0;
+background: linear-gradient(180deg, #dde0e6 0%, #b6b9c3 100%);
+border: 3px solid var(--line);
+border-top: none;
+clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+box-shadow: 0 6px 0 rgba(43, 35, 32, 0.18);
+}
+.pc-keyboard-slit {
+position: absolute;
+top: 8px;
+left: 50%;
+transform: translateX(-50%);
+z-index: 1;
+width: 36%;
+height: 5px;
+border-radius: 3px;
+background: rgba(43, 35, 32, 0.28);
+}
+/* Decorative QWERTY rows - not interactive, purely there to read as areal keyboard. Staggered left offsets mimic a real key layout. */
+.pc-deco-keys {
+position: relative;
+z-index: 1;
+margin-bottom: 10px;
+}
+.pc-deco-row {
+display: flex;
+justify-content: center;
+gap: 3px;
+margin-bottom: 3px;
+}
+.pc-deco-row-2 {
+padding-left: 10px;
+}
+.pc-deco-row-3 {
+padding-left: 20px;
+}
+.pc-deco-row span {
+flex: 1 1 0;
+max-width: 28px;
+height: 22px;
+display: flex;
+align-items: center;
+justify-content: center;
+background: linear-gradient(180deg, #fdfdfe 0%, #d8dae0 100%);
+border: 1.5px solid var(--line);
+border-radius: 5px;
+box-shadow: 0 2px 0 var(--line);
+font-family: var(--mono);
+font-size: 9px;
+font-weight: 700;
+color: var(--ink-dim);
+}
+.pc-key-row {
+position: relative;
+z-index: 1;
+display: flex;
+gap: 10px;
+justify-content: center;
+flex-wrap: wrap;
+}
+.pc-key-row + .pc-key-row {
+margin-top: 10px;
+}
+.pc-key-row-space {
+padding: 0 2px;
+}
+.pc-key {
+background: linear-gradient(180deg, #ffffff 0%, #eceef2 100%);
+border: 2px solid var(--line);
+border-radius: 8px;
+padding: 8px 12px;
+box-shadow: 0 4px 0 var(--line);
+}
+/* the search field is shaped like an actual keyboard spacebar - wide,low, and only lightly rounded, instead of a tall pill-shaped search box */
+.pc-key-search {
+flex: 1;
+width: 100%;
+padding: 6px 10px;
+border-radius: 6px;
+}
+.pc-key-label {
+display: block;
+font-family: var(--mono);
+font-size: 9px;
+letter-spacing: 1.2px;
+color: var(--ink-dim);
+text-transform: uppercase;
+text-align: center;
+margin-bottom: 4px;
+}
+.pc-key-search .field input {
+height: 34px;
+border-radius: 5px;
+text-align: center;
+letter-spacing: 0.3px;
+}
+/* Sort / Type / Forms keys - styled like a row of F-keys: squarer,slightly shorter, equal width */
+.pc-key-fn {
+flex: 1 1 0;
+min-width: 0;
+max-width: 150px;
+padding: 7px 8px 8px;
+}
+.pc-key-fn .pc-key-label {
+font-size: 8px;
+}
+.pc-key .field {
+margin-bottom: 0;
+width: 100%;
+}
+.pc-key .field input {
+text-align: center;
+}
+.pc-key .dex-select-wrap,
+.pc-key .variant-filter-wrap {
+position: relative;
+}
+.pc-key .ghost {
+padding: 8px 10px;
+font-size: 12px;
+width: 100%;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+/* CSS-7: Living Dex mobile: Handheld Pokédex — full rationale in NOTES.md */
+.dex-handheld-topbar,
+.dex-handheld-controls {
+display: none;
+}
+@media (max-width: 520px) {
+/* CSS-8: Mobile: the person is already holding a phone-sized rectangl — full rationale in NOTES.md */
+.pc-scene {
+margin: 0 0 22px;
+}
+.pc-monitor {
+background: linear-gradient(
+155deg,
+var(--red-shell) 0%,
+var(--red-shell-dark) 100%
+);
+border: 3px solid var(--line);
+border-radius: 26px 26px 16px 16px;
+padding: 14px 12px 18px;
+position: relative;
+box-shadow:
+0 7px 0 rgba(43, 35, 32, 0.28),
+inset 0 2px 0 rgba(255, 255, 255, 0.22);
+}
+.pc-monitor::before,
+.pc-monitor::after {
+display: none;
+}
+.pc-monitor-vents {
+display: none;
+}
+/* The desktop "POKÉMON STORAGE SYSTEM" readout is PC-specific copy;swap it for the handheld chrome instead. */
+.pc-monitor-topbar {
+display: none;
+}
+.dex-handheld-topbar {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 2px 6px 12px;
+}
+.dex-handheld-lens {
+width: 30px;
+height: 30px;
+border-radius: 50%;
+flex-shrink: 0;
+background: radial-gradient(
+circle at 35% 30%,
+#bfe8ff,
+#2a6fd6 55%,
+#0f3a80
+);
+border: 2.5px solid var(--line);
+position: relative;
+overflow: hidden;
+box-shadow:
+inset 0 0 0 2px rgba(255, 255, 255, 0.35),
+0 2px 0 rgba(43, 35, 32, 0.3);
+}
+.dex-handheld-lens-glint {
+position: absolute;
+top: 3px;
+left: 5px;
+width: 9px;
+height: 9px;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.75);
+filter: blur(1px);
+}
+.dex-handheld-lights {
+display: flex;
+gap: 6px;
+}
+.dex-handheld-light {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+border: 1.5px solid rgba(43, 35, 32, 0.5);
+opacity: 0.35;
+}
+.dex-handheld-light.g {
+background: #3ddc4a;
+}
+.dex-handheld-light.y {
+background: var(--yellow);
+}
+.dex-handheld-light.r {
+background: #ff5c5c;
+}
+.dex-handheld-light.lit {
+opacity: 1;
+box-shadow: 0 0 5px 1px rgba(61, 220, 74, 0.85);
+}
+.dex-handheld-brand {
+margin-left: auto;
+font-family: var(--hud);
+font-size: 14px;
+font-weight: 800;
+letter-spacing: 1px;
+color: #fff;
+-webkit-text-stroke: 0.5px var(--line);
+text-shadow: 0 2px 0 rgba(43, 35, 32, 0.35);
+}
+.pc-brand-text {
+font-size: 11px;
+}
+.pc-screen-bezel {
+background: linear-gradient(160deg, #2c2c2e, #131315);
+padding: 9px;
+border-radius: 16px;
+}
+.pc-screen {
+position: relative;
+overflow: hidden;
+border-radius: 11px;
+padding: 12px;
+box-shadow: inset 0 0 24px rgba(0, 45, 25, 0.28);
+}
+.pc-screen-content {
+max-height: 520px;
+}
+.pc-scanlines {
+opacity: 0.7;
+}
+.pc-screen-glare {
+display: block;
+}
+.pc-screen .dex-mode-toggle {
+background: rgba(255, 255, 255, 0.55);
+}
+/* CSS-9: Control deck: a stubby hinge slit, a decorative D-pad + A/B — full rationale in NOTES.md */
+.pc-keyboard-tray {
+margin: 12px 0 0;
+width: 100%;
+padding: 14px 12px 12px;
+position: relative;
+}
+.pc-keyboard-tray::before {
+background: linear-gradient(180deg, #f1f2f6 0%, #cfd2da 100%);
+clip-path: none;
+border-radius: 16px;
+}
+.pc-keyboard-slit {
+width: 28%;
+height: 5px;
+top: 9px;
+}
+.pc-deco-keys {
+display: none;
+}
+.dex-handheld-controls {
+display: flex;
+align-items: center;
+justify-content: space-between;
+position: relative;
+z-index: 1;
+padding: 2px 6px 12px;
+}
+.dex-handheld-dpad {
+position: relative;
+width: 56px;
+height: 56px;
+flex-shrink: 0;
+}
+.dex-handheld-dpad span {
+position: absolute;
+background: linear-gradient(180deg, #4a4d55, #2b2d33);
+border: 1.5px solid var(--line);
+}
+.hh-dpad-up,
+.hh-dpad-down {
+width: 18px;
+height: 20px;
+left: 19px;
+border-radius: 4px;
+}
+.hh-dpad-up {
+top: 0;
+}
+.hh-dpad-down {
+bottom: 0;
+}
+.hh-dpad-left,
+.hh-dpad-right {
+width: 20px;
+height: 18px;
+top: 19px;
+border-radius: 4px;
+}
+.hh-dpad-left {
+left: 0;
+}
+.hh-dpad-right {
+right: 0;
+}
+.hh-dpad-center {
+width: 20px;
+height: 20px;
+left: 18px;
+top: 18px;
+border-radius: 3px;
+background: linear-gradient(180deg, #3a3c42, #1e2024);
+}
+.dex-handheld-ab {
+display: flex;
+gap: 8px;
+align-items: center;
+}
+.dex-handheld-btn {
+width: 30px;
+height: 30px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--hud);
+font-weight: 800;
+font-size: 12px;
+color: #fff;
+border: 2px solid var(--line);
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.4);
+}
+.dex-handheld-btn.a {
+background: var(--blue);
+}
+.dex-handheld-btn.b {
+background: var(--red);
+margin-top: 10px;
+}
+.pc-key-row {
+gap: 8px;
+position: relative;
+z-index: 1;
+}
+.pc-key-row + .pc-key-row {
+margin-top: 8px;
+}
+.pc-key-row-fn {
+flex-wrap: wrap;
+}
+.pc-key {
+background: linear-gradient(180deg, #ffffff 0%, #eceef2 100%);
+border: 2px solid var(--line);
+border-radius: 12px;
+padding: 9px 11px;
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
+}
+.pc-key-search {
+border-radius: 12px;
+padding: 9px 11px;
+}
+.pc-key-label {
+text-align: left;
+font-size: 9.5px;
+}
+.pc-key-search .field input {
+height: 36px;
+border-radius: 8px;
+text-align: left;
+}
+.pc-key-fn {
+max-width: none;
+flex: 1 1 30%;
+padding: 7px 8px 8px;
+}
+.pc-key .ghost {
+padding: 8px 8px;
+font-size: 11.5px;
+}
+}
+.dex-summary {
+display: flex;
+align-items: center;
+gap: 18px;
+flex-wrap: wrap;
+background: var(--bg-panel);
+border: 2.5px solid var(--line);
+border-radius: var(--radius);
+padding: 16px 20px;
+margin-bottom: 20px;
+box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
+}
+.dex-summary .num {
+font-family: var(--hud);
+font-size: 32px;
+font-weight: 800;
+color: var(--red);
+line-height: 1;
+}
+.dex-summary .lbl {
+font-size: 11px;
+color: var(--ink-dim);
+text-transform: uppercase;
+letter-spacing: 1px;
+font-weight: 700;
+margin-top: 4px;
+}
+.dex-summary .bar-track {
+flex: 1;
+min-width: 160px;
+height: 14px;
+border-radius: 999px;
+background: #fff;
+border: 2px solid var(--line);
+overflow: hidden;
+}
+.dex-summary .bar-fill {
+height: 100%;
+background: linear-gradient(90deg, var(--green), var(--yellow));
+border-radius: 999px;
+transition: width 0.3s ease;
+}
+.dex-summary .dex-hint {
+width: 100%;
+font-size: 11.5px;
+color: var(--ink-dim);
+font-weight: 600;
+}
+.dex-grid {
+display: flex;
+flex-direction: column;
+gap: 14px;
+}
+.dex-card {
+background: var(--bg-panel);
+border: 2.5px solid var(--line);
+border-radius: var(--radius);
+overflow: hidden;
+box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
+transition:
+background-color 0.15s ease,
+margin 0.2s ease;
+}
+.dex-card.expanded {
+margin-left: 0;
+margin-right: 0;
+}
+.dex-card-banner {
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+}
+.dex-card-head {
+display: flex;
+align-items: center;
+gap: 14px;
+padding: 44px 18px;
+cursor: pointer;
+user-select: none;
+}
+/* CSS-10: REGION BALL CONTAINER (Living Dex page)This is the round "pokeball" badge shown next to eachgeneration/region card (e.g. Kanto, Johto, Hoenn...).The actual per-region ball image + fallback markup is built inscript.js (see REGION_BALLS map + the dex-gen-badge buildernear GEN_DATA / renderLivingDex). This rule just handles thecircular frame, the <img> sizing, and the number fallback.Ball image files expected at: images/region-balls/<filename>.png — full rationale in NOTES.md */
+.dex-gen-badge {
+width: 56px;
+height: 56px;
+border-radius: 50%;
+flex-shrink: 0;
+border: 2px solid var(--line);
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--hud);
+font-weight: 800;
+color: #fff;
+font-size: 18px;
+text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+overflow: hidden;
+position: relative;
+}
+.dex-gen-badge img {
+position: absolute;
+top: -14%;
+left: -14%;
+width: 124%;
+height: 124%;
+object-fit: cover;
+display: block;
+}
+.dex-gen-badge-fallback {
+display: none;
+align-items: center;
+justify-content: center;
+width: 100%;
+height: 100%;
+background: conic-gradient(from 90deg, var(--blue) 50%, var(--yellow) 50%);
+}
+.dex-gen-badge.complete::after {
+content: "✓";
+position: absolute;
+bottom: -2px;
+right: -2px;
+z-index: 3;
+width: 20px;
+height: 20px;
+border-radius: 50%;
+background: var(--green);
+color: #fff;
+border: 2px solid var(--bg-panel);
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--hud);
+font-weight: 800;
+font-size: 11px;
+line-height: 1;
+}
+.dex-card-title {
+flex: 1;
+min-width: 0;
+}
+.dex-card-title .region {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 16px;
+color: var(--ink);
+}
+.dex-card-title .gen-label {
+font-size: 10.5px;
+color: var(--ink);
+text-transform: uppercase;
+letter-spacing: 1px;
+font-weight: 700;
+margin-top: 2px;
+}
+.dex-card-count {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 15px;
+color: var(--red-dark);
+flex-shrink: 0;
+}
+.dex-chevron {
+font-size: 14px;
+color: var(--ink);
+transition: transform 0.2s ease;
+flex-shrink: 0;
+}
+.dex-card.expanded .dex-chevron {
+transform: rotate(180deg);
+}
+.dex-card-progress {
+padding: 0 18px 18px;
+}
+.dex-card-progress .bar-track {
+height: 10px;
+border-radius: 999px;
+background: #fff;
+border: 2px solid var(--line);
+overflow: hidden;
+}
+.dex-card-progress .bar-fill {
+height: 100%;
+background: linear-gradient(90deg, var(--green), var(--yellow));
+border-radius: 999px;
+transition: width 0.3s ease;
+}
+.dex-species-panel {
+display: none;
+border-top: 2.5px dashed var(--line);
+padding: 14px 18px 18px;
+background: var(--bg-panel-raised);
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+}
+.dex-card.expanded .dex-species-panel {
+display: block;
+}
+.dex-card[data-gen="1"] .dex-species-panel {
+background-image: url("images/dex-regions/gen1-kanto.webp");
+}
+.dex-card[data-gen="2"] .dex-species-panel {
+background-image: url("images/dex-regions/gen2-johto.jpg");
+}
+.dex-card[data-gen="3"] .dex-species-panel {
+background-image: url("images/dex-regions/gen3-hoenn.jpg");
+}
+.dex-card[data-gen="4"] .dex-species-panel {
+background-image: url("images/dex-regions/gen4-sinnoh.jpg");
+}
+.dex-card[data-gen="5"] .dex-species-panel {
+background-image: url("images/dex-regions/gen5-unova.jpg");
+}
+.dex-card[data-gen="6"] .dex-species-panel {
+background-image: url("images/dex-regions/gen6-kalos.jpg");
+}
+.dex-card[data-gen="7"] .dex-species-panel {
+background-image: url("images/dex-regions/gen7-alola.jpg");
+}
+.dex-card[data-gen="8"] .dex-species-panel {
+background-image: url("images/dex-regions/gen8-galar.jpg");
+}
+.dex-card[data-gen="9"] .dex-species-panel {
+background-image: url("images/dex-regions/gen9-paldea.jpg");
+}
+/* CSS-11: minmax(0,1fr) instead of a bare 1fr - grid tracks otherwise — full rationale in NOTES.md */
+.dex-species-grid {
+display: grid;
+grid-template-columns: repeat(6, minmax(0, 1fr));
+gap: 8px;
+}
+.dex-card[data-gen="1"] .dex-card-banner {
+background-image: url("images/dex-banners/gen1-kantobanner.jpg");
+}
+.dex-card[data-gen="2"] .dex-card-banner {
+background-image: url("images/dex-banners/gen2-johto.jpg");
+}
+.dex-card[data-gen="3"] .dex-card-banner {
+background-image: url("images/dex-banners/gen3-hoennbanner.jpg");
+}
+.dex-card[data-gen="4"] .dex-card-banner {
+background-image: url("images/dex-banners/gen4-sinnoh.jpg");
+}
+.dex-card[data-gen="5"] .dex-card-banner {
+background-image: url("images/dex-banners/gen5-unova.jpg");
+}
+.dex-card[data-gen="6"] .dex-card-banner {
+background-image: url("images/dex-banners/gen6-kalos.jpg");
+}
+.dex-card[data-gen="7"] .dex-card-banner {
+background-image: url("images/dex-banners/gen7-alola.jpg");
+}
+.dex-card[data-gen="8"] .dex-card-banner {
+background-image: url("images/dex-banners/gen8-galar.jpg");
+}
+.dex-card[data-gen="9"] .dex-card-banner {
+background-image: url("images/dex-banners/gen9-paldea.jpg");
+}
+.dex-chip {
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 13.5px;
+font-weight: 700;
+background: #fff;
+border: 1.5px solid var(--line);
+border-radius: 999px;
+padding: 8px 8px 8px 6px;
+color: var(--ink-dim);
+min-width: 0;
+}
+.dex-chip-sprite {
+width: 36px;
+height: 36px;
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+position: relative;
+z-index: 1;
+}
+.dex-chip-sprite img {
+max-width: 100%;
+max-height: 100%;
+width: auto;
+height: auto;
+object-fit: contain;
+transform: scale(2.1) translateY(-6px);
+image-rendering: pixelated;
+image-rendering: crisp-edges;
+}
+.dex-chip-sprite .fallback-letter {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 12px;
+color: var(--ink-dim);
+}
+.dex-chip .n {
+width: 26px;
+text-align: right;
+color: var(--ink-dim);
+font-size: 11px;
+flex-shrink: 0;
+}
+.dex-chip-name {
+display: inline-flex;
+align-items: center;
+gap: 5px;
+flex-wrap: wrap;
+min-width: 0;
+}
+.dex-chip-name-text {
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+min-width: 0;
+}
+.dex-chip-tag {
+display: inline-block;
+font-family: var(--hud);
+font-size: 8.5px;
+font-weight: 800;
+letter-spacing: 0.4px;
+color: #fff;
+padding: 2px 6px;
+border-radius: 999px;
+line-height: 1.4;
+text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+.dex-chip-tag-alolan {
+background: var(--yellow-dark);
+}
+.dex-chip-tag-galarian {
+background: var(--blue);
+}
+.dex-chip-tag-hisuian {
+background: var(--green-dark);
+}
+.dex-chip-tag-paldean {
+background: var(--red);
+}
+.dex-chip.caught {
+background: rgba(76, 175, 80, 0.16);
+border-color: var(--green);
+color: var(--ink);
+box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.18);
+}
+.dex-chip.caught .n {
+color: var(--green-dark);
+}
+.dex-grid.shiny-mode .dex-chip.caught {
+background-image:
+linear-gradient(
+90deg,
+rgba(255, 110, 199, 0.16),
+rgba(255, 209, 102, 0.16),
+rgba(110, 231, 183, 0.16),
+rgba(96, 165, 250, 0.16),
+rgba(192, 132, 252, 0.16)
+),
+linear-gradient(90deg, #ff6ec7, #ffd166, #6ee7b7, #60a5fa, #c084fc);
+background-origin: border-box;
+background-clip: padding-box, border-box;
+border: 1.5px solid transparent;
+color: var(--ink);
+box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.18);
+}
+.dex-grid.shiny-mode .dex-chip.caught .n {
+color: var(--ink-dim);
+}
+.dex-chip.type-dimmed {
+opacity: 0.18;
+filter: grayscale(0.5);
+transition:
+opacity 0.2s ease,
+filter 0.2s ease;
+}
+.dex-chip {
+transition:
+opacity 0.2s ease,
+filter 0.2s ease;
+}
+.dex-chip.interactive {
+cursor: pointer;
+transition:
+transform 0.08s ease,
+filter 0.15s ease,
+opacity 0.2s ease;
+}
+.dex-chip.interactive:hover {
+filter: brightness(0.97);
+border-color: var(--blue);
+}
+.dex-chip.interactive:active {
+transform: scale(0.96);
+}
+.dex-chip-highlighted {
+border-width: 2.5px;
+animation: dex-chip-attention-flash 1s ease-in-out infinite;
+}
+@keyframes dex-chip-attention-flash {
+0%,
+100% {
+border-color: var(--yellow);
+box-shadow:
+0 0 0 4px rgba(255, 203, 5, 0.6),
+0 0 16px 4px rgba(255, 255, 255, 0.5);
+}
+50% {
+border-color: #fff8dc;
+box-shadow:
+0 0 0 6px rgba(255, 241, 168, 0.95),
+0 0 26px 8px rgba(255, 255, 255, 0.9);
+}
+}
+@media (max-width: 600px) {
+.hunt-dex-actions {
+display: none;
+}
+.hunt-dex-handheld-controls {
+display: flex;
+}
+.hunt-dex-portrait {
+width: 140px;
+height: 140px;
+}
+.hunt-dex-readout .num {
+font-size: 14px;
+}
+.method-row .name {
+width: 100px;
+}
+.dex-species-grid {
+grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+/* CSS-12: Bottom action row: on desktop the +5/timer buttons only need — full rationale in NOTES.md */
+.hunt-dex-actions {
+gap: 8px;
+}
+.hunt-dex-btn-step {
+width: 46px;
+height: 46px;
+font-size: 20px;
+}
+.hunt-dex-btn-x5 {
+width: 38px;
+height: 38px;
+font-size: 11px;
+}
+.hunt-dex-btn-timer {
+width: 38px;
+height: 38px;
+font-size: 16px;
+}
+.hunt-dex-btn-found {
+height: 46px;
+font-size: 14px;
+}
+/* CSS-13: The 44px top/bottom padding on a collapsed generation row ex — full rationale in NOTES.md */
+.dex-card-head {
+padding: 20px 16px;
+gap: 12px;
+}
+.dex-gen-badge {
+width: 44px;
+height: 44px;
+}
+/* CSS-14: At 3-per-row, a horizontal sprite+number+name chip only leav — full rationale in NOTES.md */
+.dex-chip {
+flex-direction: column;
+text-align: center;
+padding: 10px 6px 8px;
+gap: 4px;
+}
+.dex-chip .n {
+width: auto;
+}
+.dex-chip-name {
+justify-content: center;
+}
+.dex-chip-name-text {
+white-space: normal;
+overflow: visible;
+text-overflow: clip;
+font-size: 12px;
+line-height: 1.2;
+}
+}
+/* CSS-15: Below ~440px the side-by-side portrait+info row in the hunt — full rationale in NOTES.md */
+@media (max-width: 440px) {
+.hunt-dex-screen {
+padding: 12px 10px;
+}
+.hunt-dex-main {
+flex-direction: column;
+align-items: center;
+text-align: center;
+gap: 8px;
+padding: 2px 0;
+}
+.hunt-dex-portrait {
+width: 92px;
+height: 92px;
+}
+.hunt-dex-id-block {
+width: 100%;
+}
+.tag-row {
+justify-content: center;
+}
+.hunt-dex-name {
+margin: 0 0 4px;
+}
+.hunt-dex-readout {
+padding: 8px 4px;
+}
+}
+:focus-visible {
+outline: 3px solid var(--blue);
+outline-offset: 2px;
+}
+/* CSS-16: clamshell: Active Hunts <-> Shiny Log — full rationale in NOTES.md */
+/* True side-by-side carousel, not stacked pages: .dex-track is a flex row
+   holding both pages in normal document order (hunts, then collection),
+   each fixed at the dex's lean width. A single transform on .dex-track
+   slides the whole row left/right - there's no z-index, no overlap, no
+   page sitting "behind" another. The neighbor's peek is simply whatever
+   sliver falls inside .dex-frame's clip window past the active page's
+   edge, and that window is only wider than the lean width on the side
+   currently bleeding (below), so the peek is real adjacent geometry,
+   not a page poking out from underneath another. */
+.dex-clamshell {
+position: relative;
+}
+.dex-frame {
+position: relative;
+overflow: hidden;
+border-radius: 22px;
+}
+.dex-track {
+display: flex;
+flex-direction: row;
+transition: transform 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.dex-page {
+flex: 0 0 calc(100vw - 48px);
+min-width: 0;
+}
+@media (max-width: 600px) {
+.dex-frame {
+transition: margin 0.55s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.dex-clamshell[data-active="hunts"] .dex-frame {
+margin-right: -24px;
+border-top-right-radius: 0;
+border-bottom-right-radius: 0;
+}
+.dex-clamshell[data-active="collection"] .dex-frame {
+margin-left: -24px;
+border-top-left-radius: 0;
+border-bottom-left-radius: 0;
+}
+}
+.dex-clamshell[data-active="hunts"] .dex-track {
+transform: translateX(0);
+}
+.dex-clamshell[data-active="collection"] .dex-track {
+transform: translateX(calc(-1 * (100vw - 48px)));
+}
+.dex-clamshell[data-active="hunts"] #view-hunts { cursor: default; }
+.dex-clamshell[data-active="hunts"] #view-collection { cursor: pointer; }
+.dex-clamshell[data-active="collection"] #view-collection { cursor: default; }
+.dex-clamshell[data-active="collection"] #view-hunts { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) {
+.dex-track {
+transition: none;
+}
+}
+/* CSS-17: Shiny Log: right-page control-panel shell — full rationale in NOTES.md */
+.log-dex-shell {
+--log-shell-cut: polygon(
+0% 0,
+100% 0,
+100% 109.62px,
+99.68% 113.25px,
+98.72% 116.07px,
+97.12% 118.09px,
+94.88% 119.30px,
+92.00% 119.70px,
+83.40% 118.91px,
+75.54% 116.70px,
+68.34% 113.30px,
+61.70% 108.96px,
+55.56% 103.90px,
+49.81% 98.38px,
+44.38% 92.61px,
+39.17% 86.84px,
+34.11% 81.32px,
+29.11% 76.26px,
+24.09% 71.92px,
+18.95% 68.52px,
+13.62% 66.31px,
+8.00% 65.52px,
+5.12% 65.12px,
+2.88% 63.91px,
+1.28% 61.89px,
+0.32% 59.07px,
+0.00% 55.44px,
+0% calc(100% - 24px),
+3.22px calc(100% - 12px),
+12px calc(100% - 3.22px),
+24px 100%,
+calc(100% - 24px) 100%,
+calc(100% - 12px) calc(100% - 3.22px),
+calc(100% - 3.22px) calc(100% - 12px),
+100% calc(100% - 24px),
+100% 0
+);
+position: relative;
+padding: 128px 16px 20px;
+display: flex;
+flex-direction: column;
+justify-content: space-between;
+gap: 12px;
+min-height: 480px;
+box-sizing: border-box;
+clip-path: var(--log-shell-cut);
+filter:
+drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5))
+drop-shadow(0 10px 12px rgba(20, 4, 4, 0.4));
+z-index: 0;
+}
+/* CSS-18: true mirror of .hunt-dex-flap's --flap-cut, not just moved
+   from the flap's bottom edge to this shell's top edge. The hunts card's
+   hinge is on its RIGHT (see .hunt-dex-hinge: right:0), and its flap is
+   shallow near that hinge, deep on the outer/left edge. This page sits
+   on the other side of that same hinge, so its hinge-adjacent edge is
+   the LEFT one - meaning the curve needs to be shallow on the left
+   (~55px, near the shared hinge) and deep on the right (~110px, outer
+   edge) for the two pages to read as matching halves of one clamshell.
+   Same y-depths as --flap-cut (converted to fixed px so the wave keeps
+   its scale regardless of this shell's height), just left-right flipped
+   from where they sit on the flap.
+   Depth, structured exactly like .hunt-dex-flap: negative z-index
+   descendants paint ON TOP of their parent's own background (not behind
+   it), so the fill can't live on .log-dex-shell itself the way it did
+   before - that was rendering the dark ::before outline over the entire
+   red fill. Instead .log-dex-shell stays a plain, unpainted layout/clip
+   host; ::before (z-index -2) is the outline, offset 4px larger; ::after
+   (z-index -1) is the actual red fill sitting in front of the outline
+   but still behind real content, exactly matching how the flap layers
+   its own outline/fill pair. */
+.log-dex-shell::before,
+.log-dex-shell::after {
+content: "";
+position: absolute;
+clip-path: var(--log-shell-cut);
+}
+.log-dex-shell::before {
+top: -4px;
+left: -4px;
+right: -4px;
+bottom: -4px;
+background: var(--line);
+z-index: -2;
+}
+.log-dex-shell::after {
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: linear-gradient(180deg, #ff5252 70px, var(--red-shell) 118px, var(--red-shell-dark) 196px);
+box-shadow:
+0 8px 0 rgba(43, 35, 32, 0.32),
+inset 0 2px 0 rgba(255, 255, 255, 0.35),
+inset 0 -20px 26px -18px rgba(0, 0, 0, 0.28),
+inset 0 0 0 4px var(--red-shell-dark);
+z-index: -1;
+}
+.log-dex-shell-crease-wrap {
+position: absolute;
+inset: 0;
+clip-path: var(--log-shell-cut);
+pointer-events: none;
+z-index: 0;
+}
+.log-dex-shell-crease {
+position: absolute;
+inset: 0;
+clip-path: polygon(
+100% 107.62px,
+99.68% 111.25px,
+98.72% 114.07px,
+97.12% 116.09px,
+94.88% 117.30px,
+92.00% 117.70px,
+83.40% 116.91px,
+75.54% 114.70px,
+68.34% 111.30px,
+61.70% 106.96px,
+55.56% 101.90px,
+49.81% 96.38px,
+44.38% 90.61px,
+39.17% 84.84px,
+34.11% 79.32px,
+29.11% 74.26px,
+24.09% 69.92px,
+18.95% 66.52px,
+13.62% 64.31px,
+8.00% 63.52px,
+5.12% 63.12px,
+2.88% 61.91px,
+1.28% 59.89px,
+0.32% 57.07px,
+0.00% 53.44px,
+0.00% 57.44px,
+0.32% 61.07px,
+1.28% 63.89px,
+2.88% 65.91px,
+5.12% 67.12px,
+8.00% 67.52px,
+13.62% 68.31px,
+18.95% 70.52px,
+24.09% 73.92px,
+29.11% 78.26px,
+34.11% 83.32px,
+39.17% 88.84px,
+44.38% 94.61px,
+49.81% 100.38px,
+55.56% 105.90px,
+61.70% 110.96px,
+68.34% 115.30px,
+75.54% 118.70px,
+83.40% 120.91px,
+92.00% 121.70px,
+94.88% 121.30px,
+97.12% 120.09px,
+98.72% 118.07px,
+99.68% 115.25px,
+100.00% 111.62px
+);
+background: rgba(0, 0, 0, 0.6);
+filter: blur(1.5px);
+}
+.log-dex-shell-wrap {
+position: relative;
+margin-bottom: 20px;
+}
+.log-dex-screen {
+background: var(--screen);
+border: 3px solid var(--line);
+border-radius: 16px;
+min-height: 76px;
+padding: 14px 16px;
+display: flex;
+align-items: center;
+gap: 12px;
+position: relative;
+box-shadow:
+inset 0 3px 10px rgba(0, 0, 0, 0.22),
+inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+.log-dex-screen::before {
+content: "";
+position: absolute;
+inset: 0;
+border-radius: inherit;
+overflow: hidden;
+pointer-events: none;
+background: repeating-linear-gradient(
+180deg,
+rgba(43, 35, 32, 0.035) 0px,
+rgba(43, 35, 32, 0.035) 1px,
+transparent 1px,
+transparent 3px
+);
+}
+.log-dex-screen-empty {
+color: var(--green-dark);
+font-family: var(--mono);
+font-size: 11px;
+letter-spacing: 0.3px;
+}
+.log-dex-screen-sprite {
+width: 48px;
+height: 48px;
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.log-dex-screen-sprite img {
+width: 100%;
+height: 100%;
+object-fit: contain;
+image-rendering: pixelated;
+image-rendering: crisp-edges;
+}
+.log-dex-screen-text {
+min-width: 0;
+flex: 1;
+}
+.log-dex-screen-label {
+color: var(--green-dark);
+font-family: var(--mono);
+font-size: 10px;
+letter-spacing: 0.5px;
+}
+.log-dex-screen-top {
+display: flex;
+align-items: baseline;
+justify-content: space-between;
+gap: 10px;
+}
+.log-dex-screen-name {
+color: var(--ink);
+font-family: var(--hud);
+font-weight: 800;
+font-size: 18px;
+white-space: normal;
+overflow-wrap: break-word;
+min-width: 0;
+}
+.log-dex-screen-count {
+font-family: var(--hud);
+font-weight: 800;
+color: var(--red);
+font-size: 14px;
+flex-shrink: 0;
+white-space: nowrap;
+}
+.log-dex-screen-count .unit {
+font-family: var(--body);
+font-weight: 600;
+color: var(--green-dark);
+font-size: 10.5px;
+margin-left: 3px;
+}
+.log-dex-screen-types {
+display: flex;
+gap: 4px;
+flex-wrap: wrap;
+margin-top: 3px;
+}
+.log-dex-screen-types .type-badge {
+font-size: 11px;
+padding: 3px 9px;
+}
+.log-dex-screen-meta {
+color: var(--green-dark);
+font-family: var(--mono);
+font-size: 9px;
+margin-top: 2px;
+white-space: nowrap;
+}
+.log-dex-screen-notes {
+color: var(--green-dark);
+font-family: var(--mono);
+font-size: 9px;
+font-style: italic;
+margin-top: 3px;
+white-space: nowrap;
+}
+.log-dex-screen-actions {
+display: none;
+flex-shrink: 0;
+align-self: flex-start;
+gap: 2px;
+}
+.log-dex-screen.edit-mode .log-dex-screen-actions {
+display: flex;
+}
+.log-dex-screen-actions .icon-btn {
+font-size: 13px;
+padding: 3px 4px;
+color: var(--green-dark);
+}
+.log-dex-screen-actions .icon-btn:hover {
+color: var(--red);
+}
+.log-dex-screen-actions .icon-btn:first-child:hover {
+color: var(--blue);
+}
+.log-dex-grid {
+display: grid;
+grid-template-columns: repeat(5, 1fr);
+grid-template-rows: repeat(2, 1fr);
+gap: 1px;
+background: var(--line);
+border: 2px solid var(--line);
+border-radius: 8px;
+overflow: hidden;
+box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
+}
+.log-dex-grid span {
+aspect-ratio: 1.7;
+border-radius: 0;
+background: linear-gradient(180deg, #7dd8ff, #2ba7e6);
+box-shadow:
+inset 0 1px 0 rgba(255, 255, 255, 0.4),
+inset 0 -3px 4px rgba(0, 0, 0, 0.25);
+}
+.log-dex-grid span:nth-child(n + 6) {
+filter: brightness(0.92);
+}
+.log-dex-grid span:nth-child(5n) {
+filter: brightness(0.85);
+}
+/* CSS-19: Middle controls row: light grey buttons on the left, three t — full rationale in NOTES.md */
+.log-dex-row {
+display: flex;
+align-items: center;
+margin-top: 1px;
+}
+.log-dex-pill {
+width: 20%;
+height: 36px;
+margin-right: 0;
+background: linear-gradient(180deg, #eceef2, #c7cad2);
+border: 2px solid var(--line);
+box-shadow:
+inset 0 1px 0 rgba(255, 255, 255, 0.6),
+0 3px 0 rgba(43, 35, 32, 0.45);
+}
+.log-dex-pill:first-child {
+border-radius: 6px 0 0 6px;
+border-right: 1.5px solid var(--line);
+}
+.log-dex-pill:last-child {
+border-radius: 0 6px 6px 0;
+margin-right: 8px;
+}
+.log-dex-bars-group {
+display: flex;
+justify-content: center;
+gap: 4px;
+width: 40%;
+margin: 5px 0 0 auto;
+}
+.log-dex-bar {
+width: 16px;
+height: 6px;
+border-radius: 3px;
+background: linear-gradient(180deg, #234d29, #0b1a0d);
+border: 1px solid var(--line);
+}
+.log-dex-dot-wrap {
+display: flex;
+align-items: center;
+margin-left: auto;
+}
+.log-dex-dot {
+width: 30px;
+height: 30px;
+border-radius: 50%;
+flex-shrink: 0;
+background: radial-gradient(
+circle at 35% 30%,
+#fff6b0,
+var(--yellow) 55%,
+var(--yellow-dark) 100%
+);
+border: 2px solid var(--line);
+box-shadow:
+0 0 6px rgba(255, 203, 5, 0.7),
+inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+/* CSS-20: Bottom buttons: two pill-shaped, very dark green keys, match — full rationale in NOTES.md */
+.log-dex-nav {
+display: flex;
+gap: 10px;
+justify-content: center;
+}
+.log-dex-nav-btn {
+flex: 0 1 38%;
+height: 28px;
+border-radius: 8px;
+border: 2px solid var(--line);
+background: linear-gradient(180deg, #16321b, #06120a);
+color: #f4f0e6;
+font-family: var(--hud);
+font-weight: 800;
+font-size: 13px;
+box-shadow:
+inset 0 1px 0 rgba(255, 255, 255, 0.15),
+0 3px 0 rgba(0, 0, 0, 0.5);
+cursor: pointer;
+}
+.log-dex-nav-btn:hover {
+background: linear-gradient(180deg, #1f4526, #0a1b0e);
+}
+.log-dex-nav-btn:active {
+transform: translateY(3px);
+box-shadow: none;
+}
