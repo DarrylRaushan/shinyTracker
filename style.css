@@ -443,6 +443,7 @@ background: linear-gradient(
 #93100f 100%
 );
 border-left: 3px solid var(--line);
+border-top-right-radius: 30px;
 z-index: 3;
 }
 .hunt-dex-hinge::before {
@@ -487,6 +488,12 @@ align-items: center;
 gap: 12px;
 padding: 0 60px 0 20px;
 z-index: 4;
+/* Moved here from ::after: Safari fails to render a drop-shadow
+filter on an element that also has its own clip-path, which was
+making the flap look flat/paper-like. This element has no
+clip-path of its own, so the shadow renders correctly here. */
+filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.65))
+drop-shadow(0 10px 10px rgba(20, 4, 4, 0.5));
 }
 .hunt-dex-flap::before,
 .hunt-dex-flap::after {
@@ -522,8 +529,6 @@ inset 0 3px 0 rgba(255, 255, 255, 0.3),
 inset 0 0 0 4px var(--red-shell-dark),
 inset 0 -14px 16px -10px rgba(0, 0, 0, 0.4);
 z-index: -1;
-filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.65))
-drop-shadow(0 10px 10px rgba(20, 4, 4, 0.5));
 }
 /* Fold shadow along the two real interior cut-lines: the horizontal
 step (65%->100% at y:52%) and the diagonal drop (65%,52% -> 50%,95%).
@@ -3417,6 +3422,77 @@ clip-path: polygon(
 );
 background: rgba(0, 0, 0, 0.6);
 filter: blur(1.5px);
+}
+/* Rim-light: a bright ribbon tracing the exact same curve as the
+crease above, offset toward the flat-top side instead of straddling
+the fold. Reads as light catching the edge of the top surface all
+along the curve (not just the flat portion), the way the hunt
+card's flap edge does. Same offset-ribbon-then-blur technique as
+the crease, just shifted up ~4-10px and recolored bright. */
+.log-dex-shell-rim-wrap {
+position: absolute;
+inset: 0;
+clip-path: var(--log-shell-cut);
+pointer-events: none;
+z-index: 0;
+}
+.log-dex-shell-rim {
+position: absolute;
+inset: 0;
+clip-path: polygon(
+100% 99.62px,
+99.68% 103.25px,
+98.72% 106.07px,
+97.12% 108.09px,
+94.88% 109.30px,
+92.00% 109.70px,
+83.40% 108.91px,
+75.54% 106.70px,
+68.34% 103.30px,
+61.70% 98.96px,
+55.56% 93.90px,
+49.81% 88.38px,
+44.38% 82.61px,
+39.17% 76.84px,
+34.11% 71.32px,
+29.11% 66.26px,
+24.09% 61.92px,
+18.95% 58.52px,
+13.62% 56.31px,
+8.00% 55.52px,
+5.12% 55.12px,
+2.88% 53.91px,
+1.28% 51.89px,
+0.32% 49.07px,
+0.00% 45.44px,
+0.00% 51.44px,
+0.32% 55.07px,
+1.28% 57.89px,
+2.88% 59.91px,
+5.12% 61.12px,
+8.00% 61.52px,
+13.62% 62.31px,
+18.95% 64.52px,
+24.09% 67.92px,
+29.11% 72.26px,
+34.11% 77.32px,
+39.17% 82.84px,
+44.38% 88.61px,
+49.81% 94.38px,
+55.56% 99.90px,
+61.70% 104.96px,
+68.34% 109.30px,
+75.54% 112.70px,
+83.40% 114.91px,
+92.00% 115.70px,
+94.88% 115.30px,
+97.12% 114.09px,
+98.72% 112.07px,
+99.68% 109.25px,
+100.00% 105.62px
+);
+background: rgba(255, 255, 255, 0.55);
+filter: blur(3px);
 }
 .log-dex-shell-wrap {
 position: relative;
