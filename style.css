@@ -1755,8 +1755,8 @@ margin-right: auto;
 .modal.modal-found {
   border-color: var(--yellow);
   box-shadow: 0 8px 0 rgba(43, 35, 32, 0.25), 0 0 0 4px rgba(255, 203, 5, 0.25);
-  height: 92vh;
-  max-height: 92vh;
+  height: 80vh;
+  max-height: 80vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
