@@ -3350,9 +3350,19 @@ top: 0;
 left: 0;
 right: 0;
 bottom: 0;
-background: linear-gradient(180deg, #ff5252 70px, var(--red-shell) 118px, var(--red-shell-dark) 196px);
+background:
+linear-gradient(
+155deg,
+rgba(255, 255, 255, 0.4) 0%,
+rgba(255, 255, 255, 0) 24%
+),
+linear-gradient(180deg, #ff5252 70px, var(--red-shell) 118px, var(--red-shell-dark) 196px);
+/* The "0 8px 0" resting shadow that used to be here got silently
+clipped away by this element's own clip-path (same issue as the
+filter bug: a shadow needs to paint outside the element's edge,
+and clip-path prevents that on the same element). Moved to
+.log-dex-shell-wrap as a drop-shadow instead, further down. */
 box-shadow:
-0 8px 0 rgba(43, 35, 32, 0.32),
 inset 0 2px 0 rgba(255, 255, 255, 0.35),
 inset 0 -20px 26px -18px rgba(0, 0, 0, 0.28),
 inset 0 0 0 4px var(--red-shell-dark);
@@ -3500,10 +3510,14 @@ margin-bottom: 20px;
 /* Moved here from .log-dex-shell: Safari fails to render a
 drop-shadow filter on an element that also has its own clip-path,
 which was making the shell's top curve look flat. This wrapper has
-no clip-path of its own, so the shadow renders correctly here. */
+no clip-path of its own, so the shadow renders correctly here.
+The third drop-shadow (0 8px 0, no blur) recreates the hunt card's
+solid "resting on a surface" shadow, which was getting silently
+clipped away when it lived on .log-dex-shell::after as a box-shadow. */
 filter:
 drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5))
-drop-shadow(0 10px 12px rgba(20, 4, 4, 0.4));
+drop-shadow(0 10px 12px rgba(20, 4, 4, 0.4))
+drop-shadow(0 8px 0 rgba(43, 35, 32, 0.32));
 }
 .log-dex-screen {
 background: var(--screen);
