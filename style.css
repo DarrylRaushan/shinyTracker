@@ -412,6 +412,12 @@ overflow: hidden;
 width: 100%;
 min-height: 440px;
 box-sizing: border-box;
+/* Safari/WebKit sometimes fails to clip a filtered descendant
+(.hunt-dex-flap::after uses drop-shadow) to this element's own
+border-radius, leaving the top edge looking flat instead of curved
+on iOS. Forcing a mask makes Safari re-apply the rounded clip. */
+-webkit-mask-image: -webkit-radial-gradient(white, black);
+mask-image: radial-gradient(white, black);
 }
 /* pin feature removed */
 /* Hinge: vertical strip along the entire right edge of the card, ~10%
