@@ -20,6 +20,60 @@ function save() {
 try {
 localStorage.setItem(STORE_KEY, JSON.stringify(state));
 } catch (e) {}
+pushToCloud();
+}
+// Cross-device sync via Firestore. This is a single shared document (no
+// login/auth - this is a personal hobby app, not multi-user), so the
+// Firestore security rules need to allow read/write on this doc without
+// auth. The cloud copy is treated as the source of truth once it exists:
+// on load we pull it down and overwrite local state; if it doesn't exist
+// yet (first time wiring this up), we push whatever's in localStorage up
+// as the initial baseline. Every save() also pushes up (debounced) so
+// other devices pick up changes next time they load.
+var db = null;
+try {
+if (window.firebase && firebase.apps && firebase.apps.length) {
+db = firebase.firestore();
+}
+} catch (e) {
+console.error('Firestore unavailable', e);
+}
+var CLOUD_DOC = db ? db.collection('shinyTracker').doc('mydata') : null;
+var _cloudSaveTimer = null;
+function pushToCloud() {
+if (!CLOUD_DOC) return;
+clearTimeout(_cloudSaveTimer);
+_cloudSaveTimer = setTimeout(function() {
+CLOUD_DOC.set({
+payload: JSON.stringify(state),
+updatedAt: Date.now()
+}).catch(function(e) {
+console.error('Firestore save failed', e);
+});
+}, 600);
+}
+function syncFromCloud() {
+if (!CLOUD_DOC) return;
+CLOUD_DOC.get().then(function(doc) {
+if (doc.exists && doc.data() && doc.data().payload) {
+try {
+var remote = JSON.parse(doc.data().payload);
+if (!remote.livingDex) remote.livingDex = {};
+if (!remote.livingDexShiny) remote.livingDexShiny = {};
+if (!remote.lastHuntPrefs) remote.lastHuntPrefs = null;
+state = remote;
+localStorage.setItem(STORE_KEY, doc.data().payload);
+renderAll();
+} catch (e) {
+console.error('Failed to parse cloud data', e);
+}
+} else {
+// No cloud doc yet - seed it with whatever's currently local.
+pushToCloud();
+}
+}).catch(function(e) {
+console.error('Firestore load failed', e);
+});
 }
 var GAMES = ["Scarlet/Violet", "Legends Arceus", "Sword/Shield", "Let's Go Pikachu/Eevee",
 "Ultra Sun/Ultra Moon", "Sun/Moon", "Omega Ruby/Alpha Sapphire", "X/Y",
@@ -4320,4 +4374,5 @@ container.appendChild(s);
 }
 })();
 renderAll();
+syncFromCloud();
 })();
