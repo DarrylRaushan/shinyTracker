@@ -3354,7 +3354,6 @@ justify-content: space-between;
 gap: 12px;
 height: 653px;
 box-sizing: border-box;
-clip-path: var(--log-shell-cut);
 z-index: 0;
 }
 /* CSS-18: true mirror of .hunt-dex-flap's --flap-cut, not just moved
