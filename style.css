@@ -419,8 +419,8 @@ curved on iOS. This explicit clip-path (redundant with
 border-radius+overflow on Chrome, but load-bearing on Safari) makes
 it properly clip the flap's shadow and square top corners to the
 card's true rounded shape. */
--webkit-clip-path: inset(0 round 30px);
-clip-path: inset(0 round 30px);
+-webkit-clip-path: inset(-3px round 33px);
+clip-path: inset(-3px round 33px);
 }
 /* pin feature removed */
 /* Hinge: vertical strip along the entire right edge of the card, ~10%
