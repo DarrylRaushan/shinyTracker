@@ -3396,7 +3396,13 @@ top: 0;
 left: 0;
 right: 0;
 bottom: 0;
-background: linear-gradient(180deg, #ff5252 70px, var(--red-shell) 118px, var(--red-shell-dark) 196px);
+background:
+linear-gradient(
+155deg,
+rgba(255, 255, 255, 0.4) 0%,
+rgba(255, 255, 255, 0) 24%
+),
+linear-gradient(180deg, #ff5252 70px, var(--red-shell) 118px, var(--red-shell-dark) 196px);
 box-shadow:
 0 8px 0 rgba(43, 35, 32, 0.32),
 inset 0 2px 0 rgba(255, 255, 255, 0.35),
