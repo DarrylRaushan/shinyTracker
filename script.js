@@ -207,6 +207,157 @@ var TYPE_COLORS = {
 "Steel": "#B8B8D0",
 "Fairy": "#EE99AC"
 };
+// Small glyph shown inside the type-colored energy/HP circles.
+// Sword/Shield-style type icons, from PokeAPI's public sprite repo
+// (file names are PokeAPI's type IDs: 1=Normal ... 18=Fairy).
+var TYPE_ICON_BASE = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-viii/sword-shield/";
+var TYPE_ICON_IDS = {
+"Normal": 1,
+"Fighting": 2,
+"Flying": 3,
+"Poison": 4,
+"Ground": 5,
+"Rock": 6,
+"Bug": 7,
+"Ghost": 8,
+"Steel": 9,
+"Fire": 10,
+"Water": 11,
+"Grass": 12,
+"Electric": 13,
+"Psychic": 14,
+"Ice": 15,
+"Dragon": 16,
+"Dark": 17,
+"Fairy": 18
+};
+function typeIconUrl(type) {
+var id = TYPE_ICON_IDS[type];
+return id ? (TYPE_ICON_BASE + id + '.png') : null;
+}
+function typeIconMarkup(type, size) {
+var url = typeIconUrl(type);
+if (!url) return '';
+size = size || 16;
+return '<img src="' + url + '" alt="' + escapeHtml(type) + '" width="' + size + '" height="' + size + '" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;" loading="lazy" onerror="this.style.display=\'none\'">';
+}
+// Crops just the square symbol chip off the left edge of the SwSh pill icon
+// (the pill is a 200x44 "[symbol][TYPE NAME]" image), auto-detects the
+// glyph's own bounding box (the glyph is always drawn in near-white, so we
+// scan for those pixels rather than trusting a fixed crop - different types
+// sit in different spots inside that 44x44 square), and bakes a tightly
+// cropped, centered version onto a small canvas so it always looks centered
+// regardless of size. Results are cached per type since this only needs to
+// run once per type per session.
+var TYPE_ICON_CROPPED_CACHE = {};
+var TYPE_ICON_CROP_SIZE = 44;
+var TYPE_ICON_CANVAS_OUT = 120;
+function getTypeIconCroppedUrl(type, onReady) {
+if (!type) { onReady(null); return; }
+if (TYPE_ICON_CROPPED_CACHE[type]) { onReady(TYPE_ICON_CROPPED_CACHE[type]); return; }
+var url = typeIconUrl(type);
+if (!url) { onReady(null); return; }
+var img = new Image();
+img.crossOrigin = 'anonymous';
+img.onload = function() {
+try {
+var n = TYPE_ICON_CROP_SIZE;
+var srcCanvas = document.createElement('canvas');
+srcCanvas.width = n; srcCanvas.height = n;
+var sctx = srcCanvas.getContext('2d');
+sctx.drawImage(img, 0, 0, n, n, 0, 0, n, n);
+var data = sctx.getImageData(0, 0, n, n).data;
+var minX = n, maxX = -1, minY = n, maxY = -1;
+for (var y = 0; y < n; y++) {
+for (var x = 0; x < n; x++) {
+var i = (y * n + x) * 4;
+if (data[i] > 200 && data[i + 1] > 200 && data[i + 2] > 200) {
+if (x < minX) minX = x;
+if (x > maxX) maxX = x;
+if (y < minY) minY = y;
+if (y > maxY) maxY = y;
+}
+}
+}
+if (maxX < 0) { minX = 0; minY = 0; maxX = n - 1; maxY = n - 1; }
+var pad = 2;
+minX = Math.max(0, minX - pad);
+minY = Math.max(0, minY - pad);
+maxX = Math.min(n - 1, maxX + pad);
+maxY = Math.min(n - 1, maxY + pad);
+var bw = maxX - minX + 1, bh = maxY - minY + 1;
+
+// Extract just the glyph's pixels into their own bw x bh canvas, making
+// everything that isn't near-white fully transparent - otherwise drawing
+// the tight bounding-box rectangle wholesale (background pixels and all)
+// onto our new colored disc shows up as a visible square patch.
+var glyphCanvas = document.createElement('canvas');
+glyphCanvas.width = bw; glyphCanvas.height = bh;
+var gctx = glyphCanvas.getContext('2d');
+gctx.drawImage(img, minX, minY, bw, bh, 0, 0, bw, bh);
+var glyphData = gctx.getImageData(0, 0, bw, bh);
+var gd = glyphData.data;
+for (var p = 0; p < gd.length; p += 4) {
+if (!(gd[p] > 200 && gd[p + 1] > 200 && gd[p + 2] > 200)) {
+gd[p + 3] = 0;
+}
+}
+gctx.putImageData(glyphData, 0, 0);
+
+var out = TYPE_ICON_CANVAS_OUT;
+var outCanvas = document.createElement('canvas');
+outCanvas.width = out; outCanvas.height = out;
+var octx = outCanvas.getContext('2d');
+octx.fillStyle = TYPE_COLORS[type] || '#999';
+octx.beginPath();
+octx.arc(out / 2, out / 2, out / 2, 0, Math.PI * 2);
+octx.fill();
+var fitScale = (out * 0.62) / Math.max(bw, bh);
+var dw = bw * fitScale, dh = bh * fitScale;
+var dx = (out - dw) / 2, dy = (out - dh) / 2;
+octx.drawImage(glyphCanvas, 0, 0, bw, bh, dx, dy, dw, dh);
+var dataUrl = outCanvas.toDataURL('image/png');
+TYPE_ICON_CROPPED_CACHE[type] = dataUrl;
+onReady(dataUrl);
+} catch (e) {
+onReady(null);
+}
+};
+img.onerror = function() { onReady(null); };
+img.src = url;
+}
+// Renders a placeholder circle immediately (so layout doesn't jump), then
+// hydrateTypeCircleIcons() swaps in the auto-cropped, centered icon once
+// it's ready. Call hydrateTypeCircleIcons() on the containing element right
+// after inserting markup built with this function.
+function typeCircleMarkup(type, size) {
+var url = typeIconUrl(type);
+if (!url) return '';
+size = size || 16;
+var cached = TYPE_ICON_CROPPED_CACHE[type];
+var inner = cached ? ('<img src="' + cached + '" alt="' + escapeHtml(type) + '" style="width:100%;height:100%;">') : '';
+return '<span class="type-circle-icon" data-type-icon="' + escapeHtml(type) + '" title="' + escapeHtml(type) + '" style="width:' + size + 'px;height:' + size + 'px;">' + inner + '</span>';
+}
+function hydrateTypeCircleIcons(root) {
+if (!root) return;
+var spans = root.querySelectorAll('[data-type-icon]');
+spans.forEach(function(span) {
+if (span.querySelector('img')) return;
+var type = span.getAttribute('data-type-icon');
+getTypeIconCroppedUrl(type, function(dataUrl) {
+if (!dataUrl) return;
+span.innerHTML = '<img src="' + dataUrl + '" alt="' + escapeHtml(type) + '" style="width:100%;height:100%;">';
+});
+});
+}
+// Same cropped symbol chip as typeCircleMarkup, but with no circular
+// frame/border/background — just the bare icon.
+function typeChipMarkup(type, size) {
+var url = typeIconUrl(type);
+if (!url) return '';
+size = size || 16;
+return '<span class="type-chip-icon" title="' + escapeHtml(type) + '" style="width:' + size + 'px;height:' + size + 'px;background-image:url(\'' + url + '\');background-size:auto ' + size + 'px;"></span>';
+}
 var METHOD_UNITS = {
 "Random Encounter": "encounters",
 "Soft Reset": "soft resets",
@@ -238,8 +389,7 @@ types: [info[1], info[2]].filter(Boolean)
 function typeBadges(types) {
 if (!types || !types.length) return '<span class="type-badge type-unknown">?</span>';
 return types.map(function(t) {
-var color = TYPE_COLORS[t] || '#999';
-return '<span class="type-badge" style="background:' + color + '">' + t + '</span>';
+return '<span class="type-badge-icon" title="' + t + '">' + typeIconMarkup(t, 63) + '</span>';
 }).join('');
 }
 // Simplified single-type "weak against" table, in the spirit of the classic
@@ -255,8 +405,7 @@ function weaknessValue(types) {
 var primary = types && types[0];
 var weak = primary ? TYPE_WEAKNESS[primary] : null;
 if (!weak) return '<span class="tcg-wrr-value">None</span>';
-var color = TYPE_COLORS[weak] || '#999';
-return '<span class="type-badge" style="background:' + color + '">' + weak + '</span><span class="tcg-wrr-value">&nbsp;&times;2</span>';
+return '<span class="type-badge-icon" title="' + weak + '">' + typeIconMarkup(weak, 63) + '</span><span class="tcg-wrr-value">&nbsp;&times;2</span>';
 }
 // Weakness/Resistance renders as a plain bordered container, one line of
 // info apiece.
@@ -266,9 +415,11 @@ return '<div class="tcg-wr">' +
 '<div class="tcg-wrr-cell"><span class="tcg-wrr-label">Resistance</span><span class="tcg-wrr-value">None</span></div>' +
 '</div>';
 }
-// Small circular energy-cost icon used on attack rows.
-function energyIcon(color) {
-return '<span class="tcg-energy" style="background:' + color + '"></span>';
+// Small circular energy-cost icon used on attack rows. Optionally takes
+// a type name to show that type's real icon centered inside the circle;
+// without one it's just a plain colored dot (used for generic costs).
+function energyIcon(color, type) {
+return type ? typeCircleMarkup(type, 28) : '<span class="tcg-energy" style="background:' + color + '"></span>';
 }
 // Rarity, loosely mapped from the hunt's odds denominator, mimicking a TCG
 // set's rarity marker. glyph mirrors the real convention: common circle,
@@ -284,11 +435,12 @@ function rarityGlyphMarkup(denom) {
 var info = rarityInfo(denom);
 return '<span class="tcg-rarity" title="' + info.label + '">' + info.glyph + '</span>';
 }
-// HP box icon, styled identically to the attack-row energy/cost icons
-// (a plain type-colored circle) instead of a distinct glyph — keeps the
-// HP icon and move costs visually consistent, like they're the same energy.
+// HP box icon, styled like the attack-row energy/cost icons (a
+// type-colored circle) but with the type's real icon centered inside it,
+// so it's recognizable at a glance instead of a plain dot.
 function hpTypeIcon(types, color) {
-return '<div class="tcg-hp-icon" style="background:' + color + '"></div>';
+var icon = (types && types[0]) ? typeIconMarkup(types[0], 28) : '';
+return '<div class="tcg-hp-icon" style="background:' + color + '">' + icon + '</div>';
 }
 // Total known species across all generations in this app's dex data,
 // used for the "007/1025"-style card-number tag. Computed lazily and
@@ -3559,6 +3711,27 @@ gen: g.gen
 }
 return null;
 }
+// Like findDexLocation, but also returns the species' 1-indexed position
+// within its own generation's species list and that generation's total
+// count - i.e. a TCG-style "set number" (Charmander -> 4/151 in Kanto)
+// rather than the national dex number used elsewhere on the card.
+function genSetInfoFor(name) {
+var norm = normName(name);
+for (var i = 0; i < GEN_DATA.length; i++) {
+var g = GEN_DATA[i];
+for (var j = 0; j < g.species.length; j++) {
+if (normName(g.species[j][1]) === norm) {
+return {
+gen: g.gen,
+region: g.region,
+relNum: j + 1,
+genTotal: g.species.length
+};
+}
+}
+}
+return null;
+}
 // Opens the right generation card, scrolls it into view, and highlights
 // the matching chip so a search-box selection is easy to spot. The
 // card and its chips already exist in the DOM from the initial render -
@@ -4069,7 +4242,13 @@ function openFoundModal(hunt) {
   var dateEndedStr = fmtDate(new Date());
   var genLabel = info && info.gen ? ('Generation ' + info.gen) : '';
 
-  var cardNumStr = (dexNum ? String(dexNum).padStart(3, '0') : '???') + '/' + totalSpeciesCount();
+  var genSetInfo = genSetInfoFor(hunt.pokemon);
+  var cardNumStr = genSetInfo ?
+    (String(genSetInfo.relNum).padStart(3, '0') + '/' + genSetInfo.genTotal) :
+    (dexNum ? String(dexNum).padStart(3, '0') : '???') + '/' + totalSpeciesCount();
+  var setBallFile = genSetInfo ? REGION_BALLS[genSetInfo.region] : null;
+  var setBallMarkup = setBallFile ?
+    '<img class="tcg-credit-seticon" src="images/region-balls/' + setBallFile + '" alt="' + escapeHtml(genSetInfo.region) + ' ball" onerror="this.style.display=\'none\'">' : '';
 
   var overlay = openModal(
     '<div class="tcg-card" style="--type-color:' + typeColor + '">' +
@@ -4106,12 +4285,12 @@ function openFoundModal(hunt) {
         '<div class="tcg-dates">Began ' + fmtDate(hunt.createdAt) + '&nbsp;•&nbsp;Caught ' + dateEndedStr + '</div>' +
 
         '<div class="tcg-attack">' +
-          '<div class="tcg-attack-cost">' + energyIcon(typeColor) + '</div>' +
+          '<div class="tcg-attack-cost">' + energyIcon(null, types[0]) + '</div>' +
           '<div class="tcg-attack-name">Time Hunted</div>' +
           '<div class="tcg-attack-dmg">' + timeHunted + '</div>' +
         '</div>' +
         '<div class="tcg-attack">' +
-          '<div class="tcg-attack-cost">' + energyIcon('#c9c2b4') + energyIcon('#c9c2b4') + '</div>' +
+          '<div class="tcg-attack-cost">' + energyIcon(null, types[1] || types[0]) + '</div>' +
           '<div class="tcg-attack-name">Odds of Encounter</div>' +
           '<div class="tcg-attack-dmg">' + oddsStr + '</div>' +
         '</div>' +
@@ -4142,6 +4321,7 @@ function openFoundModal(hunt) {
             (genLabel ? ('<span class="tcg-credit-sep">•</span><span class="tcg-credit-gen">' + escapeHtml(genLabel) + '</span>') : '') +
           '</div>' +
           '<div class="tcg-credit-row tcg-credit-num">' +
+            setBallMarkup +
             '<span>' + cardNumStr + '</span>' +
             rarityGlyphMarkup(hunt.denom) +
           '</div>' +
@@ -4153,6 +4333,7 @@ function openFoundModal(hunt) {
     'modal-found'
   );
 
+  hydrateTypeCircleIcons(overlay);
 
   function confirmFound() {
 
