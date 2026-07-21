@@ -616,8 +616,8 @@ filter: blur(4px);
 .hunt-dex-lens-wrap {
 position: relative;
 flex-shrink: 0;
-width: clamp(64px, 28vw, 112px);
-height: clamp(64px, 28vw, 112px);
+width: clamp(60px, 28vw, 112px);
+height: clamp(60px, 28vw, 112px);
 margin-top: -9px;
 }
 .hunt-dex-flap-lens {
