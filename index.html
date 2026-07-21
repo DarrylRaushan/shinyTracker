@@ -1,3 +1,5 @@
+html
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -46,21 +48,10 @@
         <div class="dex-frame">
           <div class="dex-track">
           <div id="view-hunts" class="dex-page">
-            <div class="section-head">
-              <h2>Active Hunts</h2>
-              <button class="primary" id="btn-new-hunt">+ Start a Hunt</button>
-            </div>
             <div class="hunts" id="hunts-list"></div>
           </div>
 
           <div id="view-collection" class="dex-page">
-            <div class="section-head">
-              <h2>Shiny Log</h2>
-              <div class="section-head-actions">
-                <button class="ghost" id="btn-toggle-log-edit">✎ Edit</button>
-                <button class="primary" id="btn-log-catch">+ Log a Shiny</button>
-              </div>
-            </div>
             <div class="log-dex-shell-wrap">
               <div class="log-dex-shell">
                 <div class="log-dex-shell-crease-wrap"><div class="log-dex-shell-crease"></div></div>
@@ -74,10 +65,10 @@
                   <span class="log-dex-bar"></span>
                   <span class="log-dex-bar"></span>
                 </div>
-                <div class="log-dex-row" aria-hidden="true">
-                  <span class="log-dex-pill"></span>
-                  <span class="log-dex-pill"></span>
-                  <span class="log-dex-dot-wrap"><span class="log-dex-dot"></span></span>
+                <div class="log-dex-row">
+                  <span class="log-dex-pill" aria-hidden="true"></span>
+                  <span class="log-dex-pill" aria-hidden="true"></span>
+                  <span class="log-dex-dot-wrap"><button type="button" class="log-dex-dot" id="btn-toggle-log-edit" title="Edit Shiny Log" aria-label="Edit Shiny Log" aria-pressed="false"></button></span>
                 </div>
                 <div class="log-dex-nav">
                   <button class="log-dex-nav-btn" id="log-screen-prev" aria-label="Show previous catch">◀</button>
@@ -88,9 +79,7 @@
           </div>
           </div>
         </div>
-      </div>
-
-      <div id="view-livingdex" style="display:none">
+      <div id="view-livingdex" class="dex-page">
         <div class="section-head">
           <h2>Living Dex</h2>
         </div>
@@ -247,6 +236,7 @@
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
     <!-- Firebase (used to sync your tracker data across devices via Firestore) -->
