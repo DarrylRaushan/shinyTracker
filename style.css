@@ -446,8 +446,7 @@ padding-top: 8px;
 padding-bottom: 8px;
 }
 .hunts {
-height: calc(100vh - 16px);
-height: calc(100dvh - 16px);
+height: var(--hunt-frame-height, calc(100dvh - 16px));
 overflow-y: auto;
 scroll-snap-type: y mandatory;
 -webkit-overflow-scrolling: touch;
