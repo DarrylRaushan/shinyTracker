@@ -3655,6 +3655,14 @@ cardScreen.classList.toggle('log-screen-hidden', !showCard);
 gridScreen.classList.toggle('log-screen-visible', showGrid);
 hofScreen.classList.toggle('log-screen-visible', showHof);
 }
+// Call whenever search/sort/filter changes so the Card screen actually
+// jumps to reflect the new results, instead of silently staying on
+// whatever entry was already selected (which happens if that entry
+// still happens to satisfy the new criteria).
+function logCardJumpToTop() {
+var list = filteredLogEntries();
+logSelectedId = list.length ? list[0].id : null;
+}
 function renderCollection() {
 updateLogModeUI();
 renderLogCard();
@@ -3777,9 +3785,11 @@ screen.innerHTML = '<div class="log-grid-inner">' + tilesHtml + '</div>';
 document.getElementById('log-grid-screen').addEventListener('click', function(e) {
 var tile = e.target.closest('.log-grid-tile');
 if (!tile) return;
-logSelectedId = tile.dataset.id;
-logViewMode = 'card';
-renderCollection();
+var entry = state.collection.find(function(c) {
+return c.id === tile.dataset.id;
+});
+if (!entry) return;
+openLogEntryCardModal(entry);
 });
 // Hall of Fame: luckiest catch (fewest encounters relative to the
 // odds), longest hunt (most time logged, falling back to encounters
@@ -3865,7 +3875,19 @@ renderCollection();
 var logSearchInput = document.getElementById('log-search');
 logSearchInput.addEventListener('input', function() {
 logSearchQuery = this.value;
+logCardJumpToTop();
 renderCollection();
+});
+document.getElementById('btn-log-search').addEventListener('click', function(e) {
+e.stopPropagation();
+closeOtherDexDropdowns('log-search-wrap');
+document.getElementById('log-search-wrap').classList.toggle('open');
+if (document.getElementById('log-search-wrap').classList.contains('open')) {
+logSearchInput.focus();
+}
+});
+document.getElementById('log-search-panel').addEventListener('click', function(e) {
+e.stopPropagation();
 });
 document.getElementById('btn-log-sort').addEventListener('click', function(e) {
 e.stopPropagation();
@@ -3883,6 +3905,7 @@ o.classList.toggle('active', o === opt);
 document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS[logSortMode] + ' ▾';
 document.getElementById('btn-log-sort').classList.toggle('active', logSortMode !== 'newest');
 document.getElementById('log-sort-wrap').classList.remove('open');
+logCardJumpToTop();
 renderCollection();
 });
 document.getElementById('btn-log-filter').addEventListener('click', function(e) {
@@ -3925,16 +3948,19 @@ btn.classList.toggle('active', activeCount > 0);
 document.getElementById('log-filter-game').addEventListener('change', function() {
 logFilterGame = this.value;
 updateLogFilterButtonLabel();
+logCardJumpToTop();
 renderCollection();
 });
 document.getElementById('log-filter-method').addEventListener('change', function() {
 logFilterMethod = this.value;
 updateLogFilterButtonLabel();
+logCardJumpToTop();
 renderCollection();
 });
 document.getElementById('log-filter-gen').addEventListener('change', function() {
 logFilterGen = this.value;
 updateLogFilterButtonLabel();
+logCardJumpToTop();
 renderCollection();
 });
 document.getElementById('btn-log-filter-clear').addEventListener('click', function() {
@@ -3945,6 +3971,29 @@ document.getElementById('log-filter-game').value = '';
 document.getElementById('log-filter-method').value = '';
 document.getElementById('log-filter-gen').value = '';
 updateLogFilterButtonLabel();
+logCardJumpToTop();
+renderCollection();
+});
+document.getElementById('btn-log-reset-filters').addEventListener('click', function() {
+logSearchQuery = '';
+logSortMode = 'newest';
+logFilterGame = '';
+logFilterMethod = '';
+logFilterGen = '';
+logSearchInput.value = '';
+document.getElementById('log-filter-game').value = '';
+document.getElementById('log-filter-method').value = '';
+document.getElementById('log-filter-gen').value = '';
+document.querySelectorAll('#log-sort-panel .dex-select-option').forEach(function(o) {
+o.classList.toggle('active', o.dataset.value === 'newest');
+});
+document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS.newest + ' ▾';
+document.getElementById('btn-log-sort').classList.remove('active');
+updateLogFilterButtonLabel();
+document.getElementById('log-search-wrap').classList.remove('open');
+document.getElementById('log-sort-wrap').classList.remove('open');
+document.getElementById('log-filter-wrap').classList.remove('open');
+logCardJumpToTop();
 renderCollection();
 });
 /* ---------- rendering: living dex ---------- */
@@ -4112,7 +4161,7 @@ applyDexVariantFilter();
 // "close everything" sweep manually, minus whichever wrap is about to
 // be opened.
 function closeOtherDexDropdowns(exceptId) {
-['variant-filter-wrap', 'dex-sort-wrap', 'dex-type-wrap', 'log-sort-wrap', 'log-filter-wrap'].forEach(function(id) {
+['variant-filter-wrap', 'dex-sort-wrap', 'dex-type-wrap', 'log-search-wrap', 'log-sort-wrap', 'log-filter-wrap'].forEach(function(id) {
 if (id === exceptId) return;
 var wrap = document.getElementById(id);
 if (wrap) wrap.classList.remove('open');
@@ -5108,6 +5157,143 @@ function openFoundModal(hunt) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       showCatchConfirmPopover();
+    }
+  });
+}
+function openLogEntryCardModal(entry) {
+
+  var info = speciesInfo(entry.pokemon);
+  var types = (entry.types && entry.types.length) ? entry.types : (info ? info.types : []);
+  var typeColor = TYPE_COLORS[types[0]] || 'var(--yellow)';
+  var dexNum = dexNumberOf(entry.pokemon);
+  var dexNumStr = dexNum ? ('NO. ' + String(dexNum).padStart(3, '0')) : 'NO. ???';
+  var timeSpentStr = entry.timeSpentMinutes ? fmtTime(entry.timeSpentMinutes * 60) : '—';
+  var denom = logEntryDenom(entry);
+  var oddsStr = denom ? ('1/' + denom) : '—';
+  var hpUnitLabel = methodUnit(entry.method).toUpperCase();
+  var began = entry.dateBegan || entry.dateEnded || entry.date || '';
+  var ended = entry.dateEnded || entry.date || entry.dateBegan || '';
+  var genLabel = (entry.gen || (info ? info.gen : null)) ? ('Generation ' + (entry.gen || info.gen)) : '';
+
+  var genSetInfo = genSetInfoFor(entry.pokemon);
+  var cardNumStr = genSetInfo ?
+    (String(genSetInfo.relNum).padStart(3, '0') + '/' + genSetInfo.genTotal) :
+    (dexNum ? String(dexNum).padStart(3, '0') : '???') + '/' + totalSpeciesCount();
+  var setBallFile = genSetInfo ? REGION_BALLS[genSetInfo.region] : null;
+  var setBallMarkup = setBallFile ?
+    '<img class="tcg-credit-seticon" src="images/region-balls/' + setBallFile + '" alt="' + escapeHtml(genSetInfo.region) + ' ball" onerror="this.style.display=\'none\'">' : '';
+
+  var overlay = openModal(
+    '<div class="tcg-card" style="--type-color:' + typeColor + '">' +
+      '<div class="tcg-inner">' +
+
+        '<div class="tcg-header">' +
+          '<div class="tcg-header-left">' +
+            '<h3 class="tcg-name">' + escapeHtml(entry.pokemon) + '</h3>' +
+            '<div class="tcg-evo-stage" id="tcg-evo-stage" style="display:none;"></div>' +
+            '<div class="tcg-evo-line" id="tcg-evo-line" style="display:none;"></div>' +
+          '</div>' +
+          '<div class="tcg-hp">' +
+            '<div>' +
+              '<div class="tcg-hp-label">' + hpUnitLabel + '</div>' +
+              '<div class="tcg-hp-value">' + (entry.encounters || 0) + '</div>' +
+            '</div>' +
+            hpTypeIcon(types, typeColor) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tcg-art">' +
+          '<div class="tcg-art-rays"></div>' +
+          '<div class="tcg-art-glow"></div>' +
+          '<span class="tcg-spark s1">✦</span>' +
+          '<span class="tcg-spark s2">✧</span>' +
+          '<span class="tcg-spark s3">✦</span>' +
+          '<div class="tcg-preevo" id="tcg-preevo" style="display:none;"></div>' +
+          '<div class="tcg-sprite-wrap">' +
+            spriteMarkup(entry.pokemon) +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tcg-dexline">' + dexNumStr + '&nbsp;•&nbsp;' + typeBadges(types) + '</div>' +
+        '<div class="tcg-dates">Began ' + fmtDate(began) + '&nbsp;•&nbsp;Caught ' + fmtDate(ended) + '</div>' +
+
+        '<div class="tcg-attack">' +
+          '<div class="tcg-attack-cost">' + energyIcon(null, types[0]) + '</div>' +
+          '<div class="tcg-attack-name">Time Hunted</div>' +
+          '<div class="tcg-attack-dmg">' + timeSpentStr + '</div>' +
+        '</div>' +
+        '<div class="tcg-attack">' +
+          '<div class="tcg-attack-cost">' + energyIcon(null, types[1] || types[0]) + '</div>' +
+          '<div class="tcg-attack-name">Odds of Encounter</div>' +
+          '<div class="tcg-attack-dmg">' + oddsStr + '</div>' +
+        '</div>' +
+
+        weaknessResistanceBar(types) +
+
+        '<table class="tcg-stats-table">' +
+          '<tr>' +
+            '<td class="tcg-stats-icon">' + gameIconMarkup(entry.game) + '</td>' +
+            '<td class="tcg-stats-label">Game</td>' +
+            '<td class="tcg-stats-value">' + escapeHtml(entry.game) + '</td>' +
+          '</tr>' +
+          '<tr>' +
+            '<td class="tcg-stats-icon">' + methodIconMarkup() + '</td>' +
+            '<td class="tcg-stats-label">Method</td>' +
+            '<td class="tcg-stats-value">' + escapeHtml(entry.method) + '</td>' +
+          '</tr>' +
+          '<tr' + (entry.shinyCharm ? ' class="tcg-stats-row-active"' : '') + '>' +
+            '<td class="tcg-stats-icon">' + charmIconMarkup() + '</td>' +
+            '<td class="tcg-stats-label">Charm</td>' +
+            '<td class="tcg-stats-value">' + (entry.shinyCharm ? 'Yes' : 'No') + '</td>' +
+          '</tr>' +
+        '</table>' +
+
+        '<div class="tcg-credit">' +
+          '<div class="tcg-credit-row">' +
+            '<span class="tcg-credit-illus">Illus. Shiny Tracker</span>' +
+            (genLabel ? ('<span class="tcg-credit-sep">•</span><span class="tcg-credit-gen">' + escapeHtml(genLabel) + '</span>') : '') +
+          '</div>' +
+          '<div class="tcg-credit-row tcg-credit-num">' +
+            setBallMarkup +
+            '<span>' + cardNumStr + '</span>' +
+            rarityGlyphMarkup(denom) +
+          '</div>' +
+        '</div>' +
+
+      '</div>' +
+    '</div>',
+
+    'modal-found'
+  );
+
+  hydrateTypeCircleIcons(overlay);
+
+  fetchEvolvesFrom(entry.pokemon).then(function(fromName) {
+    var evoEl = overlay.querySelector('#tcg-evo-line');
+    var preEvoEl = overlay.querySelector('#tcg-preevo');
+    var cardEl = overlay.querySelector('.tcg-card');
+    if (fromName) {
+      if (cardEl) cardEl.classList.add('has-evo');
+      if (evoEl) {
+        evoEl.textContent = 'Evolves from ' + fromName;
+        evoEl.style.display = '';
+      }
+      if (preEvoEl) {
+        preEvoEl.innerHTML = spriteMarkup(fromName);
+        preEvoEl.style.display = 'flex';
+      }
+    }
+  });
+
+  fetchEvoStage(entry.pokemon).then(function(stage) {
+    var label = stageLabel(stage);
+    if (!label) return;
+    var stageEl = overlay.querySelector('#tcg-evo-stage');
+    var cardEl = overlay.querySelector('.tcg-card');
+    if (cardEl) cardEl.classList.add('has-stage');
+    if (stageEl) {
+      stageEl.textContent = label;
+      stageEl.style.display = '';
     }
   });
 }
