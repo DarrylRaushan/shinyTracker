@@ -54,12 +54,12 @@ background-attachment: fixed;
 background-color: #30adff;
 }
 body.bg-log {
-background-image: url("images/bg-log1.jpg");
+background-image: url("images/bg-dex.png");
 background-size: cover;
 background-position: center;
 background-repeat: no-repeat;
 background-attachment: fixed;
-background-color: #313131;
+background-color: #30adff;
 }
 body.bg-dex {
 background-image: url("images/bg-hunts.png");
@@ -110,7 +110,7 @@ position: relative;
 z-index: 1;
 max-width: 1320px;
 margin: 0 auto;
-padding: 0 24px 80px;
+padding: 55px 24px 80px;
 }
 /* CSS-1: HEADER (Pokédex shell bar)Reuses the same "hunt-dex" visual language already establishedon the Active Hunts cards elsewhere in the app - the blue lens,the red/green/yellow shell colors, the two small status LEDs,and the sunken mint "screen" with scanlines - so the headerreads as the top bumper of the same device the hunt cards arebuilt to look like, instead of a generic flat app bar. — full rationale in NOTES.md */
 header.top {
@@ -4477,11 +4477,20 @@ margin-top: 1px;
 width: 20%;
 height: 36px;
 margin-right: 0;
+padding: 0;
+font: inherit;
+appearance: none;
+-webkit-appearance: none;
+cursor: pointer;
 background: linear-gradient(180deg, #eceef2, #c7cad2);
 border: 2px solid var(--line);
 box-shadow:
 inset 0 1px 0 rgba(255, 255, 255, 0.6),
 0 3px 0 rgba(43, 35, 32, 0.45);
+}
+.log-dex-pill:active {
+transform: translateY(2px);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .log-dex-pill:first-child {
 border-radius: 6px 0 0 6px;
