@@ -87,6 +87,39 @@ var GAMES = ["Scarlet/Violet", "Legends Arceus", "Sword/Shield", "Let's Go Pikac
 "Black 2/White 2", "Black/White", "HeartGold/SoulSilver", "Platinum",
 "Diamond/Pearl", "FireRed/LeafGreen", "Ruby/Sapphire/Emerald", "Pokémon GO", "Other"
 ];
+// Custom per-game icon images for the catch-confirmation card (tcg-stats
+// table "Game" row). Each entry lists the version(s) bundled into that
+// game option, in images/game-symbols/<name>.jpg - gameIconMarkup() below
+// renders one icon per name side by side. If a file is missing, its own
+// onerror just hides that icon (the other version's icon still shows);
+// if a game has no mapping at all it falls back to the generic cartridge
+// glyph (ICON_GAME).
+// NOTE: names below match what you gave me exactly for Scarlet/Violet,
+// Legends Arceus, Sword/Shield, Ultra Sun/Ultra Moon, Sun/Moon, Omega
+// Ruby/Alpha Sapphire, and X/Y. The rest (Let's Go, Black 2/White 2,
+// Black/White, HeartGold/SoulSilver, Platinum, Diamond/Pearl, FireRed/
+// LeafGreen, Ruby/Sapphire/Emerald, Pokémon GO) are my best guess at
+// matching filenames in the same style - rename these lines to match
+// whatever you actually saved the images as.
+var GAME_ICONS = {
+"Scarlet/Violet": ["scarlet", "violet"],
+"Legends Arceus": ["arceus"],
+"Sword/Shield": ["sword", "shield"],
+"Let's Go Pikachu/Eevee": ["letsGoPikachu", "letsGoEevee"],
+"Ultra Sun/Ultra Moon": ["ultraSun", "ultraMoon"],
+"Sun/Moon": ["sun", "moon"],
+"Omega Ruby/Alpha Sapphire": ["omegaRuby", "alphaSapphire"],
+"X/Y": ["pokemonX", "pokemonY"],
+"Black 2/White 2": ["black2", "white2"],
+"Black/White": ["black", "white"],
+"HeartGold/SoulSilver": ["heartGold", "soulSilver"],
+"Platinum": ["platinum"],
+"Diamond/Pearl": ["diamond", "pearl"],
+"FireRed/LeafGreen": ["fireRed", "leafGreen"],
+"Ruby/Sapphire/Emerald": ["ruby", "sapphire", "emerald"],
+"Pokémon GO": ["pokemonGo"],
+"Other": []
+};
 var METHODS = ["Random Encounter", "Soft Reset", "Masuda Method", "Chain Fishing",
 "Poké Radar / DexNav Chain", "SOS Chaining", "Horde Hunting", "Friend Safari",
 "Dynamax Adventure", "Ultra Wormhole", "Outbreak (Mass/Massive)", "Egg / Breeding",
@@ -421,6 +454,45 @@ return '<div class="tcg-wr">' +
 function energyIcon(color, type) {
 return type ? typeCircleMarkup(type, 28) : '<span class="tcg-energy" style="background:' + color + '"></span>';
 }
+// Plain inline SVGs for the TCG stats table (replaces 🎮/🎯/✨) - emoji
+// render as full-color glyphs from whatever font the OS picks, which
+// looks inconsistent next to the rest of this hand-drawn UI. These are
+// single-color line icons instead, sized/colored purely by CSS
+// (.tcg-stats-icon) so they always match the surrounding chrome.
+var ICON_GAME = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1.5h8a1 1 0 0 1 1 1V6a2 2 0 0 1 0 4v3.5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1Z"/><path d="M6 4.5h1M9 4.5h1"/></svg>';
+var ICON_METHOD = '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><line x1="10.3" y1="10.3" x2="14.5" y2="14.5"/></svg>';
+var ICON_CHARM = '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M8 0c.5 4.8.9 6.7 1.3 7.1.4.4 2.3.8 6.7 1.3-4.4.5-6.3.9-6.7 1.3-.4.4-.8 2.3-1.3 6.7-.5-4.4-.9-6.3-1.3-6.7-.4-.4-2.3-.8-6.7-1.3C4.4 7.9 6.3 7.5 6.7 7.1 7.1 6.7 7.5 4.8 8 0Z"/></svg>';
+// A broken custom game-symbol <img> just hides itself (rather than
+// leaving a broken-image box) - since a game can have 2-3 version icons
+// side by side, the other version's icon is enough to still show a
+// custom symbol even if one file is missing.
+function handleGameIconError(imgEl) {
+imgEl.style.display = 'none';
+}
+// Builds the icon markup for the "Game" row of the catch-confirmation
+// card: one small icon per version bundled into this game (from
+// GAME_ICONS, images/game-symbols/<name>.jpg), side by side. Falls back
+// to the generic cartridge glyph if the game has no mapping at all.
+function gameIconMarkup(game) {
+var files = GAME_ICONS[game];
+if (!files || !files.length) return ICON_GAME;
+var imgs = files.map(function(name) {
+return '<img class="tcg-stats-icon-img tcg-icon-game" src="images/game-symbols/' + name + '.jpg" alt="' + escapeHtml(game) + '" onerror="handleGameIconError(this)">';
+}).join('');
+return '<span class="tcg-stats-icon-group">' + imgs + '</span>';
+}
+// Single custom-image versions of the Method / Shiny Charm row icons.
+// Only one image each (unlike the Game row, which can bundle 2-3
+// versions) - drop the files at images/game-symbols/method.webp and
+// images/game-symbols/shinyCharm.png (rename these two lines if you
+// saved them under different names). Falls back to the original line-art
+// glyph if the image fails to load.
+function methodIconMarkup() {
+return '<img class="tcg-stats-icon-img tcg-icon-method" src="images/game-symbols/method.webp" alt="Method" onerror="this.outerHTML=ICON_METHOD;">';
+}
+function charmIconMarkup() {
+return '<img class="tcg-stats-icon-img tcg-icon-charm" src="images/game-symbols/shinyCharm.png" alt="Shiny Charm" onerror="this.outerHTML=ICON_CHARM;">';
+}
 // Rarity, loosely mapped from the hunt's odds denominator, mimicking a TCG
 // set's rarity marker. glyph mirrors the real convention: common circle,
 // uncommon diamond, rare star, ultra-rare double star.
@@ -439,8 +511,9 @@ return '<span class="tcg-rarity" title="' + info.label + '">' + info.glyph + '</
 // type-colored circle) but with the type's real icon centered inside it,
 // so it's recognizable at a glance instead of a plain dot.
 function hpTypeIcon(types, color) {
-var icon = (types && types[0]) ? typeIconMarkup(types[0], 28) : '';
-return '<div class="tcg-hp-icon" style="background:' + color + '">' + icon + '</div>';
+var type = types && types[0];
+if (!type) return '<div class="tcg-hp-icon" style="background:' + color + '"></div>';
+return typeCircleMarkup(type, 38);
 }
 // Total known species across all generations in this app's dex data,
 // used for the "007/1025"-style card-number tag. Computed lazily and
@@ -3009,20 +3082,37 @@ function setBodyBg(tab) {
 document.body.classList.remove('bg-hunts', 'bg-log', 'bg-dex');
 document.body.classList.add(BG_CLASS[tab] || 'bg-hunts');
 }
-setBodyBg('hunts');
 // Active Hunts and Shiny Log are the two facing pages of one physical
-// clamshell (see .dex-clamshell in style.css) - they're never both
-// display:none/hidden at once like Living Dex is. Switching between
-// them just moves the shell's data-active attribute, which the CSS
-// uses to slide both pages so the outgoing hinge and incoming hinge
-// cross paths in the middle, reading as one continuous hinge rather
-// than two unrelated screens.
-// applyTabState() only handles the hunts<->collection swap within the
-// clamshell (nav state, data-active, aria-hidden, bg, render) - it's kept
-// separate from activateTab() so the swipe handler below can drive it
-// directly on every touchmove frame without also touching the
-// livingdex/display-toggle branch on every drag frame.
-function applyTabState(tab) {
+// clamshell (see .dex-clamshell in style.css) - neither is ever
+// display:none. Living Dex sits outside this clamshell entirely now: it's
+// only reached via its nav button (see the tabs click handler below), and
+// is shown/hidden with a plain display toggle in CSS rather than being a
+// third stop on the swipeable track.
+//   Active Hunts  --swipe left-->  Shiny Log
+//   Shiny Log     --swipe right--> Active Hunts
+//   Active Hunts  --swipe right--> (nothing further - first page)
+//   Shiny Log     --swipe left-->  (nothing further - last page)
+// NEXT_TAB/PREV_TAB only list the directions that actually go somewhere;
+// a missing entry means that swipe direction has no destination and just
+// springs back (see the RESIST damping in the swipe handler below).
+var NEXT_TAB = { hunts: 'collection' };
+var PREV_TAB = { collection: 'hunts' };
+// Each tab's fixed stop along the track, in page-widths - matches the
+// .dex-clamshell[data-active="..."] .dex-track rules in CSS-16. Living
+// Dex has no entry here on purpose - it's not on the track, so a swipe
+// gesture that starts there (see onStart below) is a no-op rather than
+// something that tries to look up a position for it.
+var TAB_POSITION = { hunts: 0, collection: 1 };
+// Switches the active tab's nav state, data-active, aria-hidden, and
+// background - everything that's safe to do immediately, with no
+// dependency on later parts of the script. Kept separate from
+// applyTabState() below because the very first call happens at init time,
+// before things like dexOpenGens (declared further down this file) exist
+// yet - calling the render pass that early throws (renderLivingDex reads
+// dexOpenGens) and silently aborts the rest of this script, which is why
+// swiping and the hunts list could look "gone": nothing after the
+// throwing line ever ran, including the swipe handler setup below.
+function syncTabChrome(tab) {
 tabs.forEach(function(b) {
 b.classList.remove('active');
 if (b.dataset.tab === tab) b.classList.add('active');
@@ -3030,49 +3120,41 @@ if (b.dataset.tab === tab) b.classList.add('active');
 dexClamshell.setAttribute('data-active', tab);
 views.hunts.setAttribute('aria-hidden', tab === 'hunts' ? 'false' : 'true');
 views.collection.setAttribute('aria-hidden', tab === 'collection' ? 'false' : 'true');
+views.livingdex.setAttribute('aria-hidden', tab === 'livingdex' ? 'false' : 'true');
 setBodyBg(tab);
+}
+// Switches the active tab: chrome (above) plus a full render. This is the
+// entry point for changing tabs once the script has finished loading -
+// the swipe handler and nav clicks below both call this.
+function applyTabState(tab) {
+syncTabChrome(tab);
 renderAll();
 }
 function activateTab(tab) {
-if (tab === 'livingdex') {
-tabs.forEach(function(b) {
-b.classList.remove('active');
-if (b.dataset.tab === tab) b.classList.add('active');
-});
-dexClamshell.style.display = 'none';
-views.livingdex.style.display = '';
-views.hunts.setAttribute('aria-hidden', 'true');
-views.collection.setAttribute('aria-hidden', 'true');
-setBodyBg(tab);
-renderAll();
-} else {
-views.livingdex.style.display = 'none';
-dexClamshell.style.display = '';
 applyTabState(tab);
 }
-}
+syncTabChrome('hunts');
 tabs.forEach(function(btn) {
 btn.addEventListener('click', function() {
 activateTab(btn.dataset.tab);
 });
 });
-// ---------- swipe between Active Hunts <-> Shiny Log (mobile) ----------
-// The clamshell only ever shows one of these two "pages" at a time, and
-// the CSS already animates #view-hunts/#view-collection between
-// translateX(0%) and translateX(±100%) whenever data-active changes (see
-// CSS-16 in style.css). Rather than waiting for a finished swipe gesture
-// and then firing that transition cold, this drags the pages' transforms
-// 1:1 with the finger (transition disabled mid-drag so there's no lag),
-// then on release re-enables the transition and either finishes the slide
-// (data-active flips) or springs back to where it started - both using
-// the exact same transform values the CSS would land on, so there's no
-// jump where the drag position and the resting position disagree.
+// ---------- swipe between Active Hunts <-> Shiny Log <-> Living Dex (mobile) ----------
+// The clamshell always shows exactly one of these three "pages" as
+// active, and the CSS already gives .dex-track a fixed resting transform
+// per tab (see CSS-16 in style.css). Rather than waiting for a finished
+// swipe gesture and then firing that transition cold, this drags the
+// track's transform 1:1 with the finger (transition disabled mid-drag so
+// there's no lag), then on release re-enables the transition and either
+// finishes the slide (data-active flips to whichever neighbor was
+// revealed) or springs back to where it started - both using the exact
+// same transform values the CSS would land on, so there's no jump where
+// the drag position and the resting position disagree.
 (function setupClamshellSwipe() {
 if (!dexClamshell) return;
-var pageHunts = views.hunts;
-var pageCollection = views.collection;
 var track = dexClamshell.querySelector('.dex-track');
 if (!track) return;
+var frame = dexClamshell.querySelector('.dex-frame');
 var TRANSITION = 'transform 0.55s cubic-bezier(0.65, 0, 0.35, 1)';
 var RESIST = 0.35; // damping applied when dragging past an edge (nothing to reveal)
 var COMMIT_RATIO = 0.28; // fraction of width dragged before the swipe "sticks"
@@ -3088,11 +3170,22 @@ var decided = false; // have we classified this gesture yet?
 var dragging = false; // classified as horizontal, we're driving the transform
 var fromTab = 'hunts';
 var width = 1; // one page's width in px, measured fresh at drag start
-var baseX = 0; // track's resting position (in px) for fromTab
+var baseX = 0; // track's resting position (in px) for fromTab - -TAB_POSITION[fromTab] * width
+
+// Only Shiny Log carries a margin-left fold at rest (see CSS-16) - it's
+// what makes Active Hunts peek in on its left. Active Hunts sits flush
+// (margin-left: 0).
+function marginLeftFor(tab) {
+return tab === 'collection' ? -24 : 0;
+}
 
 function resetDragStyles() {
 track.style.transition = '';
 track.style.transform = '';
+if (frame) {
+frame.style.transition = '';
+frame.style.marginLeft = '';
+}
 }
 
 function onStart(e) {
@@ -3102,12 +3195,20 @@ startY = e.touches[0].clientY;
 startTime = Date.now();
 decided = false;
 dragging = false;
-width = pageHunts.offsetWidth || 1;
 fromTab = dexClamshell.getAttribute('data-active');
-baseX = fromTab === 'collection' ? -width : 0;
+if (!(fromTab in TAB_POSITION)) { fromTab = null; return; } // Living Dex - not draggable
+width = views[fromTab].offsetWidth || 1;
+baseX = -TAB_POSITION[fromTab] * width;
+// Shiny Log's resting transform gets a +24px compensation in CSS-16 (see
+// style.css) to offset its own .dex-frame margin-left fold - match it
+// here so a drag starting from Shiny Log begins from the exact same
+// pixel position the page is actually resting at, instead of jumping
+// 24px on the first frame.
+if (fromTab === 'collection') baseX += 24;
 }
 
 function onMove(e) {
+if (!fromTab) return; // started on Living Dex - nothing to drag
 if (e.touches.length !== 1) return;
 var dx = e.touches[0].clientX - startX;
 var dy = e.touches[0].clientY - startY;
@@ -3115,14 +3216,32 @@ if (!decided) {
 if (Math.abs(dx) < DIRECTION_THRESHOLD && Math.abs(dy) < DIRECTION_THRESHOLD) return;
 decided = true;
 dragging = Math.abs(dx) > Math.abs(dy);
-if (dragging) track.style.transition = 'none';
+if (dragging) {
+track.style.transition = 'none';
+if (frame) frame.style.transition = 'none';
+}
 }
 if (!dragging) return; // vertical gesture - let native scroll handle it
 if (e.cancelable) e.preventDefault(); // stop page rubber-banding while we drag
-var canAdvance = (fromTab === 'hunts' && dx < 0) || (fromTab === 'collection' && dx > 0);
+// Active Hunts has no swipe-right destination and Living Dex has no
+// swipe-left destination (they're the first/last pages) - drag those
+// directions with resistance so they read as "nothing further this way"
+// rather than a full 1:1 reveal that never actually commits.
+var canAdvance = (dx < 0 && !!NEXT_TAB[fromTab]) || (dx > 0 && !!PREV_TAB[fromTab]);
 var effectiveDx = canAdvance ? dx : dx * RESIST;
 effectiveDx = Math.max(-width, Math.min(width, effectiveDx));
 track.style.transform = 'translateX(' + (baseX + effectiveDx) + 'px)';
+// Eases the frame's margin-left fold in step with drag progress instead
+// of leaving it pinned at fromTab's resting value for the whole drag, so
+// the window's edge and the content sliding under it stay in sync the
+// entire way, not just at rest.
+if (frame) {
+var neighborTab = dx < 0 ? NEXT_TAB[fromTab] : PREV_TAB[fromTab];
+var fromMargin = marginLeftFor(fromTab);
+var toMargin = neighborTab ? marginLeftFor(neighborTab) : fromMargin;
+var progress = width ? Math.min(1, Math.abs(effectiveDx) / width) : 0;
+frame.style.marginLeft = (fromMargin + (toMargin - fromMargin) * progress) + 'px';
+}
 }
 
 function onEnd(e) {
@@ -3133,19 +3252,22 @@ var touch = e.changedTouches[0];
 var dx = touch.clientX - startX;
 var dt = Math.max(1, Date.now() - startTime);
 var velocity = dx / dt;
+var committed = Math.abs(dx) > width * COMMIT_RATIO || Math.abs(velocity) > COMMIT_VELOCITY;
 var toTab = fromTab;
-if (fromTab === 'hunts' && dx < 0 && (Math.abs(dx) > width * COMMIT_RATIO || Math.abs(velocity) > COMMIT_VELOCITY)) {
-toTab = 'collection';
-} else if (fromTab === 'collection' && dx > 0 && (Math.abs(dx) > width * COMMIT_RATIO || Math.abs(velocity) > COMMIT_VELOCITY)) {
-toTab = 'hunts';
+if (committed && dx < 0 && NEXT_TAB[fromTab]) {
+toTab = NEXT_TAB[fromTab];
+} else if (committed && dx > 0 && PREV_TAB[fromTab]) {
+toTab = PREV_TAB[fromTab];
 }
 // Re-enable the transition, force the browser to register it at the
 // current drag position, then commit/spring back so it animates from
 // exactly where the finger let go rather than snapping first.
 track.style.transition = TRANSITION;
+if (frame) frame.style.transition = '';
 void dexClamshell.offsetHeight; // force reflow so the transition above "takes"
 if (toTab !== fromTab) applyTabState(toTab);
 track.style.transform = '';
+if (frame) frame.style.marginLeft = '';
 setTimeout(resetDragStyles, 600);
 }
 
@@ -3222,7 +3344,7 @@ el.innerHTML =
 '<div class="hunt-dex-flap">' +
 '<div class="hunt-dex-flap-crease-wrap"><div class="hunt-dex-flap-crease"></div></div>' +
 '<div class="hunt-dex-lens-wrap">' +
-'<div class="hunt-dex-lens hunt-dex-flap-lens" aria-hidden="true"><span class="hunt-dex-flap-lens-inner"></span></div>' +
+'<div class="hunt-dex-lens hunt-dex-flap-lens" data-action="new-hunt" role="button" tabindex="0" title="Start a Hunt" aria-label="Start a Hunt"><span class="hunt-dex-flap-lens-inner"></span></div>' +
 '<div class="hunt-dex-lights hunt-dex-flap-lights">' +
 '<button class="hunt-dex-light r" data-action="delete-hunt" data-id="' + hunt.id + '" title="Abandon hunt" aria-label="Abandon hunt"></button>' +
 '<span class="hunt-dex-light y" aria-hidden="true"></span>' +
@@ -3481,6 +3603,7 @@ screen.innerHTML =
 (latest.notes ? '<div class="log-dex-screen-notes">' + escapeHtml(latest.notes) + '</div>' : '') +
 '</div>' +
 '<div class="log-dex-screen-actions">' +
+'<button class="icon-btn" data-action="undo-log" data-id="' + latest.id + '" title="Move back to Active Hunts">↩</button>' +
 '<button class="icon-btn" data-action="edit-log" data-id="' + latest.id + '" title="Edit entry">✎</button>' +
 '<button class="icon-btn" data-action="delete-log" data-id="' + latest.id + '" title="Delete entry">✕</button>' +
 '</div>';
@@ -4045,6 +4168,10 @@ if (elNum) elNum.textContent = fmtTime(elapsedSeconds(hunt));
 document.getElementById('hunts-list').addEventListener('click', function(e) {
 var btn = e.target.closest('[data-action]');
 if (!btn) return;
+if (btn.dataset.action === 'new-hunt') {
+openNewHuntModal();
+return;
+}
 var id = btn.dataset.id;
 var hunt = state.hunts.find(function(h) {
 return h.id === id;
@@ -4063,6 +4190,13 @@ runHuntAction(action, hunt, id, btn);
 return;
 }
 runHuntAction(action, hunt, id, btn);
+});
+document.getElementById('hunts-list').addEventListener('keydown', function(e) {
+if (e.key !== 'Enter' && e.key !== ' ') return;
+var lens = e.target.closest('[data-action="new-hunt"]');
+if (!lens) return;
+e.preventDefault();
+openNewHuntModal();
 });
 function runHuntAction(action, hunt, id, btn) {
 if (action === 'add-encounter' || action === 'add-encounter-5') {
@@ -4128,6 +4262,23 @@ overlay.addEventListener('click', function(e) {
 if (e.target === overlay) overlay.remove();
 });
 document.body.appendChild(overlay);
+// Lock the page behind the overlay from scrolling while it's open.
+// Overlays get closed from several different places (cancel, save,
+// backdrop click, delete, etc.) rather than one central function, so
+// instead of touching every one of those call sites, just watch for
+// this overlay leaving the DOM and unlock automatically - and only
+// once no other overlay is still open, in case one is ever stacked
+// on top of another.
+document.documentElement.classList.add('modal-open');
+var scrollLockObserver = new MutationObserver(function() {
+if (!document.body.contains(overlay)) {
+scrollLockObserver.disconnect();
+if (!document.querySelector('.overlay')) {
+document.documentElement.classList.remove('modal-open');
+}
+}
+});
+scrollLockObserver.observe(document.body, { childList: true });
 return overlay;
 }
 function gameOptions(sel) {
@@ -4140,32 +4291,198 @@ return METHODS.map(function(m) {
 return '<option ' + (m === sel ? 'selected' : '') + '>' + m + '</option>';
 }).join('');
 }
-document.getElementById('btn-new-hunt').addEventListener('click', function() {
+function openNewHuntModal() {
 // Remember the Game/Method picked last time, so repeat hunts don't
 // require reselecting them every time - only the Pokémon name resets.
 var prefs = state.lastHuntPrefs || {};
 var overlay = openModal(
-'<h3>Start a Hunt</h3>' +
-'<div class="field"><label>Target Pokémon</label><input type="text" id="f-pokemon" placeholder="e.g. Gible" autofocus></div>' +
-'<div class="field-row">' +
-'<div class="field"><label>Game</label><select id="f-game">' + gameOptions(prefs.game) + '</select></div>' +
-'<div class="field"><label>Method</label><select id="f-method">' + methodOptions(prefs.method) + '</select></div>' +
+'<div class="hunt-dexnav-hinge" aria-hidden="true"><span></span><span></span></div>' +
+'<div class="hunt-dexnav-screws" aria-hidden="true"><span></span><span></span><span></span><span></span></div>' +
+'<div class="hunt-dexnav-screen">' +
+'<div class="modal-dex-head">' +
+'<div class="modal-dex-head-title"><span class="modal-dex-dot"></span><h3>Start a Hunt</h3></div>' +
+'<div class="modal-dex-lights" aria-hidden="true"><span class="modal-dex-light g lit"></span><span class="modal-dex-light y"></span></div>' +
 '</div>' +
-'<div class="field" id="f-charm-field">' +
+'<div class="hunt-radar">' +
+'<div class="hunt-radar-ring" aria-hidden="true"></div>' +
+'<div class="hunt-radar-sweep" aria-hidden="true"></div>' +
+'<div class="hunt-radar-crosshair" aria-hidden="true"></div>' +
+'<svg class="hunt-radar-lines" aria-hidden="true"></svg>' +
+'<div class="hunt-radar-select-field node-game">' +
+'<span class="hunt-radar-node-label">Game</span>' +
+'<div class="hunt-radar-select-value" id="f-game-visual"></div>' +
+'<select id="f-game" class="hunt-radar-select-native">' + gameOptions(prefs.game) + '</select>' +
+'</div>' +
+'<div class="hunt-radar-select-field node-method">' +
+'<span class="hunt-radar-node-label">Method</span>' +
+'<div class="hunt-radar-select-value" id="f-method-visual"></div>' +
+'<select id="f-method" class="hunt-radar-select-native">' + methodOptions(prefs.method) + '</select>' +
+'</div>' +
+'<div class="hunt-radar-orb-wrap">' +
+'<div class="hunt-radar-orb" id="f-portrait"><span class="fallback-letter">?</span></div>' +
+'<div class="hunt-radar-id">' +
+'<span class="modal-dex-num" id="f-dexnum"></span>' +
+'<span class="modal-dex-types" id="f-types"></span>' +
+'</div>' +
+'</div>' +
+'<div class="hunt-radar-node node-odds">' +
+'<span class="hunt-radar-node-label">Odds</span>' +
+'<div class="odds-display" id="f-odds-display"></div>' +
+'</div>' +
+'<div class="hunt-radar-node node-charm" id="f-charm-field">' +
 '<div class="checkbox-field"><input type="checkbox" id="f-charm"><label for="f-charm">Shiny Charm</label></div>' +
 '<div class="field-hint" id="f-charm-hint"></div>' +
 '</div>' +
-'<div class="field"><label>Odds (auto-assigned)</label><div class="odds-display" id="f-odds-display"></div></div>' +
-'<div class="field"><label>Starting encounter count (optional)</label><input type="number" id="f-start-enc" min="0" value="0"></div>' +
-'<div class="modal-actions"><button class="ghost" id="cancel">Cancel</button><button class="primary" id="save">Start Hunt</button></div>'
+'</div>' +
+'</div>' +
+'<div class="field hunt-radar-name-field"><label>Target Pokémon</label><input type="text" id="f-pokemon" placeholder="e.g. Gible" autofocus></div>' +
+'<div class="modal-actions hunt-dexnav-keys">' +
+'<div class="hunt-dexnav-key-group">' +
+'<button class="ghost hunt-dexnav-key" id="cancel" aria-label="Cancel">Cancel</button>' +
+'<span class="hunt-dexnav-key-label">Cancel</span>' +
+'</div>' +
+'<div class="hunt-dexnav-key-group">' +
+'<button class="primary hunt-dexnav-key" id="save" aria-label="Start Hunt">Start Hunt</button>' +
+'<span class="hunt-dexnav-key-label">Start</span>' +
+'</div>' +
+'</div>' +
+'<div class="hunt-dexnav-vents" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>' +
+'<span class="hunt-dexnav-brand" aria-hidden="true">DEXNAV</span>',
+'modal-new-hunt'
 );
 var oddsDisplay = overlay.querySelector('#f-odds-display');
 var gameSel = overlay.querySelector('#f-game');
 var methodSel = overlay.querySelector('#f-method');
+var gameVisual = overlay.querySelector('#f-game-visual');
+var methodVisual = overlay.querySelector('#f-method-visual');
 var charmChk = overlay.querySelector('#f-charm');
 var charmHint = overlay.querySelector('#f-charm-hint');
+var pokemonInput = overlay.querySelector('#f-pokemon');
+var portrait = overlay.querySelector('#f-portrait');
+var dexNumEl = overlay.querySelector('#f-dexnum');
+var typesEl = overlay.querySelector('#f-types');
 charmChk.checked = !!prefs.shinyCharm;
-attachPokemonAutocomplete(overlay.querySelector('#f-pokemon'));
+// Game/Method are real <select> elements (so the native picker, keyboard
+// nav, and mobile scroll-wheel all still work) laid transparently over
+// a plain text div that shows the current value - that div is free to
+// wrap onto a second line, so long entries like "Omega Ruby/Alpha
+// Sapphire" are never clipped the way a native select's own closed-state
+// text would be.
+function syncSelectVisual(select, visual) {
+visual.textContent = select.value;
+}
+syncSelectVisual(gameSel, gameVisual);
+syncSelectVisual(methodSel, methodVisual);
+attachPokemonAutocomplete(pokemonInput);
+// Live shiny-sprite + dex-number + type-badge preview: fills in as soon
+// as the typed name resolves to a known species, and resets to the "?"
+// placeholder state the rest of the time (empty field, mid-typing, or
+// an unrecognized name), so it's a quick "did I type that right?" check
+// before committing to the hunt.
+function refreshPortrait() {
+var name = pokemonInput.value.trim();
+var info = name ? speciesInfo(name) : null;
+if (info) {
+portrait.innerHTML = spriteMarkup(name);
+var dexNum = dexNumberOf(name);
+dexNumEl.textContent = dexNum ? ('No. ' + String(dexNum).padStart(4, '0')) : '';
+typesEl.innerHTML = info.types.map(function(t) {
+var color = TYPE_COLORS[t] || 'var(--ink-dim)';
+return '<span class="tag tag-type" style="--type-color:' + color + '">' + escapeHtml(t) + '</span>';
+}).join('');
+} else {
+portrait.innerHTML = '<span class="fallback-letter">?</span>';
+dexNumEl.textContent = '';
+typesEl.innerHTML = '';
+}
+}
+pokemonInput.addEventListener('input', refreshPortrait);
+pokemonInput.addEventListener('change', refreshPortrait);
+// Draws the green "radar" leader lines connecting the sprite orb to each
+// of the four info nodes (Game/Method/Odds/Charm), replacing what used
+// to be four separate boxed fields. Measures actual rendered positions
+// (via getBoundingClientRect) rather than hardcoding coordinates, so it
+// stays correct across text wrapping, font loading, and window resizes.
+function layoutHuntRadarLines() {
+var radar = overlay.querySelector('.hunt-radar');
+var svg = overlay.querySelector('.hunt-radar-lines');
+var orb = overlay.querySelector('.hunt-radar-orb');
+if (!radar || !svg || !orb) return;
+var radarRect = radar.getBoundingClientRect();
+if (!radarRect.width || !radarRect.height) return;
+svg.setAttribute('viewBox', '0 0 ' + radarRect.width + ' ' + radarRect.height);
+var orbRect = orb.getBoundingClientRect();
+var cx = orbRect.left + orbRect.width / 2 - radarRect.left;
+var cy = orbRect.top + orbRect.height / 2 - radarRect.top;
+var r = orbRect.width / 2;
+function edgePoint(dx, dy) {
+var len = Math.sqrt(dx * dx + dy * dy) || 1;
+return { x: cx + (dx / len) * r, y: cy + (dy / len) * r };
+}
+// Traces an elbowed line (diagonal, then straight) from the given
+// corner of a node's bounding box out to a point on the orb's edge in
+// the direction (dx, dy). cornerX/cornerY pick which corner of the
+// node to start from, so the line leaves from whichever side of the
+// text actually faces the orb.
+function tracePath(selector, dx, dy, cornerX, cornerY) {
+var node = overlay.querySelector(selector);
+if (!node) return null;
+var nRect = node.getBoundingClientRect();
+if (!nRect.width || !nRect.height) return null;
+var anchor = {
+x: (cornerX === 'right' ? nRect.right : nRect.left) - radarRect.left,
+y: (cornerY === 'bottom' ? nRect.bottom : nRect.top) - radarRect.top
+};
+var edge = edgePoint(dx, dy);
+var ddx = edge.x - anchor.x;
+var ddy = edge.y - anchor.y;
+// Scale the curve's "bend" proportionally to the line's own length (instead
+// of a fixed 16px), so long lines (Odds/Charm, far from the orb) curve just
+// as visibly as short ones (Game/Method, close to the orb). Capped at 40px
+// so very long lines don't over-curve.
+var dist = Math.sqrt(ddx * ddx + ddy * ddy);
+var L = Math.min(dist * 0.35, 40);
+var elbow = {
+x: anchor.x + (ddx < 0 ? -L : L),
+y: anchor.y + (ddy < 0 ? -L : L)
+};
+return { anchor: anchor, elbow: elbow, edge: edge };
+}
+// Reflects every point in a trace across the orb's horizontal center (cx),
+// so the mirrored side is a true reflection instead of being independently
+// computed from its own (differently sized/positioned) node.
+function mirrorPoints(t) {
+if (!t) return null;
+function flip(p) { return { x: 2 * cx - p.x, y: p.y }; }
+return { anchor: flip(t.anchor), elbow: flip(t.elbow), edge: flip(t.edge) };
+}
+function pathString(t) {
+return 'M ' + t.anchor.x.toFixed(1) + ' ' + t.anchor.y.toFixed(1) +
+' Q ' + t.elbow.x.toFixed(1) + ' ' + t.elbow.y.toFixed(1) +
+' ' + t.edge.x.toFixed(1) + ' ' + t.edge.y.toFixed(1);
+}
+var gameTrace = tracePath('.node-game .hunt-radar-select-value', -0.75, -0.75, 'right', 'bottom');
+var methodTrace = mirrorPoints(gameTrace) || tracePath('.node-method .hunt-radar-select-value', 0.75, -0.75, 'left', 'bottom');
+var oddsTrace = tracePath('.node-odds .odds-display', -0.75, 0.75, 'right', 'top');
+var charmTrace = mirrorPoints(oddsTrace) || tracePath('.node-charm .checkbox-field', 0.75, 0.75, 'left', 'top');
+var traces = [gameTrace, methodTrace, oddsTrace, charmTrace];
+var markup = '';
+traces.forEach(function(t) {
+if (!t) return;
+markup += '<path class="hunt-radar-line-path" d="' + pathString(t) + '"/>' +
+'<circle class="hunt-radar-line-dot" cx="' + t.edge.x.toFixed(1) + '" cy="' + t.edge.y.toFixed(1) + '" r="2.5"/>';
+});
+svg.innerHTML = markup;
+}
+requestAnimationFrame(layoutHuntRadarLines);
+var huntRadarResizeHandler = function() {
+if (!document.body.contains(overlay)) {
+window.removeEventListener('resize', huntRadarResizeHandler);
+return;
+}
+layoutHuntRadarLines();
+};
+window.addEventListener('resize', huntRadarResizeHandler);
 // Shiny Charm didn't exist before Gen 6 (and isn't a thing in GO), so
 // the checkbox disables itself - and unchecks - for games where it
 // couldn't actually be equipped, instead of silently no-op'ing the
@@ -4182,13 +4499,24 @@ function refreshOdds() {
 refreshCharmAvailability();
 var denom = computeOdds(gameSel.value, methodSel.value, charmChk.checked);
 oddsDisplay.textContent = '1 in ' + denom.toLocaleString();
+requestAnimationFrame(layoutHuntRadarLines);
 }
 refreshOdds();
-gameSel.addEventListener('change', refreshOdds);
-methodSel.addEventListener('change', refreshOdds);
+gameSel.addEventListener('change', function() {
+syncSelectVisual(gameSel, gameVisual);
+refreshOdds();
+});
+methodSel.addEventListener('change', function() {
+syncSelectVisual(methodSel, methodVisual);
+refreshOdds();
+});
 charmChk.addEventListener('change', refreshOdds);
 overlay.querySelector('#cancel').addEventListener('click', function() {
+var btn = this;
+btn.classList.add('is-pressing');
+setTimeout(function() {
 overlay.remove();
+}, 180);
 });
 overlay.querySelector('#save').addEventListener('click', function() {
 var name = overlay.querySelector('#f-pokemon').value.trim();
@@ -4196,6 +4524,9 @@ if (!name) {
 overlay.querySelector('#f-pokemon').focus();
 return;
 }
+var btn = this;
+btn.classList.add('is-pressing');
+setTimeout(function() {
 var denom = computeOdds(gameSel.value, methodSel.value, charmChk.checked);
 state.lastHuntPrefs = {
 game: gameSel.value,
@@ -4209,7 +4540,7 @@ game: gameSel.value,
 method: methodSel.value,
 shinyCharm: charmChk.checked,
 denom: denom,
-encounters: parseInt(overlay.querySelector('#f-start-enc').value || '0', 10) || 0,
+encounters: 0,
 accumulatedSeconds: 0,
 running: false,
 runStart: null,
@@ -4218,15 +4549,19 @@ createdAt: Date.now()
 save();
 renderHunts();
 overlay.remove();
+}, 180);
 });
-});
-document.getElementById('btn-log-catch').addEventListener('click', function() {
+}
+var btnNewHunt = document.getElementById('btn-new-hunt');
+if (btnNewHunt) btnNewHunt.addEventListener('click', openNewHuntModal);
+var btnLogCatch = document.getElementById('btn-log-catch');
+if (btnLogCatch) btnLogCatch.addEventListener('click', function() {
 openCatchModal(null);
 });
 document.getElementById('btn-toggle-log-edit').addEventListener('click', function() {
 logEditMode = !logEditMode;
 this.classList.toggle('active', logEditMode);
-this.textContent = logEditMode ? '✓ Done' : '✎ Edit';
+this.setAttribute('aria-pressed', logEditMode ? 'true' : 'false');
 renderCollection();
 });
 function openFoundModal(hunt) {
@@ -4299,17 +4634,17 @@ function openFoundModal(hunt) {
 
         '<table class="tcg-stats-table">' +
           '<tr>' +
-            '<td class="tcg-stats-icon">🎮</td>' +
+            '<td class="tcg-stats-icon">' + gameIconMarkup(hunt.game) + '</td>' +
             '<td class="tcg-stats-label">Game</td>' +
             '<td class="tcg-stats-value">' + escapeHtml(hunt.game) + '</td>' +
           '</tr>' +
           '<tr>' +
-            '<td class="tcg-stats-icon">🎯</td>' +
+            '<td class="tcg-stats-icon">' + methodIconMarkup() + '</td>' +
             '<td class="tcg-stats-label">Method</td>' +
             '<td class="tcg-stats-value">' + escapeHtml(hunt.method) + '</td>' +
           '</tr>' +
           '<tr' + (hunt.shinyCharm ? ' class="tcg-stats-row-active"' : '') + '>' +
-            '<td class="tcg-stats-icon">✨</td>' +
+            '<td class="tcg-stats-icon">' + charmIconMarkup() + '</td>' +
             '<td class="tcg-stats-label">Charm</td>' +
             '<td class="tcg-stats-value">' + (hunt.shinyCharm ? 'Yes' : 'No') + '</td>' +
           '</tr>' +
@@ -4348,6 +4683,8 @@ function openFoundModal(hunt) {
       types: savedInfo ? savedInfo.types : [],
       game: hunt.game,
       method: hunt.method,
+      shinyCharm: hunt.shinyCharm,
+      denom: hunt.denom,
       encounters: hunt.encounters || 0,
       dateBegan: fmtDate(hunt.createdAt),
       dateEnded: new Date().toISOString().slice(0, 10),
@@ -4397,12 +4734,42 @@ function openFoundModal(hunt) {
     }
   });
 
+  function showCatchConfirmPopover() {
+    if (overlay.querySelector('.catch-confirm-popover-backdrop')) return;
+
+    var backdrop = document.createElement('div');
+    backdrop.className = 'catch-confirm-popover-backdrop';
+    backdrop.innerHTML =
+      '<div class="catch-confirm-popover">' +
+        '<div class="catch-confirm-popover-title">Log this catch?</div>' +
+        '<div class="catch-confirm-popover-sub">' + escapeHtml(hunt.pokemon) + ' will be added to your Shiny Log.</div>' +
+        '<div class="catch-confirm-popover-actions">' +
+          '<button type="button" class="ghost" data-popover-action="cancel">Cancel</button>' +
+          '<button type="button" class="primary" data-popover-action="confirm">Yes, caught it!</button>' +
+        '</div>' +
+      '</div>';
+
+    backdrop.addEventListener('click', function(e) {
+      if (e.target === backdrop) backdrop.remove();
+    });
+    backdrop.querySelector('[data-popover-action="cancel"]').addEventListener('click', function() {
+      backdrop.remove();
+    });
+    backdrop.querySelector('[data-popover-action="confirm"]').addEventListener('click', function() {
+      backdrop.remove();
+      confirmFound();
+    });
+
+    overlay.appendChild(backdrop);
+    backdrop.querySelector('[data-popover-action="confirm"]').focus();
+  }
+
   var confirmSprite = overlay.querySelector('#tcg-confirm-sprite');
-  confirmSprite.addEventListener('click', confirmFound);
+  confirmSprite.addEventListener('click', showCatchConfirmPopover);
   confirmSprite.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      confirmFound();
+      showCatchConfirmPopover();
     }
   });
 }
@@ -4533,8 +4900,55 @@ save();
 renderCollection();
 renderLivingDex();
 }
+} else if (btn.dataset.action === 'undo-log') {
+if (confirm('Move "' + entry.pokemon + '" back to Active Hunts? It will be removed from your Shiny Log.')) {
+undoLogEntry(entry);
+}
 }
 });
+// Reverses a catch: pulls a Shiny Log entry back out and rebuilds an
+// Active Hunts entry from whatever info it saved (game, method, encounter
+// count, time spent, shiny charm/odds if present), for the "I accidentally
+// logged that before actually catching it" case. Placed at the very front
+// of state.hunts, and its createdAt is nudged earlier than every other
+// active hunt if needed, so it's guaranteed to land at the top of the
+// default (oldest-first) Active Hunts sort regardless of when it actually
+// began.
+function undoLogEntry(entry) {
+var guessedCreatedAt = entry.dateBegan ? new Date(entry.dateBegan).getTime() : NaN;
+if (isNaN(guessedCreatedAt)) guessedCreatedAt = Date.now();
+var minExistingCreatedAt = state.hunts.reduce(function(min, h) {
+return Math.min(min, h.createdAt);
+}, guessedCreatedAt);
+var createdAt = Math.min(guessedCreatedAt, minExistingCreatedAt - 1);
+var shinyCharm = !!entry.shinyCharm;
+var denom = entry.denom || computeOdds(entry.game, entry.method, shinyCharm);
+
+state.hunts.unshift({
+id: uid(),
+pokemon: entry.pokemon,
+game: entry.game,
+method: entry.method,
+shinyCharm: shinyCharm,
+denom: denom,
+encounters: entry.encounters || 0,
+accumulatedSeconds: (entry.timeSpentMinutes || 0) * 60,
+running: false,
+runStart: null,
+createdAt: createdAt
+});
+
+state.collection = state.collection.filter(function(c) {
+return c.id !== entry.id;
+});
+
+logScreenIndex = state.collection.length - 1;
+save();
+renderAll();
+
+var tabBtn = document.querySelector('nav.tabs button[data-tab="hunts"]');
+if (tabBtn) tabBtn.click();
+}
 // Steps the log screen backward (-1) or forward (+1) through the
 // collection, wrapping around at either end so the two buttons can
 // cycle the list indefinitely in either direction.
