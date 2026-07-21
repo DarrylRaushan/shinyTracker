@@ -3437,7 +3437,27 @@ el.innerHTML =
 '</div>';
 wrap.appendChild(el);
 });
+syncHuntFrameHeight();
 }
+// Keeps the mobile hunts scroll frame (and the sliver of the next page
+// that peeks in beside it) pinned to the real, rendered height of one
+// hunt card - rather than the phone's full viewport height - so the
+// peek strip lines up with exactly one Pokedex card instead of running
+// taller or shorter than it.
+function syncHuntFrameHeight() {
+var firstCard = document.querySelector('#hunts-list .hunt-card');
+var root = document.documentElement;
+if (firstCard && firstCard.offsetHeight) {
+root.style.setProperty('--hunt-frame-height', firstCard.offsetHeight + 'px');
+} else {
+root.style.removeProperty('--hunt-frame-height');
+}
+}
+var huntFrameResizeTimer = null;
+window.addEventListener('resize', function() {
+clearTimeout(huntFrameResizeTimer);
+huntFrameResizeTimer = setTimeout(syncHuntFrameHeight, 150);
+});
 function escapeHtml(s) {
 return String(s).replace(/[&<>"']/g, function(c) {
 return {
