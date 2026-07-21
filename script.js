@@ -3139,6 +3139,21 @@ btn.addEventListener('click', function() {
 activateTab(btn.dataset.tab);
 });
 });
+// The two silver pills on the Shiny Log screen (formerly decorative)
+// jump straight to Living Dex, now that there's no tab bar to reach it
+// from directly.
+['btn-log-to-livingdex-1', 'btn-log-to-livingdex-2'].forEach(function(id) {
+var btn = document.getElementById(id);
+if (btn) btn.addEventListener('click', function() {
+activateTab('livingdex');
+});
+});
+// Living Dex has no tab bar to get back out through either, so it gets
+// its own explicit way back to Active Hunts.
+var livingDexBackBtn = document.getElementById('btn-livingdex-back');
+if (livingDexBackBtn) livingDexBackBtn.addEventListener('click', function() {
+activateTab('hunts');
+});
 // ---------- swipe between Active Hunts <-> Shiny Log <-> Living Dex (mobile) ----------
 // The clamshell always shows exactly one of these three "pages" as
 // active, and the CSS already gives .dex-track a fixed resting transform
@@ -4702,7 +4717,7 @@ function openFoundModal(hunt) {
     overlay.remove();
 
     var tabBtn = document.querySelector('nav.tabs button[data-tab="collection"]');
-    tabBtn.click();
+    if (tabBtn) { tabBtn.click(); } else { activateTab('collection'); }
   }
 
   fetchEvolvesFrom(hunt.pokemon).then(function(fromName) {
@@ -4947,7 +4962,7 @@ save();
 renderAll();
 
 var tabBtn = document.querySelector('nav.tabs button[data-tab="hunts"]');
-if (tabBtn) tabBtn.click();
+if (tabBtn) { tabBtn.click(); } else { activateTab('hunts'); }
 }
 // Steps the log screen backward (-1) or forward (+1) through the
 // collection, wrapping around at either end so the two buttons can
