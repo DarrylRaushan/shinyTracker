@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -35,9 +36,48 @@
                   <div class="log-dex-screen log-hof-screen" id="log-hof-screen"></div>
                 </div>
 
-                <div class="log-dex-grid" aria-hidden="true">
-                  <span></span><span></span><span></span><span></span><span></span>
-                  <span></span><span></span><span></span><span></span><span></span>
+                <div class="log-dex-grid" id="log-dex-grid">
+                  <div class="dex-select-wrap" id="log-search-wrap">
+                    <button type="button" class="log-dex-grid-btn" id="btn-log-search" title="Search" aria-label="Search">⌕</button>
+                    <div class="dex-select-panel log-search-panel" id="log-search-panel">
+                      <input type="text" id="log-search" class="log-key-input" placeholder="␣ filter your log...">
+                    </div>
+                  </div>
+                  <div class="dex-select-wrap" id="log-sort-wrap">
+                    <button type="button" class="log-dex-grid-btn" id="btn-log-sort" title="Sort">Newest ▾</button>
+                    <div class="dex-select-panel" id="log-sort-panel">
+                      <div class="dex-select-option active" data-value="newest">Newest</div>
+                      <div class="dex-select-option" data-value="oldest">Oldest</div>
+                      <div class="dex-select-option" data-value="rarest">Rarest Odds</div>
+                      <div class="dex-select-option" data-value="fastest">Fastest Catch</div>
+                      <div class="dex-select-option" data-value="most">Most Encounters</div>
+                    </div>
+                  </div>
+                  <div class="dex-select-wrap" id="log-filter-wrap">
+                    <button type="button" class="log-dex-grid-btn" id="btn-log-filter" title="Filter">All ▾</button>
+                    <div class="dex-select-panel log-filter-panel" id="log-filter-panel">
+                      <div class="log-filter-group">
+                        <label class="log-filter-group-label" for="log-filter-game">Game</label>
+                        <select id="log-filter-game"><option value="">All Games</option></select>
+                      </div>
+                      <div class="log-filter-group">
+                        <label class="log-filter-group-label" for="log-filter-method">Method</label>
+                        <select id="log-filter-method"><option value="">All Methods</option></select>
+                      </div>
+                      <div class="log-filter-group">
+                        <label class="log-filter-group-label" for="log-filter-gen">Generation</label>
+                        <select id="log-filter-gen"><option value="">All Gens</option></select>
+                      </div>
+                      <button type="button" class="ghost log-filter-clear" id="btn-log-filter-clear">Clear Filters</button>
+                    </div>
+                  </div>
+                  <button type="button" class="log-dex-grid-btn log-dex-grid-hof" id="btn-log-hof" title="Hall of Fame" aria-pressed="false"><span class="log-dex-grid-hof-icon">★</span></button>
+                  <button type="button" class="log-dex-grid-btn" id="btn-log-reset-filters" title="Reset Filters" aria-label="Reset all filters">⟲</button>
+                  <button type="button" class="log-dex-grid-btn"></button>
+                  <button type="button" class="log-dex-grid-btn"></button>
+                  <button type="button" class="log-dex-grid-btn"></button>
+                  <button type="button" class="log-dex-grid-btn"></button>
+                  <button type="button" class="log-dex-grid-btn"></button>
                 </div>
                 <div class="log-dex-bars-group" aria-hidden="true">
                   <span class="log-dex-bar"></span>
@@ -56,50 +96,6 @@
               </div>
             </div>
 
-            <div class="log-key-deck" id="log-key-deck">
-              <div class="log-key log-key-search">
-                <span class="log-key-label">Search</span>
-                <input type="text" id="log-search" class="log-key-input" placeholder="␣ filter your log...">
-              </div>
-              <div class="log-key log-key-fn">
-                <span class="log-key-label">Sort</span>
-                <div class="dex-select-wrap" id="log-sort-wrap">
-                  <button class="ghost" id="btn-log-sort" type="button">Newest ▾</button>
-                  <div class="dex-select-panel" id="log-sort-panel">
-                    <div class="dex-select-option active" data-value="newest">Newest</div>
-                    <div class="dex-select-option" data-value="oldest">Oldest</div>
-                    <div class="dex-select-option" data-value="rarest">Rarest Odds</div>
-                    <div class="dex-select-option" data-value="fastest">Fastest Catch</div>
-                    <div class="dex-select-option" data-value="most">Most Encounters</div>
-                  </div>
-                </div>
-              </div>
-              <div class="log-key log-key-fn">
-                <span class="log-key-label">Filter</span>
-                <div class="dex-select-wrap" id="log-filter-wrap">
-                  <button class="ghost" id="btn-log-filter" type="button">All ▾</button>
-                  <div class="dex-select-panel log-filter-panel" id="log-filter-panel">
-                    <div class="log-filter-group">
-                      <label class="log-filter-group-label" for="log-filter-game">Game</label>
-                      <select id="log-filter-game"><option value="">All Games</option></select>
-                    </div>
-                    <div class="log-filter-group">
-                      <label class="log-filter-group-label" for="log-filter-method">Method</label>
-                      <select id="log-filter-method"><option value="">All Methods</option></select>
-                    </div>
-                    <div class="log-filter-group">
-                      <label class="log-filter-group-label" for="log-filter-gen">Generation</label>
-                      <select id="log-filter-gen"><option value="">All Gens</option></select>
-                    </div>
-                    <button type="button" class="ghost log-filter-clear" id="btn-log-filter-clear">Clear Filters</button>
-                  </div>
-                </div>
-              </div>
-              <button type="button" class="log-key log-key-hof" id="btn-log-hof" aria-pressed="false">
-                <span class="log-key-hof-icon">★</span>
-                <span class="log-key-label">Hall of Fame</span>
-              </button>
-            </div>
           </div>
           </div>
         </div>
