@@ -3343,7 +3343,7 @@ function renderHunts() {
 var wrap = document.getElementById('hunts-list');
 wrap.innerHTML = '';
 if (state.hunts.length === 0) {
-wrap.innerHTML = '<div class="empty"><div class="glyph">✧</div><p class="lead">No hunts in progress.</p><p>Start one to begin logging encounters, odds, and time spent.</p></div>';
+wrap.innerHTML = '<div class="empty"><div class="glyph">✧</div><p class="lead">No hunts in progress.</p><p>Start one to begin logging encounters, odds, and time spent.</p><button type="button" class="primary empty-cta" data-action="new-hunt">Start a Hunt</button></div>';
 return;
 }
 sortHuntsForDisplay(state.hunts).forEach(function(hunt) {
@@ -3569,21 +3569,128 @@ if (e.target !== input && !list.contains(e.target)) close();
 }
 /* ---------- rendering: collection (catch log) ---------- */
 var logEditMode = false;
-// Which collection entry the screen currently shows. -1 means "no
-// selection yet" and falls back to the most recent catch; the prev/next
-// buttons below let the person step through older entries manually.
-var logScreenIndex = -1;
-function renderCollection() {
-var screen = document.getElementById('log-latest-screen');
-if (state.collection.length === 0) {
-logScreenIndex = -1;
-screen.innerHTML =
-'<div class="log-dex-screen-empty">Your first catch will show up here</div>';
-} else {
-if (logScreenIndex < 0 || logScreenIndex >= state.collection.length) {
-logScreenIndex = state.collection.length - 1;
+// Which collection entry (by id, not array index) the screen is
+// showing. Tracking the id rather than a raw index means the
+// selection survives re-sorting/filtering instead of jumping to
+// whatever now happens to sit at the old index.
+var logSelectedId = null;
+var logViewMode = 'card'; // 'card' | 'grid'
+var logShowHoF = false;
+var logSearchQuery = '';
+var logSortMode = 'newest';
+var logFilterGame = '';
+var logFilterMethod = '';
+var logFilterGen = '';
+
+var LOG_SORT_LABELS = {
+newest: 'Newest',
+oldest: 'Oldest',
+rarest: 'Rarest Odds',
+fastest: 'Fastest Catch',
+most: 'Most Encounters'
+};
+
+// Best-effort odds for an entry: use the odds actually rolled at catch
+// time if saved (denom), otherwise recompute the same way a fresh hunt
+// would - so manually-added log entries (never went through Active
+// Hunts) still sort/rank sensibly against ones that did.
+function logEntryDenom(entry) {
+if (entry.denom) return entry.denom;
+return computeOdds(entry.game, entry.method, !!entry.shinyCharm) || 0;
 }
-var latest = state.collection[logScreenIndex];
+function logEntryDateValue(entry) {
+var raw = entry.dateEnded || entry.date || entry.dateBegan || '';
+var t = raw ? new Date(raw).getTime() : NaN;
+return isNaN(t) ? 0 : t;
+}
+// Search + filter + sort applied on top of state.collection without
+// mutating it. Card mode, Grid mode, and Hall of Fame's "jump to this
+// entry" all read from this same list so they always agree.
+function filteredLogEntries() {
+var q = logSearchQuery.trim().toLowerCase();
+var list = state.collection.filter(function(e) {
+if (q && e.pokemon.toLowerCase().indexOf(q) === -1) return false;
+if (logFilterGame && e.game !== logFilterGame) return false;
+if (logFilterMethod && e.method !== logFilterMethod) return false;
+if (logFilterGen && String(e.gen || '') !== logFilterGen) return false;
+return true;
+});
+list.sort(function(a, b) {
+switch (logSortMode) {
+case 'oldest':
+return logEntryDateValue(a) - logEntryDateValue(b);
+case 'rarest':
+return logEntryDenom(b) - logEntryDenom(a);
+case 'fastest':
+return (a.encounters || 0) - (b.encounters || 0);
+case 'most':
+return (b.encounters || 0) - (a.encounters || 0);
+case 'newest':
+default:
+return logEntryDateValue(b) - logEntryDateValue(a);
+}
+});
+return list;
+}
+// Shows/hides the Card screen, Grid screen, and Hall of Fame screen,
+// and reflects the current mode on the shell so CSS can hide the nav
+// arrows/edit dot (which only make sense in Card mode).
+function updateLogModeUI() {
+var shell = document.getElementById('log-dex-shell');
+var cardScreen = document.getElementById('log-latest-screen');
+var gridScreen = document.getElementById('log-grid-screen');
+var hofScreen = document.getElementById('log-hof-screen');
+if (shell) {
+shell.dataset.logMode = logViewMode;
+shell.dataset.logHof = logShowHoF ? 'true' : 'false';
+}
+document.querySelectorAll('#log-mode-toggle button').forEach(function(b) {
+b.classList.toggle('active', b.dataset.mode === logViewMode);
+});
+document.getElementById('btn-log-hof').setAttribute('aria-pressed', logShowHoF ? 'true' : 'false');
+var showCard = !logShowHoF && logViewMode === 'card';
+var showGrid = !logShowHoF && logViewMode === 'grid';
+var showHof = logShowHoF;
+cardScreen.classList.toggle('log-screen-hidden', !showCard);
+gridScreen.classList.toggle('log-screen-visible', showGrid);
+hofScreen.classList.toggle('log-screen-visible', showHof);
+}
+function renderCollection() {
+updateLogModeUI();
+renderLogCard();
+renderLogGrid();
+renderLogHoF();
+}
+function renderLogCard() {
+var screen = document.getElementById('log-latest-screen');
+var list = filteredLogEntries();
+if (list.length === 0) {
+logSelectedId = null;
+screen.innerHTML =
+'<div class="log-dex-screen-empty">' +
+(state.collection.length === 0 ? 'Your first catch will show up here' : 'No catches match your search/filters') +
+'</div>';
+return;
+}
+var index = -1;
+for (var i = 0; i < list.length; i++) {
+if (list[i].id === logSelectedId) { index = i; break; }
+}
+if (index < 0) {
+// No valid selection (first load, or the selected entry just got
+// filtered/deleted out) - default to whichever entry is truly the
+// most recently caught, regardless of what the current sort puts
+// first.
+var newestEntry = state.collection[state.collection.length - 1];
+if (newestEntry) {
+for (var j = 0; j < list.length; j++) {
+if (list[j].id === newestEntry.id) { index = j; break; }
+}
+}
+if (index < 0) index = list.length - 1;
+logSelectedId = list[index].id;
+}
+var latest = list[index];
 var info = speciesInfo(latest.pokemon);
 var gen = latest.gen || (info ? info.gen : null);
 var types = latest.types || (info ? info.types : []);
@@ -3592,8 +3699,9 @@ var began = latest.dateBegan || '';
 var ended = latest.dateEnded || latest.date || '';
 var dexNum = dexNumberOf(latest.pokemon);
 var entryLabel = dexNum ? ('No. ' + String(dexNum).padStart(4, '0')) : 'No. ????';
-var isLatestEntry = logScreenIndex === state.collection.length - 1;
-var screenPosLabel = isLatestEntry ? 'LATEST CATCH' : ('CATCH ' + (logScreenIndex + 1) + ' OF ' + state.collection.length);
+var trueNewest = state.collection[state.collection.length - 1];
+var isLatestEntry = !!trueNewest && latest.id === trueNewest.id;
+var screenPosLabel = isLatestEntry ? 'LATEST CATCH' : ('CATCH ' + (index + 1) + ' OF ' + list.length);
 var metaBits = [latest.game, latest.method, gen ? ('Gen ' + gen) : null].filter(Boolean);
 var meta = escapeHtml(metaBits.join(' · '));
 var timeBit = latest.timeSpentMinutes ? fmtTime(latest.timeSpentMinutes * 60) + ' spent' : '';
@@ -3623,7 +3731,222 @@ screen.innerHTML =
 '<button class="icon-btn" data-action="delete-log" data-id="' + latest.id + '" title="Delete entry">✕</button>' +
 '</div>';
 }
+// Steps the Card view backward (-1) or forward (+1) through the
+// current filtered/sorted list, wrapping at either end.
+function logScreenStep(dir) {
+var list = filteredLogEntries();
+if (list.length === 0) return;
+var index = -1;
+for (var i = 0; i < list.length; i++) {
+if (list[i].id === logSelectedId) { index = i; break; }
 }
+if (index < 0) index = 0;
+index = (index + dir + list.length) % list.length;
+logSelectedId = list[index].id;
+renderCollection();
+}
+// Grid mode: a scrollable gallery of small sprite tiles built from the
+// same filtered/sorted list as Card mode. Tapping a tile jumps Card
+// mode straight to that entry.
+function renderLogGrid() {
+var screen = document.getElementById('log-grid-screen');
+if (!screen.classList.contains('log-screen-visible')) {
+// Still rebuild it while hidden so it's ready the moment the person
+// switches to Grid, but skip the work entirely if there's nothing
+// to look at yet.
+if (state.collection.length === 0) return;
+}
+var list = filteredLogEntries();
+if (list.length === 0) {
+screen.innerHTML = '<div class="log-grid-empty">' +
+(state.collection.length === 0 ? 'Your first catch will show up here' : 'No catches match your search/filters') +
+'</div>';
+return;
+}
+var tilesHtml = list.map(function(e) {
+var dexNum = dexNumberOf(e.pokemon);
+var label = dexNum ? ('No. ' + String(dexNum).padStart(4, '0')) : 'No. ????';
+return '<button type="button" class="log-grid-tile" data-id="' + e.id + '" title="' + escapeHtml(e.pokemon) + '">' +
+'<span class="log-grid-tile-sprite">' + spriteMarkup(e.pokemon) + '</span>' +
+'<span class="log-grid-tile-name">' + escapeHtml(e.pokemon) + '</span>' +
+'<span class="log-grid-tile-num">' + label + '</span>' +
+'</button>';
+}).join('');
+screen.innerHTML = '<div class="log-grid-inner">' + tilesHtml + '</div>';
+}
+document.getElementById('log-grid-screen').addEventListener('click', function(e) {
+var tile = e.target.closest('.log-grid-tile');
+if (!tile) return;
+logSelectedId = tile.dataset.id;
+logViewMode = 'card';
+renderCollection();
+});
+// Hall of Fame: luckiest catch (fewest encounters relative to the
+// odds), longest hunt (most time logged, falling back to encounters
+// if nobody has timed anything), and most encounters overall. Always
+// computed from the full collection (not the current search/filter),
+// since these are meant to be whole-log records.
+function computeHallOfFame() {
+var list = state.collection;
+if (!list.length) return null;
+var luckiest = null,
+luckiestRatio = Infinity;
+var longest = null;
+var most = null;
+list.forEach(function(e) {
+var denom = logEntryDenom(e);
+if (denom > 0 && e.encounters > 0) {
+var ratio = e.encounters / denom;
+if (ratio < luckiestRatio) {
+luckiestRatio = ratio;
+luckiest = e;
+}
+}
+if (!most || (e.encounters || 0) > (most.encounters || 0)) most = e;
+if ((e.timeSpentMinutes || 0) > 0 && (!longest || e.timeSpentMinutes > longest.timeSpentMinutes)) {
+longest = e;
+}
+});
+// Nobody logged time spent on anything - fall back to encounters as
+// the next best proxy for "longest hunt" so the row isn't just blank.
+if (!longest) longest = most;
+return { luckiest: luckiest, longest: longest, most: most };
+}
+function hofRowHtml(label, entry, statText) {
+if (!entry) {
+return '<div class="log-hof-row" style="cursor:default;"><div class="log-hof-row-text"><div class="log-hof-row-label">' + escapeHtml(label) + '</div><div class="log-hof-row-name">—</div></div></div>';
+}
+return '<button type="button" class="log-hof-row" data-id="' + entry.id + '">' +
+'<span class="log-hof-row-sprite">' + spriteMarkup(entry.pokemon) + '</span>' +
+'<span class="log-hof-row-text">' +
+'<span class="log-hof-row-label">' + escapeHtml(label) + '</span>' +
+'<span class="log-hof-row-name">' + escapeHtml(entry.pokemon) + '</span>' +
+'</span>' +
+'<span class="log-hof-row-stat">' + escapeHtml(statText) + '</span>' +
+'</button>';
+}
+function renderLogHoF() {
+var screen = document.getElementById('log-hof-screen');
+var hof = computeHallOfFame();
+if (!hof) {
+screen.innerHTML = '<div class="log-hof-empty">Catch a shiny to start your Hall of Fame</div>';
+return;
+}
+var luckiestStat = hof.luckiest ?
+(hof.luckiest.encounters + ' / ' + logEntryDenom(hof.luckiest) + ' odds') : '';
+var longestStat = hof.longest ?
+(hof.longest.timeSpentMinutes ? (fmtTime(hof.longest.timeSpentMinutes * 60) + ' spent') : (hof.longest.encounters + ' encounters')) : '';
+var mostStat = hof.most ? (hof.most.encounters + ' encounters') : '';
+screen.innerHTML =
+'<div class="log-hof-title">HALL OF FAME</div>' +
+hofRowHtml('Luckiest Catch', hof.luckiest, luckiestStat) +
+hofRowHtml('Longest Hunt', hof.longest, longestStat) +
+hofRowHtml('Most Encounters', hof.most, mostStat);
+}
+document.getElementById('log-hof-screen').addEventListener('click', function(e) {
+var row = e.target.closest('.log-hof-row[data-id]');
+if (!row) return;
+logSelectedId = row.dataset.id;
+logShowHoF = false;
+logViewMode = 'card';
+renderCollection();
+});
+document.getElementById('log-mode-toggle').addEventListener('click', function(e) {
+var btn = e.target.closest('button[data-mode]');
+if (!btn) return;
+logViewMode = btn.dataset.mode;
+logShowHoF = false;
+renderCollection();
+});
+document.getElementById('btn-log-hof').addEventListener('click', function() {
+logShowHoF = !logShowHoF;
+renderCollection();
+});
+var logSearchInput = document.getElementById('log-search');
+logSearchInput.addEventListener('input', function() {
+logSearchQuery = this.value;
+renderCollection();
+});
+document.getElementById('btn-log-sort').addEventListener('click', function(e) {
+e.stopPropagation();
+closeOtherDexDropdowns('log-sort-wrap');
+document.getElementById('log-sort-wrap').classList.toggle('open');
+});
+document.getElementById('log-sort-panel').addEventListener('click', function(e) {
+e.stopPropagation();
+var opt = e.target.closest('.dex-select-option');
+if (!opt) return;
+logSortMode = opt.dataset.value;
+document.querySelectorAll('#log-sort-panel .dex-select-option').forEach(function(o) {
+o.classList.toggle('active', o === opt);
+});
+document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS[logSortMode] + ' ▾';
+document.getElementById('btn-log-sort').classList.toggle('active', logSortMode !== 'newest');
+document.getElementById('log-sort-wrap').classList.remove('open');
+renderCollection();
+});
+document.getElementById('btn-log-filter').addEventListener('click', function(e) {
+e.stopPropagation();
+closeOtherDexDropdowns('log-filter-wrap');
+document.getElementById('log-filter-wrap').classList.toggle('open');
+});
+document.getElementById('log-filter-panel').addEventListener('click', function(e) {
+e.stopPropagation();
+});
+(function populateLogFilterOptions() {
+var gameSel = document.getElementById('log-filter-game');
+GAMES.forEach(function(g) {
+var opt = document.createElement('option');
+opt.value = g;
+opt.textContent = g;
+gameSel.appendChild(opt);
+});
+var methodSel = document.getElementById('log-filter-method');
+METHODS.forEach(function(m) {
+var opt = document.createElement('option');
+opt.value = m;
+opt.textContent = m;
+methodSel.appendChild(opt);
+});
+var genSel = document.getElementById('log-filter-gen');
+GEN_DATA.forEach(function(g) {
+var opt = document.createElement('option');
+opt.value = String(g.gen);
+opt.textContent = 'Gen ' + g.gen + ' (' + g.region + ')';
+genSel.appendChild(opt);
+});
+})();
+function updateLogFilterButtonLabel() {
+var activeCount = [logFilterGame, logFilterMethod, logFilterGen].filter(Boolean).length;
+var btn = document.getElementById('btn-log-filter');
+btn.textContent = (activeCount ? activeCount + ' Filter' + (activeCount > 1 ? 's' : '') : 'All') + ' ▾';
+btn.classList.toggle('active', activeCount > 0);
+}
+document.getElementById('log-filter-game').addEventListener('change', function() {
+logFilterGame = this.value;
+updateLogFilterButtonLabel();
+renderCollection();
+});
+document.getElementById('log-filter-method').addEventListener('change', function() {
+logFilterMethod = this.value;
+updateLogFilterButtonLabel();
+renderCollection();
+});
+document.getElementById('log-filter-gen').addEventListener('change', function() {
+logFilterGen = this.value;
+updateLogFilterButtonLabel();
+renderCollection();
+});
+document.getElementById('btn-log-filter-clear').addEventListener('click', function() {
+logFilterGame = '';
+logFilterMethod = '';
+logFilterGen = '';
+document.getElementById('log-filter-game').value = '';
+document.getElementById('log-filter-method').value = '';
+document.getElementById('log-filter-gen').value = '';
+updateLogFilterButtonLabel();
+renderCollection();
+});
 /* ---------- rendering: living dex ---------- */
 var dexOpenGens = {};
 var dexMode = 'living';
@@ -3789,7 +4112,7 @@ applyDexVariantFilter();
 // "close everything" sweep manually, minus whichever wrap is about to
 // be opened.
 function closeOtherDexDropdowns(exceptId) {
-['variant-filter-wrap', 'dex-sort-wrap', 'dex-type-wrap'].forEach(function(id) {
+['variant-filter-wrap', 'dex-sort-wrap', 'dex-type-wrap', 'log-sort-wrap', 'log-filter-wrap'].forEach(function(id) {
 if (id === exceptId) return;
 var wrap = document.getElementById(id);
 if (wrap) wrap.classList.remove('open');
@@ -4707,7 +5030,7 @@ function openFoundModal(hunt) {
       notes: ''
     });
 
-    logScreenIndex = state.collection.length - 1;
+    logSelectedId = state.collection[state.collection.length - 1].id;
     state.hunts = state.hunts.filter(function(h) {
       return h.id !== hunt.id;
     });
@@ -4831,7 +5154,7 @@ dateEnded: overlay.querySelector('#f-date').value,
 timeSpentMinutes: parseInt(overlay.querySelector('#f-mins').value || '0', 10) || 0,
 notes: overlay.querySelector('#f-notes').value.trim()
 });
-logScreenIndex = state.collection.length - 1;
+logSelectedId = state.collection[state.collection.length - 1].id;
 save();
 renderCollection();
 renderLivingDex();
@@ -4957,21 +5280,12 @@ state.collection = state.collection.filter(function(c) {
 return c.id !== entry.id;
 });
 
-logScreenIndex = state.collection.length - 1;
+logSelectedId = state.collection.length ? state.collection[state.collection.length - 1].id : null;
 save();
 renderAll();
 
 var tabBtn = document.querySelector('nav.tabs button[data-tab="hunts"]');
 if (tabBtn) { tabBtn.click(); } else { activateTab('hunts'); }
-}
-// Steps the log screen backward (-1) or forward (+1) through the
-// collection, wrapping around at either end so the two buttons can
-// cycle the list indefinitely in either direction.
-function logScreenStep(dir) {
-if (state.collection.length === 0) return;
-if (logScreenIndex < 0) logScreenIndex = state.collection.length - 1;
-logScreenIndex = (logScreenIndex + dir + state.collection.length) % state.collection.length;
-renderCollection();
 }
 document.getElementById('log-screen-prev').addEventListener('click', function() {
 logScreenStep(-1);
