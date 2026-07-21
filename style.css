@@ -34,6 +34,17 @@ font-family: var(--body);
 min-height: 100vh;
 transition: background-color 0.3s ease;
 }
+/* Applied to <html> while any modal overlay (Start a Hunt, the catch
+   confirmation card, etc.) is open, so the page behind it can't be
+   scrolled while the overlay is up. */
+html.modal-open {
+overflow: hidden;
+height: 100%;
+}
+html.modal-open body {
+overflow: hidden;
+height: 100%;
+}
 body.bg-hunts {
 background-image: url("images/bg-dex.png");
 background-size: cover;
@@ -622,6 +633,14 @@ padding: 4px;
 display: flex;
 box-shadow: 0 3px 0 rgba(0, 0, 0, 0.22);
 box-sizing: border-box;
+cursor: pointer;
+transition: transform 0.15s ease;
+}
+.hunt-dex-flap-lens:hover {
+transform: scale(1.05);
+}
+.hunt-dex-flap-lens:active {
+transform: scale(0.95);
 }
 .hunt-dex-flap-lens-inner {
 display: block;
@@ -1810,9 +1829,678 @@ margin-top: 20px;
 .modal-actions .danger {
 margin-right: auto;
 }
+/* ---------- Start a Hunt modal: PokéNav-style handheld device shell ---------- */
+/* The modal itself becomes the device body: molded blue plastic (a nod
+   to ORAS's PokéNav Plus, the hardware the DexNav radar actually runs
+   on) trimmed in the app's signature red, with a flip-hinge along the
+   top edge and four pinning screws - the radar "screen" that used to
+   float on plain white now sits recessed into a real-looking casing. */
+.modal.modal-new-hunt {
+position: relative;
+padding: clamp(10px, 3vh, 20px) 16px clamp(8px, 2vh, 16px);
+border-color: var(--red);
+border-width: 4px;
+max-height: min(94vh, 94dvh);
+overflow: hidden;
+display: flex;
+flex-direction: column;
+background:
+linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 14%),
+linear-gradient(165deg, #5568e4 0%, var(--blue) 46%, var(--blue-dark) 100%);
+box-shadow:
+0 8px 0 rgba(43, 35, 32, 0.25),
+0 0 0 4px rgba(238, 21, 21, 0.16),
+inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+/* The device reads as a single sealed unit, not a scrolling page: it
+   never scrolls (overflow: hidden above) and every internal dimension
+   below is written as a clamp() against viewport height, so the whole
+   radar panel scales itself down to keep fitting inside the viewport
+   on short screens instead of overflowing it. */
+/* Two hinge barrels straddling the top edge, like a device that folds
+   open - purely decorative, echoing the clamshell Pokédex used
+   elsewhere in the app. */
+.hunt-dexnav-hinge {
+position: absolute;
+top: -5px;
+left: 50%;
+transform: translateX(-50%);
+width: 108px;
+display: flex;
+justify-content: space-between;
+pointer-events: none;
+z-index: 3;
+}
+.hunt-dexnav-hinge span {
+width: 26px;
+height: 11px;
+border-radius: 6px;
+background: linear-gradient(180deg, #4a3f3c, var(--line));
+border: 2px solid var(--line);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+/* Four molded screws pinning the faceplate to the shell. */
+.hunt-dexnav-screws {
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 3;
+}
+.hunt-dexnav-screws span {
+position: absolute;
+width: 9px;
+height: 9px;
+border-radius: 50%;
+background: radial-gradient(circle at 35% 30%, #f0f0f0, #9a9a9a 55%, #5c5c5c 100%);
+border: 1px solid rgba(0, 0, 0, 0.4);
+box-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.hunt-dexnav-screws span::after {
+content: "";
+position: absolute;
+top: 50%;
+left: 15%;
+right: 15%;
+height: 1.5px;
+background: rgba(0, 0, 0, 0.45);
+transform: translateY(-50%) rotate(35deg);
+}
+.hunt-dexnav-screws span:nth-child(1) { top: 11px; left: 11px; }
+.hunt-dexnav-screws span:nth-child(2) { top: 11px; right: 11px; }
+.hunt-dexnav-screws span:nth-child(3) { bottom: 11px; left: 11px; }
+.hunt-dexnav-screws span:nth-child(4) { bottom: 11px; right: 11px; }
+/* Small embossed model name, silkscreened into the lower plastic like a
+   real handheld's branding - sits under the control deck. */
+.hunt-dexnav-brand {
+display: block;
+text-align: center;
+font-family: var(--hud);
+font-size: 9.5px;
+font-weight: 800;
+letter-spacing: 2.5px;
+color: rgba(255, 255, 255, 0.4);
+text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+margin-top: clamp(2px, 0.8vh, 6px);
+position: relative;
+z-index: 2;
+flex-shrink: 0;
+}
+/* Dark inset bezel housing the DexNav radar screen, recessed into the
+   blue shell with an inner shadow and a thin glassy highlight along the
+   top edge so it reads as glass sitting inside plastic. */
+.hunt-dexnav-screen {
+position: relative;
+padding: clamp(6px, 1.6vh, 10px) 10px clamp(8px, 1.8vh, 12px);
+border-radius: 18px;
+display: flex;
+flex-direction: column;
+min-height: 0;
+background: linear-gradient(180deg, #241b18 0%, #100b09 100%);
+box-shadow:
+inset 0 3px 8px rgba(0, 0, 0, 0.65),
+inset 0 0 0 2px rgba(255, 255, 255, 0.05),
+0 1px 0 rgba(255, 255, 255, 0.14);
+z-index: 2;
+}
+.modal-dex-head {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 18px;
+}
+/* "Hidden Pokémon" banner treatment: a dark, semi-transparent block
+   flush with the screen bezel's top-left corner, fading out diagonally
+   on its right edge rather than ending in a hard line. */
+.modal-new-hunt .modal-dex-head {
+position: relative;
+margin: -10px -10px clamp(6px, 1.6vh, 14px);
+padding: clamp(6px, 1.4vh, 12px) 40px clamp(6px, 1.4vh, 12px) 16px;
+flex-shrink: 0;
+background: linear-gradient(100deg, rgba(20, 14, 12, 0.85) 0%, rgba(20, 14, 12, 0.85) 55%, rgba(20, 14, 12, 0) 100%);
+border-radius: 15px 15px 0 0;
+}
+.modal-new-hunt .modal-dex-head h3 {
+color: #fff;
+font-family: var(--body);
+font-weight: 800;
+letter-spacing: 0.2px;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.modal-dex-head-title {
+display: flex;
+align-items: center;
+gap: 9px;
+}
+.modal-dex-head h3 {
+margin: 0;
+}
+.modal-dex-dot {
+width: 9px;
+height: 9px;
+border-radius: 50%;
+background: var(--red);
+box-shadow: 0 0 0 3px rgba(238, 21, 21, 0.18);
+flex-shrink: 0;
+animation: huntDexPulse 1.4s ease-in-out infinite;
+}
+.modal-dex-lights {
+display: flex;
+gap: 6px;
+flex-shrink: 0;
+margin-left: auto;
+}
+.modal-dex-light {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+border: 1.5px solid rgba(43, 35, 32, 0.5);
+opacity: 0.4;
+flex-shrink: 0;
+}
+.modal-dex-light.g {
+background: #3ddc4a;
+}
+.modal-dex-light.y {
+background: var(--yellow);
+}
+.modal-dex-light.lit {
+opacity: 1;
+box-shadow: 0 0 5px 1px rgba(61, 220, 74, 0.85);
+}
+/* Three-row layout: Game/Method boxes on top, the sprite orb centered
+   in its own full-width row, Odds/Charm boxes on the bottom - all
+   sitting on a DexNav-style orange radar plate. */
+.hunt-radar {
+position: relative;
+display: grid;
+grid-template-columns: 1fr 1fr;
+grid-template-areas:
+"game method"
+"orb orb"
+"odds charm";
+column-gap: 12px;
+row-gap: clamp(2px, 1vh, 8px);
+align-items: stretch;
+padding: clamp(6px, 1.6vh, 12px) 12px clamp(8px, 1.8vh, 14px);
+margin-bottom: clamp(4px, 1vh, 8px);
+border-radius: 18px;
+border: 3px solid var(--line);
+background: radial-gradient(circle at 50% 46%, #ffd873 0%, #f7ae3d 28%, #e2641f 58%, #9c2f14 88%, #7a2410 100%);
+box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.3), inset 0 0 0 2px rgba(0, 0, 0, 0.08);
+overflow: hidden;
+flex-shrink: 1;
+min-height: 0;
+}
+/* Faint concentric "radar dish" rings echoing the DexNav screen's
+   background arcs, centered behind the orb. */
+.hunt-radar::before {
+content: "";
+position: absolute;
+inset: 0;
+pointer-events: none;
+background-image: repeating-radial-gradient(
+circle at 50% 46%,
+transparent 0,
+transparent 21px,
+rgba(43, 35, 32, 0.14) 22px,
+transparent 23px
+);
+}
+/* Scanline pass over the whole radar plate: thin dark horizontal
+   lines, uniformly spaced, sitting above the gradient but below the
+   orb/nodes so it reads as a screen effect rather than an obstruction. */
+.hunt-radar::after {
+content: "";
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 0;
+background-image: repeating-linear-gradient(
+to bottom,
+rgba(43, 35, 32, 0.16) 0px,
+rgba(43, 35, 32, 0.16) 1.5px,
+transparent 1.5px,
+transparent 3.5px
+);
+}
+/* Outer segmented ring: a dark, semi-transparent boundary with evenly
+   spaced gear-like notches around its circumference. */
+.hunt-radar-ring {
+position: absolute;
+top: 50%;
+left: 50%;
+width: 84%;
+aspect-ratio: 1 / 1;
+transform: translate(-50%, -50%);
+border-radius: 50%;
+background: repeating-conic-gradient(
+rgba(43, 35, 32, 0.55) 0deg 6deg,
+transparent 6deg 15deg
+);
+-webkit-mask: radial-gradient(closest-side, transparent 85%, black 87%, black 97%, transparent 99%);
+mask: radial-gradient(closest-side, transparent 85%, black 87%, black 97%, transparent 99%);
+z-index: 0;
+pointer-events: none;
+}
+/* Inner sweeping track: a glowing cyan/aqua arc on the left hemisphere,
+   brightest at 9 o'clock and tapering to nothing at 12 and 6. */
+.hunt-radar-sweep {
+position: absolute;
+top: 50%;
+left: 50%;
+width: 62%;
+aspect-ratio: 1 / 1;
+transform: translate(-50%, -50%);
+border-radius: 50%;
+background: conic-gradient(
+from 180deg at 50% 50%,
+transparent 0deg,
+rgba(125, 228, 255, 0.7) 90deg,
+transparent 180deg,
+transparent 360deg
+);
+-webkit-mask: radial-gradient(closest-side, transparent 88%, black 90%, black 98%, transparent 100%);
+mask: radial-gradient(closest-side, transparent 88%, black 90%, black 98%, transparent 100%);
+filter: blur(1.5px);
+opacity: 0.9;
+z-index: 0;
+pointer-events: none;
+}
+/* Subtle crosshairs intersecting at the exact center of the radar. */
+.hunt-radar-crosshair {
+position: absolute;
+top: 50%;
+left: 50%;
+width: 80%;
+height: 80%;
+transform: translate(-50%, -50%);
+z-index: 0;
+pointer-events: none;
+}
+.hunt-radar-crosshair::before,
+.hunt-radar-crosshair::after {
+content: "";
+position: absolute;
+background: rgba(43, 35, 32, 0.16);
+}
+.hunt-radar-crosshair::before {
+left: 0;
+right: 0;
+top: 50%;
+height: 1px;
+transform: translateY(-50%);
+}
+.hunt-radar-crosshair::after {
+top: 0;
+bottom: 0;
+left: 50%;
+width: 1px;
+transform: translateX(-50%);
+}
+.hunt-radar-orb-wrap {
+grid-area: orb;
+justify-self: center;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 5px;
+padding: 2px;
+position: relative;
+z-index: 1;
+}
+.hunt-radar-orb {
+width: clamp(56px, 15vh, 92px);
+height: clamp(56px, 15vh, 92px);
+border-radius: 50%;
+background: radial-gradient(circle at 34% 28%, #f2934a 0%, #d9631e 55%, #b84a16 100%);
+border: 3px solid var(--line);
+display: flex;
+align-items: center;
+justify-content: center;
+overflow: hidden;
+padding: 10px;
+box-sizing: border-box;
+position: relative;
+z-index: 1;
+box-shadow:
+inset 0 3px 8px rgba(0, 0, 0, 0.28),
+0 0 0 5px rgba(43, 35, 32, 0.14),
+0 0 0 9px rgba(43, 35, 32, 0.08);
+}
+.hunt-radar-orb img {
+width: 100%;
+height: 100%;
+object-fit: contain;
+image-rendering: pixelated;
+image-rendering: crisp-edges;
+}
+.hunt-radar-orb .fallback-letter {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 34px;
+color: rgba(43, 35, 32, 0.55);
+}
+/* Dex number + type badges, moved directly under the sprite window. */
+.hunt-radar-id {
+display: flex;
+align-items: center;
+gap: 6px;
+min-height: 16px;
+max-width: 220px;
+justify-content: center;
+flex-wrap: wrap;
+position: relative;
+z-index: 1;
+}
+.hunt-radar-id .modal-dex-num {
+font-family: var(--mono);
+font-size: 11px;
+color: var(--ink-dim);
+letter-spacing: 0.4px;
+background: #fff9ec;
+border: 1px solid var(--line);
+border-radius: 6px;
+padding: 1px 6px;
+}
+.hunt-radar-id .modal-dex-types {
+display: flex;
+gap: 4px;
+flex-wrap: wrap;
+justify-content: center;
+}
+.hunt-radar-id .tag-type {
+--type-color: var(--ink-dim);
+border-color: color-mix(in srgb, var(--type-color) 55%, var(--line));
+background: color-mix(in srgb, var(--type-color) 18%, #fff);
+}
+.hunt-radar-node-label {
+font-family: var(--body);
+font-size: 10px;
+color: #fff;
+letter-spacing: 0.6px;
+text-transform: uppercase;
+font-weight: 700;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+/* Game/Method: a real <select> sits transparently on top of a plain
+   text div showing the current value. The div is free to wrap onto a
+   second line, so long entries like "Omega Ruby/Alpha Sapphire" or
+   "Poké Radar / DexNav Chain" are always shown in full instead of
+   being clipped the way a native select's own closed-state text
+   would be. */
+.hunt-radar-select-field {
+position: relative;
+z-index: 2;
+background: transparent;
+border: none;
+border-radius: 0;
+padding: 2px;
+box-shadow: none;
+display: flex;
+flex-direction: column;
+gap: 3px;
+min-height: clamp(30px, 6vh, 48px);
+justify-content: center;
+}
+.node-game { grid-area: game; align-items: flex-start; text-align: left; }
+.node-method { grid-area: method; align-items: flex-end; text-align: right; }
+.hunt-radar-select-value {
+font-size: 13px;
+font-weight: 700;
+color: #fff7e2;
+line-height: 1.25;
+overflow-wrap: break-word;
+display: inline-block;
+padding-bottom: 3px;
+border-bottom: 2.5px solid #6be4ff;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.hunt-radar-select-value::after {
+content: "";
+display: inline-block;
+width: 9px;
+height: 9px;
+margin-left: 5px;
+vertical-align: middle;
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1 1l6 6 6-6' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+background-repeat: no-repeat;
+background-size: contain;
+opacity: 0.75;
+pointer-events: none;
+}
+.hunt-radar-select-native {
+position: absolute;
+inset: 0;
+width: 100%;
+height: 100%;
+margin: 0;
+padding: 0;
+border: 0;
+background: transparent;
+opacity: 0;
+cursor: pointer;
+font-size: 16px;
+}
+/* Odds and Shiny Charm: borderless readouts, underlined like the rest of
+   the radar's info nodes instead of sitting in their own box. */
+.hunt-radar-node {
+position: relative;
+z-index: 2;
+background: transparent;
+border: none;
+border-radius: 0;
+padding: 2px;
+box-shadow: none;
+display: flex;
+flex-direction: column;
+justify-content: center;
+gap: 4px;
+min-width: 0;
+}
+.node-odds { grid-area: odds; align-items: flex-start; }
+.node-charm { grid-area: charm; align-items: flex-end; text-align: right; margin-top: 6px; }
+.hunt-radar-node .odds-display {
+background: transparent;
+border: none;
+border-radius: 0;
+color: #fff7e2;
+font-family: var(--mono);
+font-size: 13px;
+letter-spacing: 0.4px;
+padding: 0 0 3px;
+box-shadow: none;
+border-bottom: 2.5px solid #6be4ff;
+white-space: nowrap;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.node-charm .checkbox-field {
+justify-content: flex-end;
+padding-bottom: 3px;
+border-bottom: 2.5px solid #6be4ff;
+display: inline-flex;
+align-self: flex-end;
+gap: 5px;
+}
+.node-charm .checkbox-field input {
+flex-shrink: 0;
+}
+.node-charm .checkbox-field label {
+color: #fff7e2;
+font-weight: 700;
+font-size: clamp(10.5px, 3vw, 13px);
+white-space: nowrap;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.node-charm .field-hint {
+color: #ffd8d8;
+font-size: 10px;
+text-align: right;
+white-space: normal;
+overflow-wrap: break-word;
+text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+/* Radar leader lines: thin cyan traces drawn (via layoutHuntRadarLines
+   in script.js) from the sprite orb out to each info node, so the
+   Game/Method/Odds/Charm readouts look like they're sprouting off the
+   circular scan window rather than sitting in their own boxes. */
+.hunt-radar-lines {
+position: absolute;
+inset: 0;
+width: 100%;
+height: 100%;
+pointer-events: none;
+z-index: 1;
+overflow: visible;
+}
+.hunt-radar-line-path {
+fill: none;
+stroke: #6be4ff;
+stroke-width: 2;
+stroke-linecap: round;
+stroke-linejoin: round;
+opacity: 0.9;
+filter: drop-shadow(0 0 2px rgba(107, 228, 255, 0.65));
+}
+.hunt-radar-line-dot {
+fill: #6be4ff;
+filter: drop-shadow(0 0 2px rgba(107, 228, 255, 0.65));
+}
+@media (max-width: 340px) {
+.hunt-radar-lines { display: none; }
+}
+.hunt-radar-name-field {
+margin-top: 2px;
+}
+.hunt-radar-name-field input {
+text-align: center;
+font-family: var(--hud);
+font-weight: 700;
+font-size: 16px;
+}
+/* Name field re-skinned as a plate mounted directly on the blue shell
+   plastic rather than a plain white-panel form field. */
+.modal-new-hunt .hunt-radar-name-field {
+position: relative;
+z-index: 5;
+margin-bottom: clamp(4px, 1vh, 8px);
+flex-shrink: 0;
+}
+.modal-new-hunt .hunt-radar-name-field label {
+color: rgba(255, 255, 255, 0.78);
+text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.modal-new-hunt .hunt-radar-name-field input {
+border-radius: 14px;
+box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+/* Control deck: the Cancel/Start Hunt row gets a seam separating it
+   from the screen above, echoing a real device's molded button strip. */
+.modal-new-hunt .modal-actions.hunt-dexnav-keys {
+position: relative;
+z-index: 2;
+justify-content: center;
+align-items: flex-start;
+gap: 30px;
+margin-top: clamp(4px, 1vh, 10px);
+padding-top: clamp(6px, 1.6vh, 14px);
+border-top: 2px solid rgba(255, 255, 255, 0.18);
+flex-shrink: 0;
+}
+/* Tamagotchi-style button pair: small flush round caps sitting in a
+   recessed divot, each with its own printed legend molded into the
+   plastic below it rather than text inside the button itself. */
+.hunt-dexnav-key-group {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 6px;
+}
+.modal-new-hunt .modal-actions .hunt-dexnav-key {
+width: clamp(36px, 8vh, 46px);
+height: clamp(36px, 8vh, 46px);
+border-radius: 50%;
+padding: 0;
+font-size: 0;
+line-height: 0;
+transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.modal-new-hunt .modal-actions .ghost.hunt-dexnav-key {
+background:
+radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.8), transparent 55%),
+linear-gradient(180deg, #fffdf6 0%, #ffe9a8 55%, #f0c94f 100%);
+border: 2px solid var(--line);
+box-shadow:
+0 4px 0 var(--yellow-dark),
+inset 0 1px 2px rgba(255, 255, 255, 0.6),
+inset 0 -3px 4px rgba(0, 0, 0, 0.12);
+}
+.modal-new-hunt .modal-actions .ghost.hunt-dexnav-key:hover {
+border-color: var(--line);
+filter: brightness(1.03);
+}
+.modal-new-hunt .modal-actions .primary.hunt-dexnav-key {
+background:
+radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.6), transparent 55%),
+linear-gradient(180deg, #ff5b5b 0%, var(--red) 55%, var(--red-dark) 100%);
+border: 2px solid var(--red-dark);
+box-shadow:
+0 4px 0 var(--red-dark),
+inset 0 1px 2px rgba(255, 255, 255, 0.45),
+inset 0 -3px 4px rgba(0, 0, 0, 0.18);
+}
+.modal-new-hunt .modal-actions .hunt-dexnav-key:active {
+transform: translateY(4px) scale(0.95);
+box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3) !important;
+}
+/* Matches the same push-then-pop press animation used by the app's
+   other round buttons (hunt-dex-round-btn), reusing its keyframes. */
+.modal-new-hunt .modal-actions .hunt-dexnav-key.is-pressing {
+animation: hh-btn-press 0.18s ease-out;
+}
+.hunt-dexnav-key-label {
+font-family: var(--hud);
+font-size: 9.5px;
+font-weight: 800;
+letter-spacing: 1.1px;
+text-transform: uppercase;
+color: rgba(255, 255, 255, 0.75);
+text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+/* Speaker/audio vents: a row of recessed slits molded into the shell
+   below the control deck, like a real handheld's tiny built-in
+   speaker grille. */
+.hunt-dexnav-vents {
+display: flex;
+justify-content: center;
+gap: 4px;
+margin-top: clamp(3px, 1vh, 10px);
+position: relative;
+z-index: 2;
+flex-shrink: 0;
+}
+.hunt-dexnav-vents span {
+width: 3px;
+height: 9px;
+border-radius: 1.5px;
+background: rgba(0, 0, 0, 0.28);
+box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+/* Below ~340px, drop Odds/Charm to a stacked single column too. */
+@media (max-width: 340px) {
+.hunt-radar {
+grid-template-columns: 1fr;
+grid-template-areas:
+"game"
+"method"
+"orb"
+"odds"
+"charm";
+}
+}
 /* ---------- Shiny Found modal: celebratory sprite header ---------- */
 /* ---------- Shiny Found modal: TCG-card confirmation ---------- */
 /* Replaces the old ".modal.modal-found" through ".found-hero-name" block. */
+
 
 .modal.modal-found {
   border-color: var(--yellow);
@@ -1866,7 +2554,15 @@ margin-right: auto;
 .tcg-evo-stage { display: inline-block; width: fit-content; font-family: var(--hud); font-size: 9.5px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; color: var(--ink-dim); background: var(--bg-panel-raised); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
 .tcg-evo-line { font-size: 10.5px; font-weight: 700; font-style: italic; color: var(--ink-dim); }
 
-.tcg-hp { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tcg-hp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.tcg-hp .type-circle-icon {
+  margin-right: 0;
+}
 
 .tcg-hp-label { font-family: var(--hud); font-size: 10.5px; font-weight: 800; color: var(--ink-dim); letter-spacing: 0.4px; text-align: right; }
 .tcg-hp-value { font-family: var(--hud); font-size: 21px; font-weight: 800; color: var(--ink); text-align: right; }
@@ -1933,6 +2629,56 @@ margin-right: auto;
   font-family: var(--hud); font-size: 48px; font-weight: 800; color: var(--ink);
   text-shadow: 0 2px 0 rgba(255,255,255,.5);
 }
+.catch-confirm-popover-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(43, 35, 32, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  padding: 20px;
+  border-radius: inherit;
+  animation: catch-confirm-fade-in 0.15s ease;
+}
+@keyframes catch-confirm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.catch-confirm-popover {
+  background: var(--bg-panel);
+  border: 3px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  width: 100%;
+  max-width: 260px;
+  box-shadow: 0 6px 0 rgba(43, 35, 32, 0.25);
+  text-align: center;
+  animation: tcg-sprite-pop 0.25s cubic-bezier(.34,1.56,.64,1);
+}
+.catch-confirm-popover-title {
+  font-family: var(--hud);
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--red);
+  margin-bottom: 6px;
+}
+.catch-confirm-popover-sub {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-dim);
+  margin-bottom: 16px;
+}
+.catch-confirm-popover-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.catch-confirm-popover-actions button {
+  flex: 1;
+  font-size: 12.5px;
+  padding: 8px 10px;
+}
 .tcg-spark {
   position: absolute; z-index: 3; font-size: 22px; color: #fff1b8;
   text-shadow: 0 0 6px #fff, 0 0 12px #ffcb05, 0 0 18px rgba(255, 203, 5, 0.9), 0 1px 2px rgba(43, 35, 32, 0.4);
@@ -1984,8 +2730,16 @@ margin-right: auto;
 .tcg-stats-table tr + tr td { border-top: 1.5px solid rgba(43,35,32,.2); }
 .tcg-stats-table td { padding: 6px 8px; vertical-align: middle; }
 .tcg-stats-icon {
-  width: 26px; text-align: center; font-size: 13px;
+  width: 40px; text-align: center; color: var(--ink-dim);
 }
+.tcg-stats-icon svg { display: inline-block; vertical-align: middle; }
+.tcg-stats-icon-group { display: inline-flex; align-items: center; justify-content: center; gap: 2px; transform: translateX(-4px); }
+.tcg-stats-icon-img { display: inline-block; vertical-align: middle; object-fit: contain; flex-shrink: 0; }
+/* Resize each icon independently here: */
+.tcg-icon-game { width: 19px; height: 19px; }
+.tcg-icon-method { width: 19px; height: 19px; }
+.tcg-icon-charm { width: 19px; height: 19px; }
+.tcg-stats-row-active .tcg-stats-icon { color: #7a5a00; }
 .tcg-stats-label {
   width: 30%; font-size: 9px; font-weight: 800; color: var(--ink-dim);
   text-transform: uppercase; letter-spacing: 0.4px;
@@ -3303,14 +4057,20 @@ outline-offset: 2px;
 }
 /* CSS-16: clamshell: Active Hunts <-> Shiny Log — full rationale in NOTES.md */
 /* True side-by-side carousel, not stacked pages: .dex-track is a flex row
-   holding both pages in normal document order (hunts, then collection),
-   each fixed at the dex's lean width. A single transform on .dex-track
-   slides the whole row left/right - there's no z-index, no overlap, no
-   page sitting "behind" another. The neighbor's peek is simply whatever
+   holding both pages in fixed document order (hunts, collection), each
+   fixed at the dex's lean width. A single transform on .dex-track slides
+   the whole row left/right - there's no z-index, no overlap, no page
+   sitting "behind" another. The neighbor's peek is simply whatever
    sliver falls inside .dex-frame's clip window past the active page's
    edge, and that window is only wider than the lean width on the side
-   currently bleeding (below), so the peek is real adjacent geometry,
-   not a page poking out from underneath another. */
+   currently bleeding (below), so the peek is real adjacent geometry, not
+   a page poking out from underneath another.
+   Living Dex used to be a third stop on this same track, reached by
+   swipe. It's been pulled out entirely - it now lives outside
+   .dex-clamshell as its own page, reached only via its nav button, and
+   is shown/hidden with a plain display toggle rather than a track
+   position. That's a deliberate simplification (no swipe, no peek, no
+   carousel maths for it) - see the toggle rules right below. */
 .dex-clamshell {
 position: relative;
 }
@@ -3345,7 +4105,7 @@ border-bottom-left-radius: 0;
 transform: translateX(0);
 }
 .dex-clamshell[data-active="collection"] .dex-track {
-transform: translateX(calc(-1 * (100vw - 48px)));
+transform: translateX(calc(-1 * (100vw - 48px) + 24px));
 }
 .dex-clamshell[data-active="hunts"] #view-hunts { cursor: default; }
 .dex-clamshell[data-active="hunts"] #view-collection { cursor: pointer; }
@@ -3355,6 +4115,18 @@ transform: translateX(calc(-1 * (100vw - 48px)));
 .dex-track {
 transition: none;
 }
+}
+/* Living Dex: standalone page, button-only, no carousel/peek/swipe. Hidden
+   whenever it isn't the active tab; when it is, it takes over in place of
+   the clamshell rather than sharing the track with it. */
+#view-livingdex {
+display: none;
+}
+.dex-clamshell[data-active="livingdex"] .dex-frame {
+display: none;
+}
+.dex-clamshell[data-active="livingdex"] #view-livingdex {
+display: block;
 }
 /* CSS-17: Shiny Log: right-page control-panel shell — full rationale in NOTES.md */
 .log-dex-shell {
@@ -3665,8 +4437,11 @@ color: var(--green-dark);
 .log-dex-screen-actions .icon-btn:hover {
 color: var(--red);
 }
-.log-dex-screen-actions .icon-btn:first-child:hover {
+.log-dex-screen-actions .icon-btn[data-action="edit-log"]:hover {
 color: var(--blue);
+}
+.log-dex-screen-actions .icon-btn[data-action="undo-log"]:hover {
+color: var(--yellow);
 }
 .log-dex-grid {
 display: grid;
@@ -3751,6 +4526,23 @@ border: 2px solid var(--line);
 box-shadow:
 0 0 6px rgba(255, 203, 5, 0.7),
 inset 0 1px 1px rgba(255, 255, 255, 0.5);
+padding: 0;
+-webkit-appearance: none;
+appearance: none;
+cursor: pointer;
+transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.log-dex-dot:hover {
+transform: scale(1.08);
+}
+.log-dex-dot:active {
+transform: scale(0.92);
+}
+.log-dex-dot.active {
+box-shadow:
+0 0 10px 3px rgba(255, 203, 5, 0.95),
+inset 0 1px 1px rgba(255, 255, 255, 0.5);
+transform: scale(0.92);
 }
 /* CSS-20: Bottom buttons: two pill-shaped, very dark green keys, match — full rationale in NOTES.md */
 .log-dex-nav {
@@ -3778,5 +4570,5 @@ background: linear-gradient(180deg, #1f4526, #0a1b0e);
 }
 .log-dex-nav-btn:active {
 transform: translateY(3px);
-box-shadow: none;
+
 }
