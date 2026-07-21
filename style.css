@@ -436,6 +436,29 @@ card's true rounded shape. */
 -webkit-clip-path: inset(-3px round 33px);
 clip-path: inset(-3px round 33px);
 }
+/* Mobile: each Active Hunts card fills the screen and the list snaps to
+   one card per scroll, like a card feed - so with several hunts going
+   you scroll down to reveal the next Pokédex rather than seeing several
+   small cards at once. Desktop keeps the original stacked-list sizing. */
+@media (max-width: 600px) {
+.app {
+padding-top: 8px;
+padding-bottom: 8px;
+}
+.hunts {
+height: calc(100vh - 16px);
+height: calc(100dvh - 16px);
+overflow-y: auto;
+scroll-snap-type: y mandatory;
+-webkit-overflow-scrolling: touch;
+}
+.hunt-card {
+min-height: calc(100vh - 16px);
+min-height: calc(100dvh - 16px);
+scroll-snap-align: start;
+scroll-snap-stop: always;
+}
+}
 /* pin feature removed */
 /* Hinge: vertical strip along the entire right edge of the card, ~10%
 of the total width. A conic-style highlight down its left-center
@@ -1109,7 +1132,7 @@ flex-direction: column;
 align-items: center;
 gap: 5px;
 flex-shrink: 0;
-margin-top: -30px;
+margin-top: -10px;
 }
 .hunt-dex-joystick-socket {
 position: relative;
@@ -1312,6 +1335,7 @@ position: relative;
 width: 100px;
 height: 100px;
 flex-shrink: 0;
+margin-top: 5px; 
 }
 .dpad-plate {
 position: absolute;
@@ -3959,14 +3983,87 @@ display: none;
 display: flex;
 }
 .hunt-dex-portrait {
-width: 140px;
-height: 140px;
+width: 150px;
+height: 150px;
 }
 .hunt-dex-readout .num {
-font-size: 14px;
+font-size: 17px;
 }
 .method-row .name {
 width: 100px;
+}
+.hunt-dex-screen {
+padding: 10px;
+}
+.hunt-dex-entry-row {
+font-size: 12px;
+margin-bottom: 4px;
+}
+.hunt-dex-name {
+font-size: 20px;
+}
+.hunt-dex-id {
+font-size: 12px;
+}
+.tag {
+font-size: 11px;
+padding: 2px 8px;
+}
+.hunt-dex-readout {
+padding: 8px 6px;
+margin-top: 6px;
+}
+.hunt-dex-readout .lbl {
+font-size: 8px;
+}
+.hunt-dex-bar-track {
+height: 10px;
+margin-top: 6px;
+}
+.hunt-dex-bar-caption {
+font-size: 10px;
+margin-top: 2px;
+}
+.hunt-dex-handheld-controls {
+margin-top: 4px;
+gap: 10px;
+}
+.hunt-dex-joystick-socket,
+.hunt-dex-round-btn {
+width: 84px;
+height: 84px;
+}
+.hunt-dex-round-btn {
+font-size: 20px;
+}
+.hunt-dex-round-btn::after {
+width: 48px;
+height: 48px;
+}
+.hunt-dex-dpad {
+width: 100px;
+height: 100px;
+}
+.hunt-dex-dpad .dpad-up,
+.hunt-dex-dpad .dpad-down {
+width: 30px;
+height: 34px;
+left: 35px;
+}
+.hunt-dex-dpad .dpad-left,
+.hunt-dex-dpad .dpad-right {
+width: 34px;
+height: 30px;
+top: 35px;
+}
+.hunt-dex-dpad .dpad-center {
+width: 30px;
+height: 30px;
+left: 35px;
+top: 35px;
+}
+.hunt-dex-dpad .hdpad-btn {
+font-size: 14px;
 }
 .dex-species-grid {
 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4027,18 +4124,18 @@ line-height: 1.2;
 /* CSS-15: Below ~440px the side-by-side portrait+info row in the hunt — full rationale in NOTES.md */
 @media (max-width: 440px) {
 .hunt-dex-screen {
-padding: 12px 10px;
+padding: 8px 8px 6px;
 }
 .hunt-dex-main {
 flex-direction: column;
 align-items: center;
 text-align: center;
-gap: 8px;
-padding: 2px 0;
+gap: 6px;
+padding: 0;
 }
 .hunt-dex-portrait {
-width: 92px;
-height: 92px;
+width: 125px;
+height: 125px;
 }
 .hunt-dex-id-block {
 width: 100%;
@@ -4050,7 +4147,15 @@ justify-content: center;
 margin: 0 0 4px;
 }
 .hunt-dex-readout {
-padding: 8px 4px;
+padding: 6px 5px;
+}
+.hunt-dex-handheld-controls {
+margin-top: 2px;
+gap: 6px;
+padding: 2px 4px 0;
+}
+.hunt-dex-pokeball-row {
+margin-top: 2px;
 }
 }
 :focus-visible {
@@ -4453,22 +4558,82 @@ gap: 1px;
 background: var(--line);
 border: 2px solid var(--line);
 border-radius: 8px;
-overflow: hidden;
 box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
 }
-.log-dex-grid span {
+.log-dex-grid > *:first-child.log-dex-grid-btn,
+.log-dex-grid > *:first-child .log-dex-grid-btn {
+border-top-left-radius: 6px;
+}
+.log-dex-grid > *:nth-child(5).log-dex-grid-btn,
+.log-dex-grid > *:nth-child(5) .log-dex-grid-btn {
+border-top-right-radius: 6px;
+}
+.log-dex-grid > *:nth-child(6).log-dex-grid-btn,
+.log-dex-grid > *:nth-child(6) .log-dex-grid-btn {
+border-bottom-left-radius: 6px;
+}
+.log-dex-grid > *:last-child.log-dex-grid-btn,
+.log-dex-grid > *:last-child .log-dex-grid-btn {
+border-bottom-right-radius: 6px;
+}
+.log-dex-grid > * {
 aspect-ratio: 1.7;
+}
+.log-dex-grid-btn {
+width: 100%;
+height: 100%;
+margin: 0;
+padding: 0 3px;
+border: none;
 border-radius: 0;
+appearance: none;
+-webkit-appearance: none;
+font: inherit;
+font-family: var(--hud);
+font-weight: 800;
+font-size: 9px;
+line-height: 1.15;
+color: #0c2b3d;
+cursor: pointer;
 background: linear-gradient(180deg, #7dd8ff, #2ba7e6);
+box-shadow:
+inset 0 1px 0 rgba(255, 255, 255, 0.4),
+inset 0 -3px 4px rgba(0, 0, 0, 0.25),
+0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.log-dex-grid-btn:active {
+transform: translateY(2px);
 box-shadow:
 inset 0 1px 0 rgba(255, 255, 255, 0.4),
 inset 0 -3px 4px rgba(0, 0, 0, 0.25);
 }
-.log-dex-grid span:nth-child(n + 6) {
+.log-dex-grid-btn.active {
+box-shadow:
+inset 0 1px 0 rgba(255, 255, 255, 0.4),
+inset 0 -3px 4px rgba(0, 0, 0, 0.25),
+0 2px 0 rgba(0, 0, 0, 0.35),
+inset 0 0 0 2px #fff;
+}
+.log-dex-grid-hof-icon {
+font-size: 15px;
+color: var(--yellow);
+line-height: 1;
+}
+#btn-log-hof[aria-pressed="true"] {
+background: linear-gradient(180deg, #fff6b0, var(--yellow) 55%, var(--yellow-dark) 100%);
+}
+#btn-log-hof[aria-pressed="true"] .log-dex-grid-hof-icon {
+color: #2b2320;
+}
+.log-dex-grid > *:nth-child(n + 6) {
 filter: brightness(0.92);
 }
-.log-dex-grid span:nth-child(5n) {
+.log-dex-grid > *:nth-child(5n) {
 filter: brightness(0.85);
+}
+.log-search-panel {
+padding: 10px;
+min-width: 200px;
 }
 /* CSS-19: Middle controls row: light grey buttons on the left, three t — full rationale in NOTES.md */
 .log-dex-row {
@@ -4784,33 +4949,7 @@ transform: translateY(3px);
   pointer-events: none;
 }
 
-/* ---- Key deck (search / sort / filter / Hall of Fame) ---- */
-.log-key-deck {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.log-key {
-  position: relative;
-  flex: 1 1 150px;
-  background: linear-gradient(180deg, #3d3d42, #202024);
-  border: 2px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 10px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 3px 0 rgba(0, 0, 0, 0.45);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.log-key-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.7px;
-  text-transform: uppercase;
-  color: #b9c0c9;
-}
+/* ---- Search input (now housed in the search grid button's popover) ---- */
 .log-key-input {
   font: inherit;
   font-family: var(--body);
@@ -4823,48 +4962,6 @@ transform: translateY(3px);
   outline: none;
   width: 100%;
   box-sizing: border-box;
-}
-.log-key-fn .dex-select-wrap {
-  width: 100%;
-}
-.log-key-fn .ghost {
-  width: 100%;
-  text-align: left;
-  font-size: 12px;
-  box-sizing: border-box;
-}
-.log-key-hof {
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  font: inherit;
-  appearance: none;
-  -webkit-appearance: none;
-}
-.log-key-hof-icon {
-  font-size: 15px;
-  color: var(--yellow);
-  line-height: 1;
-}
-.log-key-hof .log-key-label {
-  color: #f4f0e6;
-  font-family: var(--hud);
-  font-weight: 800;
-  font-size: 11.5px;
-  text-transform: none;
-  letter-spacing: 0.3px;
-}
-.log-key-hof:hover {
-  background: linear-gradient(180deg, #4a4a50, #26262b);
-}
-.log-key-hof[aria-pressed="true"] {
-  background: linear-gradient(180deg, #ffcb05, #c99a02);
-}
-.log-key-hof[aria-pressed="true"] .log-key-hof-icon,
-.log-key-hof[aria-pressed="true"] .log-key-label {
-  color: #2b2320;
 }
 
 .log-filter-panel {
