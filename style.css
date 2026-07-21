@@ -398,6 +398,9 @@ font-weight: 800;
 font-size: 16px;
 font-family: var(--hud);
 }
+.empty .empty-cta {
+margin-top: 18px;
+}
 .hunts {
 display: flex;
 flex-direction: column;
@@ -4173,7 +4176,7 @@ display: flex;
 flex-direction: column;
 justify-content: space-between;
 gap: 12px;
-height: 653px;
+min-height: 653px;
 box-sizing: border-box;
 z-index: 0;
 }
@@ -4580,3 +4583,319 @@ background: linear-gradient(180deg, #1f4526, #0a1b0e);
 transform: translateY(3px);
 
 }
+
+/* ============================================================
+   Shiny Log modernization: Card/Grid toggle, Hall of Fame, and
+   the search/sort/filter/HoF key deck below the shell.
+   ============================================================ */
+
+.log-mode-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  margin-bottom: 10px;
+  position: relative;
+  z-index: 1;
+}
+.log-mode-toggle button {
+  font-family: var(--hud);
+  font-size: 10.5px;
+  letter-spacing: 0.3px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  padding: 5px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: all 0.15s ease;
+}
+.log-mode-toggle button.active {
+  background: #fff;
+  color: var(--red);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.log-mode-toggle button:hover:not(.active) {
+  color: #fff;
+}
+
+.log-dex-screen-stack {
+  position: relative;
+}
+
+/* Card screen visibility is toggled by adding this class in JS,
+   rather than relying on .log-dex-screen's own display:flex, so the
+   original card markup/behavior stays completely untouched. */
+#log-latest-screen.log-screen-hidden {
+  display: none;
+}
+
+.log-grid-screen,
+.log-hof-screen {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+.log-grid-screen.log-screen-visible,
+.log-hof-screen.log-screen-visible {
+  display: flex;
+}
+
+.log-grid-inner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.log-grid-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 6px 4px 5px;
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.log-grid-tile:hover {
+  border-color: var(--blue);
+}
+.log-grid-tile-sprite {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.log-grid-tile-sprite img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.log-grid-tile-name {
+  font-family: var(--hud);
+  font-weight: 800;
+  font-size: 10px;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.15;
+  overflow-wrap: break-word;
+}
+.log-grid-tile-num {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--green-dark);
+}
+.log-grid-empty,
+.log-hof-empty {
+  color: var(--green-dark);
+  font-family: var(--mono);
+  font-size: 11px;
+  text-align: center;
+  padding: 22px 4px;
+}
+
+.log-hof-title {
+  font-family: var(--hud);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  color: var(--yellow-dark);
+  text-align: center;
+}
+.log-hof-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 10px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font: inherit;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+.log-hof-row:hover {
+  background: rgba(0, 0, 0, 0.09);
+}
+.log-hof-row-sprite {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.log-hof-row-sprite img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.log-hof-row-text {
+  min-width: 0;
+  flex: 1;
+}
+.log-hof-row-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--green-dark);
+}
+.log-hof-row-name {
+  font-family: var(--hud);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink);
+  overflow-wrap: break-word;
+}
+.log-hof-row-stat {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--red);
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Nav arrows and the edit dot only make sense for the single-catch
+   Card view - keep their layout slot (visibility, not display) so
+   nothing reflows when switching modes. */
+.log-dex-shell[data-log-mode="grid"] .log-dex-nav,
+.log-dex-shell[data-log-hof="true"] .log-dex-nav,
+.log-dex-shell[data-log-mode="grid"] .log-dex-dot-wrap,
+.log-dex-shell[data-log-hof="true"] .log-dex-dot-wrap {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ---- Key deck (search / sort / filter / Hall of Fame) ---- */
+.log-key-deck {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.log-key {
+  position: relative;
+  flex: 1 1 150px;
+  background: linear-gradient(180deg, #3d3d42, #202024);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 3px 0 rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.log-key-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: #b9c0c9;
+}
+.log-key-input {
+  font: inherit;
+  font-family: var(--body);
+  font-size: 12.5px;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 9px;
+  background: #f4f0e6;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.log-key-fn .dex-select-wrap {
+  width: 100%;
+}
+.log-key-fn .ghost {
+  width: 100%;
+  text-align: left;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+.log-key-hof {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.log-key-hof-icon {
+  font-size: 15px;
+  color: var(--yellow);
+  line-height: 1;
+}
+.log-key-hof .log-key-label {
+  color: #f4f0e6;
+  font-family: var(--hud);
+  font-weight: 800;
+  font-size: 11.5px;
+  text-transform: none;
+  letter-spacing: 0.3px;
+}
+.log-key-hof:hover {
+  background: linear-gradient(180deg, #4a4a50, #26262b);
+}
+.log-key-hof[aria-pressed="true"] {
+  background: linear-gradient(180deg, #ffcb05, #c99a02);
+}
+.log-key-hof[aria-pressed="true"] .log-key-hof-icon,
+.log-key-hof[aria-pressed="true"] .log-key-label {
+  color: #2b2320;
+}
+
+.log-filter-panel {
+  min-width: 230px;
+}
+.log-filter-panel .log-filter-group {
+  margin-bottom: 10px;
+}
+.log-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.log-filter-group-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.log-filter-group select {
+  font: inherit;
+  font-family: var(--body);
+  font-size: 12.5px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 2px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+.log-filter-clear {
+  align-self: flex-end;
+  font-size: 11px;
+  padding: 5px 10px;
