@@ -442,6 +442,11 @@ clip-path: inset(-3px round 33px);
    small cards at once. Desktop keeps the original stacked-list sizing. */
 @media (max-width: 600px) {
 .app {
+display: flex;
+flex-direction: column;
+justify-content: center;
+min-height: 100vh;
+min-height: 100dvh;
 padding-top: 8px;
 padding-bottom: 8px;
 }
