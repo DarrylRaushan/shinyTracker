@@ -1,3 +1,4 @@
+
 :root {
 --bg: #fff3cf;
 --bg-panel: #ffffff;
@@ -452,6 +453,7 @@ scroll-snap-type: y mandatory;
 -webkit-overflow-scrolling: touch;
 }
 .hunt-card {
+flex-shrink: 0;
 scroll-snap-align: start;
 scroll-snap-stop: always;
 }
