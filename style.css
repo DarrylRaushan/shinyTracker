@@ -4553,7 +4553,7 @@ color: var(--yellow);
 }
 .log-dex-grid {
 display: grid;
-grid-template-columns: repeat(5, 1fr);
+grid-template-columns: repeat(5, minmax(0, 1fr));
 grid-template-rows: repeat(2, 1fr);
 gap: 1px;
 background: var(--line);
@@ -4597,6 +4597,9 @@ line-height: 1.15;
 color: #0c2b3d;
 cursor: pointer;
 background: linear-gradient(180deg, #7dd8ff, #2ba7e6);
+overflow: hidden;
+white-space: nowrap;
+text-overflow: ellipsis;
 box-shadow:
 inset 0 1px 0 rgba(255, 255, 255, 0.4),
 inset 0 -3px 4px rgba(0, 0, 0, 0.25),
