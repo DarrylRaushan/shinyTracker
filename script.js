@@ -3415,7 +3415,7 @@ el.innerHTML =
 '<div class="hunt-dex-mic-grille"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>' +
 '<div class="hunt-dex-joystick-socket">' +
 '<span class="hunt-dex-joystick-plate"></span>' +
-'<button class="hunt-dex-round-btn" data-action="toggle-timer" data-id="' + hunt.id + '" title="' + (hunt.running ? 'Pause timer' : 'Start timer') + '">' + (hunt.running ? '⏸\uFE0E' : '▶\uFE0E') + '</button>' +
+'<button class="hunt-dex-round-btn" data-action="toggle-timer" data-id="' + hunt.id + '" title="' + (hunt.running ? 'Pause timer' : 'Start timer') + '">' + (hunt.running ? '⏸' : '▶') + '</button>' +
 '</div>' +
 '</div>' +
 '<div class="hunt-dex-mini-col">' +
