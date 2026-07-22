@@ -4028,40 +4028,40 @@ gap: 10px;
 }
 .hunt-dex-joystick-socket,
 .hunt-dex-round-btn {
-width: 84px;
-height: 84px;
+width: 98px;
+height: 98px;
 }
 .hunt-dex-round-btn {
-font-size: 20px;
+font-size: 23px;
 }
 .hunt-dex-round-btn::after {
-width: 48px;
-height: 48px;
+width: 56px;
+height: 56px;
 }
 .hunt-dex-dpad {
-width: 100px;
-height: 100px;
+width: 116px;
+height: 116px;
 }
 .hunt-dex-dpad .dpad-up,
 .hunt-dex-dpad .dpad-down {
-width: 30px;
-height: 34px;
-left: 35px;
+width: 35px;
+height: 39px;
+left: 40px;
 }
 .hunt-dex-dpad .dpad-left,
 .hunt-dex-dpad .dpad-right {
-width: 34px;
-height: 30px;
-top: 35px;
+width: 39px;
+height: 35px;
+top: 40px;
 }
 .hunt-dex-dpad .dpad-center {
-width: 30px;
-height: 30px;
-left: 35px;
-top: 35px;
+width: 35px;
+height: 35px;
+left: 40px;
+top: 40px;
 }
 .hunt-dex-dpad .hdpad-btn {
-font-size: 14px;
+font-size: 16px;
 }
 .dex-species-grid {
 grid-template-columns: repeat(3, minmax(0, 1fr));
