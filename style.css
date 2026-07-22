@@ -4573,206 +4573,238 @@ color: var(--blue);
 .log-dex-screen-actions .icon-btn[data-action="undo-log"]:hover {
 color: var(--yellow);
 }
-.log-dex-grid {
+/* --- Control deck: search / sort / filter / HoF / edit / reset -------
+   Was one hairline-seamed bar of identical pale-blue slices. Now a
+   dark bezel panel holding six individually-rounded, color-coded keys
+   (one hue per function) so each action reads at a glance, with a
+   small caption pulled from the button's title attribute. */
+.log-dex-toolbar {
 display: grid;
-grid-template-columns: repeat(5, minmax(0, 1fr));
-grid-template-rows: repeat(2, 1fr);
-gap: 1px;
-background: var(--line);
+grid-template-columns: repeat(3, 1fr);
+grid-auto-rows: 38px;
+gap: 5px;
+background: rgba(0, 0, 0, 0.05);
 border: 2px solid var(--line);
-border-radius: 8px;
-box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.35);
+border-radius: 16px;
+padding: 6px;
+box-shadow:
+inset 0 3px 8px rgba(0, 0, 0, 0.22),
+inset 0 0 0 2px rgba(0, 0, 0, 0.04);
+overflow: visible;
 }
-.log-dex-grid > *:first-child.log-dex-grid-btn,
-.log-dex-grid > *:first-child .log-dex-grid-btn {
-border-top-left-radius: 6px;
-}
-.log-dex-grid > *:nth-child(5).log-dex-grid-btn,
-.log-dex-grid > *:nth-child(5) .log-dex-grid-btn {
-border-top-right-radius: 6px;
-}
-.log-dex-grid > *:nth-child(6).log-dex-grid-btn,
-.log-dex-grid > *:nth-child(6) .log-dex-grid-btn {
-border-bottom-left-radius: 6px;
-}
-.log-dex-grid > *:last-child.log-dex-grid-btn,
-.log-dex-grid > *:last-child .log-dex-grid-btn {
-border-bottom-right-radius: 6px;
-}
-.log-dex-grid > * {
-aspect-ratio: 1.7;
+.log-dex-toolbar > * {
+min-width: 0;
 }
 .log-dex-grid-btn {
 width: 100%;
 height: 100%;
 margin: 0;
-padding: 0 3px;
-border: none;
-border-radius: 0;
+padding: 3px 2px;
+border: 2px solid rgba(0, 0, 0, 0.2);
+border-radius: 10px;
 appearance: none;
 -webkit-appearance: none;
 font: inherit;
 font-family: var(--hud);
 font-weight: 800;
-font-size: 9px;
-line-height: 1.15;
-color: #0c2b3d;
+font-size: 11px;
+line-height: 1.05;
+color: var(--ink-dim);
 cursor: pointer;
-background: linear-gradient(180deg, #7dd8ff, #2ba7e6);
+background: radial-gradient(circle at 50% 30%, #ffffff 0%, #f0f2f5 65%, #e2e5ea 100%);
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 2px;
 overflow: hidden;
 white-space: nowrap;
 text-overflow: ellipsis;
 box-shadow:
-inset 0 1px 0 rgba(255, 255, 255, 0.4),
-inset 0 -3px 4px rgba(0, 0, 0, 0.25),
-0 2px 0 rgba(0, 0, 0, 0.35);
+inset 0 5px 7px -2px rgba(0, 0, 0, 0.35),
+inset 0 -3px 4px -1px rgba(255, 255, 255, 0.95),
+inset 4px 0 6px -3px rgba(0, 0, 0, 0.18),
+inset -4px 0 6px -3px rgba(0, 0, 0, 0.18),
+0 1px 0 rgba(255, 255, 255, 0.6);
+transition: transform 0.05s ease, box-shadow 0.05s ease, filter 0.15s ease;
+}
+.log-dex-grid-btn:hover {
+filter: brightness(0.98);
 }
 .log-dex-grid-btn:active {
 transform: translateY(2px);
 box-shadow:
-inset 0 1px 0 rgba(255, 255, 255, 0.4),
-inset 0 -3px 4px rgba(0, 0, 0, 0.25);
+inset 0 6px 8px -2px rgba(0, 0, 0, 0.4),
+inset 0 -2px 3px -1px rgba(255, 255, 255, 0.8),
+inset 4px 0 6px -3px rgba(0, 0, 0, 0.22),
+inset -4px 0 6px -3px rgba(0, 0, 0, 0.22);
 }
 .log-dex-grid-btn.active {
 box-shadow:
-inset 0 1px 0 rgba(255, 255, 255, 0.4),
-inset 0 -3px 4px rgba(0, 0, 0, 0.25),
-0 2px 0 rgba(0, 0, 0, 0.35),
-inset 0 0 0 2px #fff;
+inset 0 5px 7px -2px rgba(0, 0, 0, 0.35),
+inset 0 -3px 4px -1px rgba(255, 255, 255, 0.95),
+inset 4px 0 6px -3px rgba(0, 0, 0, 0.18),
+inset -4px 0 6px -3px rgba(0, 0, 0, 0.18),
+0 1px 0 rgba(255, 255, 255, 0.6),
+inset 0 0 0 2px var(--blue);
+}
+#btn-log-search,
+#btn-log-hof,
+#btn-toggle-log-edit,
+#btn-log-reset-filters {
+font-size: 15px;
+}
+#btn-log-search::after,
+#btn-log-hof::after,
+#btn-toggle-log-edit::after,
+#btn-log-reset-filters::after {
+content: attr(title);
+font-family: var(--body);
+font-weight: 700;
+font-size: 7px;
+letter-spacing: 0.2px;
+opacity: 0.8;
+}
+#btn-log-sort,
+#btn-log-filter {
+font-size: 9px;
+}
+#btn-log-sort::before,
+#btn-log-filter::before {
+font-size: 14px;
+line-height: 1;
+}
+#btn-log-sort::before {
+content: "⇅";
+}
+#btn-log-filter::before {
+content: "▤";
+}
+/* Search, Sort, Filter, Reset, HoF, Edit: all six keys share the same
+   flat white, sunken-well look now. HoF and Edit still flash gold
+   while their toggle is actually on - that's state feedback, not
+   default decoration. */
+#btn-log-hof {
+color: var(--ink-dim);
 }
 .log-dex-grid-hof-icon {
 font-size: 15px;
-color: var(--yellow);
+color: #a5760a;
 line-height: 1;
 }
 #btn-log-hof[aria-pressed="true"] {
 background: linear-gradient(180deg, #fff6b0, var(--yellow) 55%, var(--yellow-dark) 100%);
+box-shadow:
+inset 0 5px 7px -2px rgba(0, 0, 0, 0.3),
+inset 0 -3px 4px -1px rgba(255, 255, 255, 0.6),
+inset 4px 0 6px -3px rgba(0, 0, 0, 0.15),
+inset -4px 0 6px -3px rgba(0, 0, 0, 0.15),
+0 0 10px 1px rgba(255, 203, 5, 0.6);
 }
 #btn-log-hof[aria-pressed="true"] .log-dex-grid-hof-icon {
 color: #2b2320;
 }
-.log-dex-grid > *:nth-child(n + 6) {
-filter: brightness(0.92);
+#btn-toggle-log-edit {
+color: var(--blue);
 }
-.log-dex-grid > *:nth-child(5n) {
-filter: brightness(0.85);
+#btn-toggle-log-edit[aria-pressed="true"] {
+background: linear-gradient(180deg, #fff6b0, var(--yellow) 55%, var(--yellow-dark) 100%);
+color: #2b2320;
+box-shadow:
+inset 0 5px 7px -2px rgba(0, 0, 0, 0.3),
+inset 0 -3px 4px -1px rgba(255, 255, 255, 0.6),
+inset 4px 0 6px -3px rgba(0, 0, 0, 0.15),
+inset -4px 0 6px -3px rgba(0, 0, 0, 0.15),
+0 0 10px 1px rgba(255, 203, 5, 0.6);
 }
 .log-search-panel {
 padding: 10px;
 min-width: 200px;
 }
-/* CSS-19: Middle controls row: light grey buttons on the left, three t — full rationale in NOTES.md */
+/* CSS-19: Middle controls row - a single full-width Living Dex button,
+   styled in the shell's own red-shell red so it reads as the device's
+   own body color rather than another deck key. */
 .log-dex-row {
 display: flex;
 align-items: center;
-margin-top: 1px;
+margin-top: 4px;
 }
 .log-dex-pill {
-width: 20%;
-height: 36px;
-margin-right: 0;
+width: 100%;
+height: 42px;
+margin: 0;
 padding: 0;
 font: inherit;
-appearance: none;
--webkit-appearance: none;
-cursor: pointer;
-background: linear-gradient(180deg, #eceef2, #c7cad2);
-border: 2px solid var(--line);
-box-shadow:
-inset 0 1px 0 rgba(255, 255, 255, 0.6),
-0 3px 0 rgba(43, 35, 32, 0.45);
-}
-.log-dex-pill:active {
-transform: translateY(2px);
-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-.log-dex-pill:first-child {
-border-radius: 6px 0 0 6px;
-border-right: 1.5px solid var(--line);
-}
-.log-dex-pill:last-child {
-border-radius: 0 6px 6px 0;
-margin-right: 8px;
-}
-.log-dex-bars-group {
-display: flex;
-justify-content: center;
-gap: 4px;
-width: 40%;
-margin: 5px 0 0 auto;
-}
-.log-dex-bar {
-width: 16px;
-height: 6px;
-border-radius: 3px;
-background: linear-gradient(180deg, #234d29, #0b1a0d);
-border: 1px solid var(--line);
-}
-.log-dex-dot-wrap {
-display: flex;
-align-items: center;
-margin-left: auto;
-}
-.log-dex-dot {
-width: 30px;
-height: 30px;
-border-radius: 50%;
-flex-shrink: 0;
-background: radial-gradient(
-circle at 35% 30%,
-#fff6b0,
-var(--yellow) 55%,
-var(--yellow-dark) 100%
-);
-border: 2px solid var(--line);
-box-shadow:
-0 0 6px rgba(255, 203, 5, 0.7),
-inset 0 1px 1px rgba(255, 255, 255, 0.5);
-padding: 0;
--webkit-appearance: none;
-appearance: none;
-cursor: pointer;
-transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.log-dex-dot:hover {
-transform: scale(1.08);
-}
-.log-dex-dot:active {
-transform: scale(0.92);
-}
-.log-dex-dot.active {
-box-shadow:
-0 0 10px 3px rgba(255, 203, 5, 0.95),
-inset 0 1px 1px rgba(255, 255, 255, 0.5);
-transform: scale(0.92);
-}
-/* CSS-20: Bottom buttons: two pill-shaped, very dark green keys, match — full rationale in NOTES.md */
-.log-dex-nav {
-display: flex;
-gap: 10px;
-justify-content: center;
-}
-.log-dex-nav-btn {
-flex: 0 1 38%;
-height: 28px;
-border-radius: 8px;
-border: 2px solid var(--line);
-background: linear-gradient(180deg, #16321b, #06120a);
-color: #f4f0e6;
 font-family: var(--hud);
 font-weight: 800;
 font-size: 13px;
+letter-spacing: 0.4px;
+color: #fff2ee;
+appearance: none;
+-webkit-appearance: none;
+cursor: pointer;
+background: linear-gradient(180deg, var(--red-shell) 0%, var(--red-shell-dark) 100%);
+border: 2px solid var(--line);
+border-radius: 12px;
+box-shadow:
+inset 0 1px 0 rgba(255, 255, 255, 0.3),
+0 3px 0 rgba(43, 35, 32, 0.45);
+transition: transform 0.05s ease, box-shadow 0.05s ease, filter 0.15s ease;
+}
+.log-dex-pill:hover {
+filter: brightness(1.08);
+}
+.log-dex-pill:active {
+transform: translateY(2px);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+/* CSS-20: Bottom buttons: two pill-shaped, very dark green keys */
+/* Nav arrows only make sense for the single-catch Card view (Grid and
+   Hall of Fame aren't stepping through one entry at a time), so they're
+   invisible outside plain Card mode. They stay in the layout at all
+   times now (visibility, not display) - like .log-hof-screen further
+   up, this keeps the shell's flex layout budget identical across all
+   three modes, so .log-dex-screen-stack (and the Card/Grid/HOF screens
+   that size themselves off it) never gets squeezed to a different
+   height just because Card mode has an extra row to fit. */
+.log-dex-nav {
+display: flex;
+visibility: hidden;
+pointer-events: none;
+gap: 10px;
+justify-content: center;
+margin-top: 2px;
+}
+.log-dex-shell[data-log-mode="card"][data-log-hof="false"] .log-dex-nav {
+visibility: visible;
+pointer-events: auto;
+}
+.log-dex-nav-btn {
+flex: 0 1 40%;
+height: 34px;
+border-radius: 10px;
+border: 2px solid var(--line);
+background: linear-gradient(180deg, #1c3a22, #06120a);
+color: #f4f0e6;
+font-family: var(--hud);
+font-weight: 800;
+font-size: 15px;
 box-shadow:
 inset 0 1px 0 rgba(255, 255, 255, 0.15),
 0 3px 0 rgba(0, 0, 0, 0.5);
 cursor: pointer;
+transition: transform 0.05s ease, box-shadow 0.05s ease, background 0.15s ease;
 }
 .log-dex-nav-btn:hover {
-background: linear-gradient(180deg, #1f4526, #0a1b0e);
+background: linear-gradient(180deg, #24512c, #0a1b0e);
+box-shadow:
+inset 0 1px 0 rgba(255, 255, 255, 0.15),
+0 3px 0 rgba(0, 0, 0, 0.5),
+0 0 8px 1px rgba(76, 175, 80, 0.45);
 }
 .log-dex-nav-btn:active {
 transform: translateY(3px);
-
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* ============================================================
@@ -4816,14 +4848,18 @@ transform: translateY(3px);
 
 .log-dex-screen-stack {
   position: relative;
-  overflow-y: auto;
+  overflow: hidden;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
-/* Card and Grid are absolutely positioned overlays so their content can
-   never affect the stack's height - only the Hall of Fame screen below
-   (which stays in normal flow at all times) is allowed to do that. */
+/* Card, Grid, and Hall of Fame are all absolutely positioned overlays
+   filling the stack, so all three always render at exactly the same
+   size - the stack's own height comes from flex:1 above (a fixed share
+   of the shell's fixed height), not from any one screen's content. */
 #log-latest-screen,
-.log-grid-screen {
+.log-grid-screen,
+.log-hof-screen {
   position: absolute;
   top: 0;
   left: 0;
@@ -4843,15 +4879,15 @@ transform: translateY(3px);
   display: none;
   flex-direction: column;
   gap: 10px;
+  padding: 10px 12px 10px 10px;
 }
 .log-grid-screen.log-screen-visible {
   display: flex;
 }
 
-/* Hall of Fame is the one screen that's always laid out in-flow, even
-   when it isn't the active mode - it just stays invisible and
-   non-interactive. That's what makes it the stack's permanent,
-   static reference size: Card/Grid overlay it, but never resize it. */
+/* Hall of Fame stays mounted at all times (like Card/Grid) - it's just
+   invisible and non-interactive outside Hall of Fame mode - so toggling
+   modes never has to wait on it being built. */
 .log-hof-screen {
   display: flex;
   flex-direction: column;
@@ -4867,25 +4903,31 @@ transform: translateY(3px);
 .log-grid-inner {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  /* Each row is exactly half of whatever height .log-grid-screen actually
+     has (which itself always matches the Card and Hall of Fame screens'
+     height - see .log-dex-screen-stack, sized off flex:1 rather than off
+     any one screen's content), so 2 rows of 3 (6 tiles) always exactly
+     fill the available area no matter how big that area is. A 3rd+ row
+     is sized the same but pushes past 100%, which is what makes
+     .log-grid-screen's own overflow-y: auto (see above) kick in and
+     scroll instead of the tiles just being squeezed smaller. */
+  grid-auto-rows: calc(50% - 4px);
   gap: 8px;
-  /* Matches the Hall of Fame screen's real rendered height (title + 3
-     fixed rows), which is the static reference size for the whole
-     shell - see .log-dex-screen-stack comment. Card/Grid must scroll
-     within this instead of exceeding it, or their overflow pushes the
-     bottom controls (nav arrows, pills, mode toggle) off the shell. */
-  max-height: 177px;
-  overflow-y: auto;
-  padding-right: 2px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .log-grid-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
   background: rgba(0, 0, 0, 0.04);
   border: 2px solid rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   padding: 6px 4px 5px;
+  box-sizing: border-box;
+  overflow: hidden;
   cursor: pointer;
   font: inherit;
   appearance: none;
@@ -4980,6 +5022,7 @@ transform: translateY(3px);
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: var(--green-dark);
+  margin-right: 5px;
 }
 .log-hof-row-name {
   font-family: var(--hud);
@@ -4995,17 +5038,6 @@ transform: translateY(3px);
   flex-shrink: 0;
   text-align: right;
   white-space: nowrap;
-}
-
-/* Nav arrows and the edit dot only make sense for the single-catch
-   Card view - keep their layout slot (visibility, not display) so
-   nothing reflows when switching modes. */
-.log-dex-shell[data-log-mode="grid"] .log-dex-nav,
-.log-dex-shell[data-log-hof="true"] .log-dex-nav,
-.log-dex-shell[data-log-mode="grid"] .log-dex-dot-wrap,
-.log-dex-shell[data-log-hof="true"] .log-dex-dot-wrap {
-  visibility: hidden;
-  pointer-events: none;
 }
 
 /* ---- Search input (now housed in the search grid button's popover) ---- */
