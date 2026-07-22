@@ -4280,9 +4280,10 @@ position: relative;
 padding: 128px 16px 20px;
 display: flex;
 flex-direction: column;
-justify-content: space-between;
+justify-content: flex-start;
 gap: 12px;
-min-height: 653px;
+height: 653px;
+overflow: hidden;
 box-sizing: border-box;
 z-index: 0;
 }
@@ -4422,14 +4423,19 @@ background: var(--screen);
 border: 3px solid var(--line);
 border-radius: 16px;
 min-height: 76px;
-padding: 14px 16px;
+padding: 18px 18px;
 display: flex;
-align-items: center;
+flex-direction: column;
 gap: 12px;
 position: relative;
 box-shadow:
 inset 0 3px 10px rgba(0, 0, 0, 0.22),
 inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+.log-dex-screen-body {
+display: flex;
+align-items: stretch;
+gap: 16px;
 }
 .log-dex-screen::before {
 content: "";
@@ -4453,9 +4459,10 @@ font-size: 11px;
 letter-spacing: 0.3px;
 }
 .log-dex-screen-sprite {
-width: 48px;
-height: 48px;
+width: 96px;
+height: 96px;
 flex-shrink: 0;
+align-self: center;
 display: flex;
 align-items: center;
 justify-content: center;
@@ -4470,33 +4477,40 @@ image-rendering: crisp-edges;
 .log-dex-screen-text {
 min-width: 0;
 flex: 1;
+display: flex;
+flex-direction: column;
+justify-content: center;
+gap: 8px;
+padding: 2px 0;
+}
+.log-dex-screen-toprow {
+display: flex;
+align-items: flex-start;
+justify-content: space-between;
+gap: 10px;
 }
 .log-dex-screen-label {
 color: var(--green-dark);
 font-family: var(--mono);
-font-size: 10px;
+font-size: 11px;
 letter-spacing: 0.5px;
-}
-.log-dex-screen-top {
-display: flex;
-align-items: baseline;
-justify-content: space-between;
-gap: 10px;
 }
 .log-dex-screen-name {
 color: var(--ink);
 font-family: var(--hud);
 font-weight: 800;
-font-size: 18px;
-white-space: normal;
-overflow-wrap: break-word;
+font-size: 23px;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
 min-width: 0;
+flex-shrink: 0;
 }
 .log-dex-screen-count {
 font-family: var(--hud);
 font-weight: 800;
 color: var(--red);
-font-size: 14px;
+font-size: 17px;
 flex-shrink: 0;
 white-space: nowrap;
 }
@@ -4504,29 +4518,37 @@ white-space: nowrap;
 font-family: var(--body);
 font-weight: 600;
 color: var(--green-dark);
-font-size: 10.5px;
+font-size: 11px;
 margin-left: 3px;
 }
 .log-dex-screen-types {
 display: flex;
-gap: 4px;
+gap: 6px;
 flex-wrap: wrap;
-margin-top: 3px;
+margin-top: -8px;
+}
+.log-dex-screen-types .type-badge-icon {
+width: 68px;
+height: 24px;
+margin-right: 7px;
 }
 .log-dex-screen-meta {
 color: var(--green-dark);
 font-family: var(--mono);
-font-size: 9px;
-margin-top: 2px;
-white-space: nowrap;
+font-size: 13px;
+white-space: normal;
+}
+.log-dex-screen-date-group {
+display: flex;
+flex-direction: column;
+gap: 0;
 }
 .log-dex-screen-notes {
 color: var(--green-dark);
 font-family: var(--mono);
-font-size: 9px;
+font-size: 10.5px;
 font-style: italic;
-margin-top: 3px;
-white-space: nowrap;
+white-space: normal;
 }
 .log-dex-screen-actions {
 display: none;
@@ -4794,6 +4816,20 @@ transform: translateY(3px);
 
 .log-dex-screen-stack {
   position: relative;
+  overflow-y: auto;
+}
+
+/* Card and Grid are absolutely positioned overlays so their content can
+   never affect the stack's height - only the Hall of Fame screen below
+   (which stays in normal flow at all times) is allowed to do that. */
+#log-latest-screen,
+.log-grid-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: auto;
 }
 
 /* Card screen visibility is toggled by adding this class in JS,
@@ -4803,22 +4839,41 @@ transform: translateY(3px);
   display: none;
 }
 
-.log-grid-screen,
-.log-hof-screen {
+.log-grid-screen {
   display: none;
   flex-direction: column;
   gap: 10px;
 }
-.log-grid-screen.log-screen-visible,
-.log-hof-screen.log-screen-visible {
+.log-grid-screen.log-screen-visible {
   display: flex;
+}
+
+/* Hall of Fame is the one screen that's always laid out in-flow, even
+   when it isn't the active mode - it just stays invisible and
+   non-interactive. That's what makes it the stack's permanent,
+   static reference size: Card/Grid overlay it, but never resize it. */
+.log-hof-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  visibility: hidden;
+  pointer-events: none;
+}
+.log-hof-screen.log-screen-visible {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .log-grid-inner {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  max-height: 340px;
+  /* Matches the Hall of Fame screen's real rendered height (title + 3
+     fixed rows), which is the static reference size for the whole
+     shell - see .log-dex-screen-stack comment. Card/Grid must scroll
+     within this instead of exceeding it, or their overflow pushes the
+     bottom controls (nav arrows, pills, mode toggle) off the shell. */
+  max-height: 177px;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -5000,3 +5055,4 @@ transform: translateY(3px);
   align-self: flex-end;
   font-size: 11px;
   padding: 5px 10px;
+}
