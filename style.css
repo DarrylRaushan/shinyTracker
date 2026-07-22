@@ -4435,7 +4435,7 @@ inset 0 0 0 2px rgba(0, 0, 0, 0.05);
 .log-dex-screen-body {
 display: flex;
 align-items: stretch;
-gap: 16px;
+gap: 28px;
 }
 .log-dex-screen::before {
 content: "";
@@ -4525,7 +4525,7 @@ margin-left: 3px;
 display: flex;
 gap: 6px;
 flex-wrap: wrap;
-margin-top: -12px;
+margin-top: -3px;
 }
 .log-dex-screen-types .type-badge-icon {
 width: 68px;
