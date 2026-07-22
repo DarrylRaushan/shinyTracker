@@ -419,10 +419,10 @@ gen: info[0],
 types: [info[1], info[2]].filter(Boolean)
 };
 }
-function typeBadges(types) {
+function typeBadges(types, size) {
 if (!types || !types.length) return '<span class="type-badge type-unknown">?</span>';
 return types.map(function(t) {
-return '<span class="type-badge-icon" title="' + t + '">' + typeIconMarkup(t, 63) + '</span>';
+return '<span class="type-badge-icon" title="' + t + '">' + typeIconMarkup(t, size || 63) + '</span>';
 }).join('');
 }
 // Simplified single-type "weak against" table, in the spirit of the classic
@@ -3732,31 +3732,34 @@ var isLatestEntry = !!trueNewest && latest.id === trueNewest.id;
 var screenPosLabel = isLatestEntry ? 'LATEST CATCH' : ('CATCH ' + (index + 1) + ' OF ' + list.length);
 var metaBits = [latest.game, latest.method, gen ? ('Gen ' + gen) : null].filter(Boolean);
 var meta = escapeHtml(metaBits.join(' · '));
-var timeBit = latest.timeSpentMinutes ? fmtTime(latest.timeSpentMinutes * 60) + ' spent' : '';
-var dateBit = (began || ended) ? ('Began ' + fmtDate(began) + ' → ' + fmtDate(ended)) : '';
-var dateLine = [dateBit, timeBit].filter(Boolean).join(' · ');
+var beganRow = began ? ('<div class="log-dex-screen-meta">Began - ' + escapeHtml(fmtDate(began)) + '</div>') : '';
+var endRow = ended ? ('<div class="log-dex-screen-meta">End - ' + escapeHtml(fmtDate(ended)) + '</div>') : '';
+var timeRow = latest.timeSpentMinutes ? ('<div class="log-dex-screen-meta">Time Spent - ' + escapeHtml(fmtTime(latest.timeSpentMinutes * 60)) + '</div>') : '';
+var dateGroup = (beganRow || endRow || timeRow) ? ('<div class="log-dex-screen-date-group">' + beganRow + endRow + timeRow + '</div>') : '';
 // Screen mirrors the log card exactly - same fields, same text - and
 // is now the only place the latest catch is shown (no more duplicate
 // row below). Edit/delete actions live here too, toggled by the
 // "Edit" button same as the old card actions did.
 screen.classList.toggle('edit-mode', logEditMode);
 screen.innerHTML =
-'<div class="log-dex-screen-sprite">' + spriteMarkup(latest.pokemon) + '</div>' +
-'<div class="log-dex-screen-text">' +
+'<div class="log-dex-screen-toprow">' +
 '<div class="log-dex-screen-label">' + entryLabel + ' · ' + screenPosLabel + '</div>' +
-'<div class="log-dex-screen-top">' +
-'<div class="log-dex-screen-name">' + escapeHtml(latest.pokemon) + '</div>' +
 '<div class="log-dex-screen-count">' + latest.encounters + '<span class="unit">' + escapeHtml(unit) + '</span></div>' +
 '</div>' +
-'<div class="log-dex-screen-types">' + typeBadges(types) + '</div>' +
+'<div class="log-dex-screen-body">' +
+'<div class="log-dex-screen-sprite">' + spriteMarkup(latest.pokemon) + '</div>' +
+'<div class="log-dex-screen-text">' +
+'<div class="log-dex-screen-name">' + escapeHtml(latest.pokemon) + '</div>' +
+'<div class="log-dex-screen-types">' + typeBadges(types, 68) + '</div>' +
 (meta ? '<div class="log-dex-screen-meta">' + meta + '</div>' : '') +
-(dateLine ? '<div class="log-dex-screen-meta">' + escapeHtml(dateLine) + '</div>' : '') +
+dateGroup +
 (latest.notes ? '<div class="log-dex-screen-notes">' + escapeHtml(latest.notes) + '</div>' : '') +
 '</div>' +
 '<div class="log-dex-screen-actions">' +
 '<button class="icon-btn" data-action="undo-log" data-id="' + latest.id + '" title="Move back to Active Hunts">↩</button>' +
 '<button class="icon-btn" data-action="edit-log" data-id="' + latest.id + '" title="Edit entry">✎</button>' +
 '<button class="icon-btn" data-action="delete-log" data-id="' + latest.id + '" title="Delete entry">✕</button>' +
+'</div>' +
 '</div>';
 }
 // Steps the Card view backward (-1) or forward (+1) through the
