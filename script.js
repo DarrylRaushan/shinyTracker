@@ -3139,10 +3139,10 @@ btn.addEventListener('click', function() {
 activateTab(btn.dataset.tab);
 });
 });
-// The two silver pills on the Shiny Log screen (formerly decorative)
-// jump straight to Living Dex, now that there's no tab bar to reach it
-// from directly.
-['btn-log-to-livingdex-1', 'btn-log-to-livingdex-2'].forEach(function(id) {
+// The silver pill on the Shiny Log screen (formerly decorative) jumps
+// straight to Living Dex, now that there's no tab bar to reach it from
+// directly.
+['btn-log-to-livingdex-1'].forEach(function(id) {
 var btn = document.getElementById(id);
 if (btn) btn.addEventListener('click', function() {
 activateTab('livingdex');
