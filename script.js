@@ -526,6 +526,26 @@ for (var i = 0; i < GEN_DATA.length; i++) total += GEN_DATA[i].species.length;
 _totalSpeciesCache = total;
 return total;
 }
+// Regular (non-shiny) Living Dex progress, used to badge the "Living Dex"
+// pill on the Shiny Log page so it doubles as a live progress teaser
+// instead of a plain nav link. Deliberately always the non-shiny count
+// (regardless of whatever dexMode the Living Dex page itself is currently
+// showing) since that's the number people generally think of as "my dex".
+function livingDexProgress() {
+var caughtTotal = 0;
+GEN_DATA.forEach(function(g) {
+g.species.forEach(function(sp) {
+if (state.livingDex[normName(sp[1])]) caughtTotal++;
+});
+});
+return { caught: caughtTotal, total: totalSpeciesCount() };
+}
+function updateLivingDexPillBadge() {
+var el = document.getElementById('log-dex-pill-count');
+if (!el) return;
+var p = livingDexProgress();
+el.textContent = p.caught + ' / ' + p.total;
+}
 function ordinal(n) {
 var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
 return n + (s[(v - 20) % 10] || s[v] || s[0]);
@@ -3145,7 +3165,15 @@ activateTab(btn.dataset.tab);
 ['btn-log-to-livingdex-1'].forEach(function(id) {
 var btn = document.getElementById(id);
 if (btn) btn.addEventListener('click', function() {
+// Retrigger the click-bounce animation even on rapid repeat clicks
+// (removing the class first forces a reflow so the animation restarts).
+btn.classList.remove('log-dex-pill-clicked');
+void btn.offsetWidth;
+btn.classList.add('log-dex-pill-clicked');
 activateTab('livingdex');
+});
+btn.addEventListener('animationend', function(e) {
+if (e.animationName === 'log-dex-pill-click') btn.classList.remove('log-dex-pill-clicked');
 });
 });
 // Living Dex has no tab bar to get back out through either, so it gets
@@ -3690,6 +3718,7 @@ updateLogModeUI();
 renderLogCard();
 renderLogGrid();
 renderLogHoF();
+updateLivingDexPillBadge();
 }
 function renderLogCard() {
 var screen = document.getElementById('log-latest-screen');
@@ -4518,6 +4547,7 @@ summary.innerHTML =
 updateDexExpandAllLabel();
 applyDexTypeFilter();
 applyDexVariantFilter();
+updateLivingDexPillBadge();
 }
 document.getElementById('dex-grid').addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
