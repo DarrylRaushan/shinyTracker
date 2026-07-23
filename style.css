@@ -1338,41 +1338,152 @@ position: relative;
 width: 100px;
 height: 100px;
 flex-shrink: 0;
-margin-top: 5px; 
+margin-top: 5px;
+perspective: 260px;
 }
-.dpad-plate {
+/* Sunken socket the dpad sits in — a soft recessed shadow behind it. */
+.hunt-dex-dpad::before {
+content: "";
 position: absolute;
-inset: 6px;
+inset: 0;
 border-radius: 50%;
-background: rgba(0, 0, 0, 0.15);
-box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.3);
+background: radial-gradient(circle at 50% 46%, rgba(0, 0, 0, 0.28), rgba(0, 0, 0, 0.1) 65%, transparent 78%);
+box-shadow:
+inset 0 4px 8px rgba(0, 0, 0, 0.35),
+inset 0 -2px 3px rgba(255, 255, 255, 0.08);
+z-index: 0;
+}
+/* Single rigid rocking plate: the cross bars + arm buttons live
+   inside this wrapper so everything tilts together like a real
+   one-piece dpad instead of 4 independent buttons. Direction
+   classes are toggled on .hunt-dex-dpad by JS. */
+.dpad-rock {
+position: absolute;
+inset: 0;
+z-index: 1;
+transform-style: preserve-3d;
+transition: transform 0.16s cubic-bezier(.25, .9, .35, 1);
+transform: rotateX(0deg) rotateY(0deg);
+}
+.hunt-dex-dpad.press-up .dpad-rock {
+transform: rotateX(16deg);
+}
+.hunt-dex-dpad.press-down .dpad-rock {
+transform: rotateX(-16deg);
+}
+.hunt-dex-dpad.press-left .dpad-rock {
+transform: rotateY(-16deg);
+}
+.hunt-dex-dpad.press-right .dpad-rock {
+transform: rotateY(16deg);
+}
+/* The cross itself: a plus-shape built from two overlapping bars,
+   but dressed up with real molded-plastic detail rather than two
+   flat strips — each bar gets a directional light gradient plus a
+   3-layer bevel (rim line, top highlight, bottom-right shadow), and
+   the rock plate gets a raised center pivot (::after) so the whole
+   thing reads as one dpad with four distinct arms instead of a
+   plain flat cross. */
+.dpad-rock::after {
+content: "";
+position: absolute;
+top: 50%;
+left: 50%;
+width: 30px;
+height: 30px;
+transform: translate(-50%, -50%);
+border-radius: 50%;
+z-index: 1;
+background: radial-gradient(circle at 36% 30%, #3d4a45 0%, #232e2a 62%, #161e1b 100%);
+box-shadow:
+0 0 0 3px rgba(0, 0, 0, 0.32),
+inset 0 1px 0 rgba(255, 255, 255, 0.14),
+inset 0 -3px 3px rgba(0, 0, 0, 0.55),
+0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.dpad-bar-v,
+.dpad-bar-h {
+position: absolute;
+background: linear-gradient(145deg, #333f3a 0%, #202b27 45%, #171f1c 100%);
+border-radius: 9px;
+box-shadow:
+inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+inset 0 1.5px 0 rgba(255, 255, 255, 0.12),
+inset -2px -3px 4px rgba(0, 0, 0, 0.4),
+inset 2px 2px 3px rgba(255, 255, 255, 0.04);
+}
+.dpad-bar-v {
+left: 50%;
+top: 2px;
+bottom: 2px;
+width: 32px;
+transform: translateX(-50%);
+}
+.dpad-bar-h {
+top: 50%;
+left: 2px;
+right: 2px;
+height: 32px;
+transform: translateY(-50%);
+}
+/* Faint cap-line near the outer tip of each arm, echoing a molded
+   button edge rather than a seamless bar end. */
+.dpad-bar-v::before,
+.dpad-bar-v::after,
+.dpad-bar-h::before,
+.dpad-bar-h::after {
+content: "";
+position: absolute;
+background: rgba(255, 255, 255, 0.07);
+border-radius: 2px;
+}
+.dpad-bar-v::before {
+top: 9px;
+left: 5px;
+right: 5px;
+height: 1px;
+}
+.dpad-bar-v::after {
+bottom: 9px;
+left: 5px;
+right: 5px;
+height: 1px;
+}
+.dpad-bar-h::before {
+left: 9px;
+top: 5px;
+bottom: 5px;
+width: 1px;
+}
+.dpad-bar-h::after {
+right: 9px;
+top: 5px;
+bottom: 5px;
+width: 1px;
 }
 .hunt-dex-dpad .hdpad-btn {
 position: absolute;
-background: linear-gradient(180deg, #52565f, #2b2d33);
-color: #fff;
-border: 2px solid var(--line);
-font-family: var(--hud);
-font-weight: 800;
-font-size: 14px;
+background: transparent;
+color: #f2ede0;
+border: none;
+font-family: var(--mono);
+font-weight: 700;
+font-size: 12px;
+letter-spacing: 0.02em;
 display: flex;
 align-items: center;
 justify-content: center;
 padding: 0;
-z-index: 1;
-box-shadow:
-0 3px 0 rgba(0, 0, 0, 0.4),
-inset 0 1px 0 rgba(255, 255, 255, 0.18);
+z-index: 2;
 }
 .hunt-dex-dpad button.hdpad-btn {
 cursor: pointer;
 appearance: none;
 -webkit-appearance: none;
-transition: transform 0.08s ease, box-shadow 0.08s ease;
+transition: transform 0.08s ease;
 }
 .hunt-dex-dpad button.hdpad-btn:active {
-transform: translateY(3px) scale(0.93);
-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+transform: scale(0.94);
 }
 .hunt-dex-dpad button.hdpad-btn.is-pressing {
 animation: hh-btn-press 0.18s ease-out;
@@ -1382,7 +1493,6 @@ animation: hh-btn-press 0.18s ease-out;
 width: 30px;
 height: 34px;
 left: 35px;
-border-radius: 7px;
 }
 .hunt-dex-dpad .dpad-up {
 top: 0;
@@ -1395,24 +1505,12 @@ bottom: 0;
 width: 34px;
 height: 30px;
 top: 35px;
-border-radius: 7px;
 }
 .hunt-dex-dpad .dpad-left {
 left: 0;
 }
 .hunt-dex-dpad .dpad-right {
 right: 0;
-}
-.hunt-dex-dpad .dpad-center {
-position: absolute;
-width: 30px;
-height: 30px;
-left: 35px;
-top: 35px;
-border-radius: 6px;
-z-index: 1;
-background: linear-gradient(180deg, #3a3c42, #1e2024);
-border: 2px solid var(--line);
 }
 .sparkle {
 position: absolute;
@@ -3457,45 +3555,64 @@ position: relative;
 width: 56px;
 height: 56px;
 flex-shrink: 0;
+border-radius: 8px;
+background: linear-gradient(150deg, #3d424b, #22252a);
+box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.06);
+}
+.dex-handheld-dpad::before {
+content: "";
+position: absolute;
+inset: 5px;
+border-radius: 50%;
+background: radial-gradient(circle at 38% 34%, #cdd1d7, #989ca4 68%, #7c8089);
+box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 .dex-handheld-dpad span {
 position: absolute;
-background: linear-gradient(180deg, #4a4d55, #2b2d33);
-border: 1.5px solid var(--line);
+background: linear-gradient(180deg, #f4f5f7, #c7cbd1);
+border: none;
+box-shadow:
+inset 0 1px 0 rgba(255, 255, 255, 0.75),
+inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+z-index: 1;
 }
 .hh-dpad-up,
 .hh-dpad-down {
 width: 18px;
 height: 20px;
 left: 19px;
-border-radius: 4px;
 }
 .hh-dpad-up {
-top: 0;
+top: 2px;
+clip-path: polygon(18% 0%, 82% 0%, 100% 100%, 0% 100%);
 }
 .hh-dpad-down {
-bottom: 0;
+bottom: 2px;
+clip-path: polygon(0% 0%, 100% 0%, 82% 100%, 18% 100%);
 }
 .hh-dpad-left,
 .hh-dpad-right {
 width: 20px;
 height: 18px;
 top: 19px;
-border-radius: 4px;
 }
 .hh-dpad-left {
-left: 0;
+left: 2px;
+clip-path: polygon(0% 18%, 0% 82%, 100% 100%, 100% 0%);
 }
 .hh-dpad-right {
-right: 0;
+right: 2px;
+clip-path: polygon(100% 18%, 100% 82%, 0% 100%, 0% 0%);
 }
 .hh-dpad-center {
-width: 20px;
-height: 20px;
-left: 18px;
-top: 18px;
-border-radius: 3px;
-background: linear-gradient(180deg, #3a3c42, #1e2024);
+width: 15px;
+height: 15px;
+left: 20.5px;
+top: 20.5px;
+border-radius: 50%;
+z-index: 1;
+background: radial-gradient(circle at 38% 34%, #d8dbe0, #a3a7ae 70%, #888c94);
+box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.28);
 }
 .dex-handheld-ab {
 display: flex;
@@ -4053,20 +4170,26 @@ width: 35px;
 height: 39px;
 left: 40px;
 }
+.hunt-dex-dpad .dpad-up {
+top: 0;
+}
+.hunt-dex-dpad .dpad-down {
+bottom: 0;
+}
 .hunt-dex-dpad .dpad-left,
 .hunt-dex-dpad .dpad-right {
 width: 39px;
 height: 35px;
 top: 40px;
 }
-.hunt-dex-dpad .dpad-center {
-width: 35px;
-height: 35px;
-left: 40px;
-top: 40px;
+.hunt-dex-dpad .dpad-left {
+left: 0;
+}
+.hunt-dex-dpad .dpad-right {
+right: 0;
 }
 .hunt-dex-dpad .hdpad-btn {
-font-size: 16px;
+font-size: 13px;
 }
 .dex-species-grid {
 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4600,7 +4723,7 @@ width: 100%;
 height: 100%;
 margin: 0;
 padding: 3px 2px;
-border: 2px solid rgba(0, 0, 0, 0.2);
+border: 2px solid rgba(0, 0, 0, 0.16);
 border-radius: 10px;
 appearance: none;
 -webkit-appearance: none;
@@ -4611,7 +4734,7 @@ font-size: 11px;
 line-height: 1.05;
 color: var(--ink-dim);
 cursor: pointer;
-background: radial-gradient(circle at 50% 30%, #ffffff 0%, #f0f2f5 65%, #e2e5ea 100%);
+background: linear-gradient(180deg, #ffffff 0%, #f4f6f9 55%, #e6e9ee 100%);
 display: flex;
 flex-direction: column;
 align-items: center;
@@ -4621,18 +4744,17 @@ overflow: hidden;
 white-space: nowrap;
 text-overflow: ellipsis;
 box-shadow:
-inset 0 5px 7px -2px rgba(0, 0, 0, 0.35),
-inset 0 -3px 4px -1px rgba(255, 255, 255, 0.95),
-inset 4px 0 6px -3px rgba(0, 0, 0, 0.18),
-inset -4px 0 6px -3px rgba(0, 0, 0, 0.18),
-0 1px 0 rgba(255, 255, 255, 0.6);
-transition: transform 0.05s ease, box-shadow 0.05s ease, filter 0.15s ease;
+0 3px 0 rgba(0, 0, 0, 0.16),
+0 4px 5px -1px rgba(0, 0, 0, 0.18),
+inset 0 1px 0 rgba(255, 255, 255, 0.9),
+inset 0 -2px 2px -1px rgba(0, 0, 0, 0.06);
+transition: transform 0.06s ease, box-shadow 0.06s ease, filter 0.15s ease;
 }
 .log-dex-grid-btn:hover {
-filter: brightness(0.98);
+filter: brightness(1.015);
 }
 .log-dex-grid-btn:active {
-transform: translateY(2px);
+transform: translateY(3px);
 box-shadow:
 inset 0 6px 8px -2px rgba(0, 0, 0, 0.4),
 inset 0 -2px 3px -1px rgba(255, 255, 255, 0.8),
@@ -4640,12 +4762,12 @@ inset 4px 0 6px -3px rgba(0, 0, 0, 0.22),
 inset -4px 0 6px -3px rgba(0, 0, 0, 0.22);
 }
 .log-dex-grid-btn.active {
+transform: translateY(3px);
 box-shadow:
 inset 0 5px 7px -2px rgba(0, 0, 0, 0.35),
 inset 0 -3px 4px -1px rgba(255, 255, 255, 0.95),
 inset 4px 0 6px -3px rgba(0, 0, 0, 0.18),
 inset -4px 0 6px -3px rgba(0, 0, 0, 0.18),
-0 1px 0 rgba(255, 255, 255, 0.6),
 inset 0 0 0 2px var(--blue);
 }
 #btn-log-search,
@@ -4681,19 +4803,23 @@ content: "⇅";
 content: "▤";
 }
 /* Search, Sort, Filter, Reset, HoF, Edit: all six keys share the same
-   flat white, sunken-well look now. HoF and Edit still flash gold
-   while their toggle is actually on - that's state feedback, not
-   default decoration. */
+   white, raised keycap look by default now (real lift, not a flat
+   sunken well), and press down flush with the deck when active - HoF
+   and Edit also flash gold while genuinely toggled on. JS keeps at
+   most one of {Reset, HoF, Edit} "down" at a time and clears the
+   other two whenever one is pressed; Search/Sort/Filter are exempt
+   from that and can all stay down together. */
 #btn-log-hof {
 color: var(--ink-dim);
 }
 .log-dex-grid-hof-icon {
 font-size: 15px;
-color: #a5760a;
+color: var(--ink-dim);
 line-height: 1;
 }
 #btn-log-hof[aria-pressed="true"] {
 background: linear-gradient(180deg, #fff6b0, var(--yellow) 55%, var(--yellow-dark) 100%);
+transform: translateY(3px);
 box-shadow:
 inset 0 5px 7px -2px rgba(0, 0, 0, 0.3),
 inset 0 -3px 4px -1px rgba(255, 255, 255, 0.6),
@@ -4705,11 +4831,12 @@ inset -4px 0 6px -3px rgba(0, 0, 0, 0.15),
 color: #2b2320;
 }
 #btn-toggle-log-edit {
-color: var(--blue);
+color: var(--ink-dim);
 }
 #btn-toggle-log-edit[aria-pressed="true"] {
 background: linear-gradient(180deg, #fff6b0, var(--yellow) 55%, var(--yellow-dark) 100%);
 color: #2b2320;
+transform: translateY(3px);
 box-shadow:
 inset 0 5px 7px -2px rgba(0, 0, 0, 0.3),
 inset 0 -3px 4px -1px rgba(255, 255, 255, 0.6),
@@ -4759,25 +4886,17 @@ transform: translateY(2px);
 box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 /* CSS-20: Bottom buttons: two pill-shaped, very dark green keys */
-/* Nav arrows only make sense for the single-catch Card view (Grid and
-   Hall of Fame aren't stepping through one entry at a time), so they're
-   invisible outside plain Card mode. They stay in the layout at all
-   times now (visibility, not display) - like .log-hof-screen further
-   up, this keeps the shell's flex layout budget identical across all
-   three modes, so .log-dex-screen-stack (and the Card/Grid/HOF screens
-   that size themselves off it) never gets squeezed to a different
-   height just because Card mode has an extra row to fit. */
+/* Always visible and clickable across Card, Grid, and Hall of Fame -
+   they stay in the layout in every mode (this was already true) and
+   now stay on-screen too, so the shell's flex layout budget and the
+   bottom controls both stay identical across all three modes. */
 .log-dex-nav {
 display: flex;
-visibility: hidden;
-pointer-events: none;
+visibility: visible;
+pointer-events: auto;
 gap: 10px;
 justify-content: center;
 margin-top: 2px;
-}
-.log-dex-shell[data-log-mode="card"][data-log-hof="false"] .log-dex-nav {
-visibility: visible;
-pointer-events: auto;
 }
 .log-dex-nav-btn {
 flex: 0 1 40%;
@@ -4891,7 +5010,8 @@ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 .log-hof-screen {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  padding: 10px 12px 10px;
   visibility: hidden;
   pointer-events: none;
 }
@@ -4964,42 +5084,58 @@ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
   font-size: 8px;
   color: var(--green-dark);
 }
-.log-grid-empty,
-.log-hof-empty {
+.log-grid-empty {
   color: var(--green-dark);
   font-family: var(--mono);
   font-size: 11px;
   text-align: center;
   padding: 22px 4px;
 }
+.log-hof-empty {
+  color: var(--green-dark);
+  font-family: var(--mono);
+  font-size: 13px;
+  text-align: center;
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px 12px;
+}
 
 .log-hof-title {
   font-family: var(--hud);
   font-weight: 800;
-  font-size: 12px;
+  font-size: 18px;
   letter-spacing: 1.2px;
   color: var(--yellow-dark);
   text-align: center;
+  flex-shrink: 0;
 }
 .log-hof-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: rgba(0, 0, 0, 0.04);
-  border-radius: 10px;
-  padding: 6px 8px;
+  border-radius: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.05);
+  padding: 8px 10px;
   cursor: pointer;
   font: inherit;
-  border: none;
   width: 100%;
   text-align: left;
+  flex: 1 1 0;
+  min-height: 0;
 }
 .log-hof-row:hover {
   background: rgba(0, 0, 0, 0.09);
 }
 .log-hof-row-sprite {
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -5015,25 +5151,30 @@ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
 .log-hof-row-text {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 .log-hof-row-label {
   font-family: var(--mono);
-  font-size: 8.5px;
+  font-size: 9px;
   letter-spacing: 0.4px;
   text-transform: uppercase;
   color: var(--green-dark);
-  margin-right: 5px;
+  margin-right: 0;
 }
 .log-hof-row-name {
   font-family: var(--hud);
   font-weight: 800;
-  font-size: 13px;
+  font-size: 14.5px;
   color: var(--ink);
   overflow-wrap: break-word;
+  line-height: 1.15;
 }
 .log-hof-row-stat {
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 10px;
+  font-weight: 700;
   color: var(--red);
   flex-shrink: 0;
   text-align: right;
