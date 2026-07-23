@@ -3424,12 +3424,14 @@ el.innerHTML =
 '<div class="hunt-dex-mini-screen"><span class="mini-num">' + hunt.encounters + '</span><span class="mini-lbl">ENC · ' + pct + '%</span></div>' +
 '</div>' +
 '<div class="hunt-dex-dpad">' +
-'<span class="dpad-plate"></span>' +
+'<div class="dpad-rock">' +
+'<span class="dpad-bar-v"></span>' +
+'<span class="dpad-bar-h"></span>' +
 '<button class="hdpad-btn dpad-up" data-action="add-encounter-5" data-id="' + hunt.id + '" title="Add 5 encounters"><span>+5</span></button>' +
 '<button class="hdpad-btn dpad-right" data-action="add-encounter" data-id="' + hunt.id + '" title="Add an encounter"><span>+1</span></button>' +
 '<span class="hdpad-btn dpad-down" aria-hidden="true"></span>' +
 '<button class="hdpad-btn dpad-left" data-action="remove-encounter" data-id="' + hunt.id + '" title="Remove an encounter"><span>−1</span></button>' +
-'<span class="dpad-center"></span>' +
+'</div>' +
 '</div>' +
 '</div>' +
 '<div class="hunt-dex-pokeball-row"><button class="hunt-dex-pokeball-btn" data-action="mark-found" data-id="' + hunt.id + '" title="Mark as caught" aria-label="Mark as caught"></button></div>' +
@@ -3891,7 +3893,64 @@ logViewMode = btn.dataset.mode;
 logShowHoF = false;
 renderCollection();
 });
+// Keeps at most one of the six log toolbar keys (Search, Sort, Filter,
+// Reset, HoF, Edit) "lit" at a time, EXCEPT Search/Sort/Filter, which
+// are allowed to stay active together - so opening/toggling any key
+// clears the others unless they're named in `keep`. Only touches state
+// that's actually set (so it doesn't force needless re-renders), and
+// returns whether anything actually changed.
+function resetLogKeysExcept(keep) {
+keep = keep || [];
+var changed = false;
+if (keep.indexOf('search') === -1) {
+if (logSearchQuery) {
+logSearchQuery = '';
+logSearchInput.value = '';
+changed = true;
+}
+document.getElementById('log-search-wrap').classList.remove('open');
+}
+if (keep.indexOf('sort') === -1) {
+if (logSortMode !== 'newest') {
+logSortMode = 'newest';
+document.querySelectorAll('#log-sort-panel .dex-select-option').forEach(function(o) {
+o.classList.toggle('active', o.dataset.value === 'newest');
+});
+document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS.newest + ' ▾';
+document.getElementById('btn-log-sort').classList.remove('active');
+changed = true;
+}
+document.getElementById('log-sort-wrap').classList.remove('open');
+}
+if (keep.indexOf('filter') === -1) {
+if (logFilterGame || logFilterMethod || logFilterGen) {
+logFilterGame = '';
+logFilterMethod = '';
+logFilterGen = '';
+document.getElementById('log-filter-game').value = '';
+document.getElementById('log-filter-method').value = '';
+document.getElementById('log-filter-gen').value = '';
+updateLogFilterButtonLabel();
+changed = true;
+}
+document.getElementById('log-filter-wrap').classList.remove('open');
+}
+if (keep.indexOf('hof') === -1 && logShowHoF) {
+logShowHoF = false;
+changed = true;
+}
+if (keep.indexOf('edit') === -1 && logEditMode) {
+logEditMode = false;
+var editBtn = document.getElementById('btn-toggle-log-edit');
+editBtn.classList.remove('active');
+editBtn.setAttribute('aria-pressed', 'false');
+changed = true;
+}
+if (changed) logCardJumpToTop();
+return changed;
+}
 document.getElementById('btn-log-hof').addEventListener('click', function() {
+resetLogKeysExcept(['hof']);
 logShowHoF = !logShowHoF;
 renderCollection();
 });
@@ -3903,19 +3962,23 @@ renderCollection();
 });
 document.getElementById('btn-log-search').addEventListener('click', function(e) {
 e.stopPropagation();
+var changed = resetLogKeysExcept(['search', 'sort', 'filter']);
 closeOtherDexDropdowns('log-search-wrap');
 document.getElementById('log-search-wrap').classList.toggle('open');
 if (document.getElementById('log-search-wrap').classList.contains('open')) {
 logSearchInput.focus();
 }
+if (changed) renderCollection();
 });
 document.getElementById('log-search-panel').addEventListener('click', function(e) {
 e.stopPropagation();
 });
 document.getElementById('btn-log-sort').addEventListener('click', function(e) {
 e.stopPropagation();
+var changed = resetLogKeysExcept(['search', 'sort', 'filter']);
 closeOtherDexDropdowns('log-sort-wrap');
 document.getElementById('log-sort-wrap').classList.toggle('open');
+if (changed) renderCollection();
 });
 document.getElementById('log-sort-panel').addEventListener('click', function(e) {
 e.stopPropagation();
@@ -3933,8 +3996,10 @@ renderCollection();
 });
 document.getElementById('btn-log-filter').addEventListener('click', function(e) {
 e.stopPropagation();
+var changed = resetLogKeysExcept(['search', 'sort', 'filter']);
 closeOtherDexDropdowns('log-filter-wrap');
 document.getElementById('log-filter-wrap').classList.toggle('open');
+if (changed) renderCollection();
 });
 document.getElementById('log-filter-panel').addEventListener('click', function(e) {
 e.stopPropagation();
@@ -3998,25 +4063,7 @@ logCardJumpToTop();
 renderCollection();
 });
 document.getElementById('btn-log-reset-filters').addEventListener('click', function() {
-logSearchQuery = '';
-logSortMode = 'newest';
-logFilterGame = '';
-logFilterMethod = '';
-logFilterGen = '';
-logSearchInput.value = '';
-document.getElementById('log-filter-game').value = '';
-document.getElementById('log-filter-method').value = '';
-document.getElementById('log-filter-gen').value = '';
-document.querySelectorAll('#log-sort-panel .dex-select-option').forEach(function(o) {
-o.classList.toggle('active', o.dataset.value === 'newest');
-});
-document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS.newest + ' ▾';
-document.getElementById('btn-log-sort').classList.remove('active');
-updateLogFilterButtonLabel();
-document.getElementById('log-search-wrap').classList.remove('open');
-document.getElementById('log-sort-wrap').classList.remove('open');
-document.getElementById('log-filter-wrap').classList.remove('open');
-logCardJumpToTop();
+resetLogKeysExcept([]);
 renderCollection();
 });
 /* ---------- rendering: living dex ---------- */
@@ -4594,6 +4641,17 @@ if (isHandheldBtn) {
 // The re-render below replaces this button with a fresh one, so
 // without this delay the animation would never get a chance to play.
 btn.classList.add('is-pressing');
+// If this is one of the dpad's directional arms, rock the whole
+// connected plate (pressed side dips, opposite side lifts) rather
+// than animating the button in isolation.
+var dpadWrap = btn.closest('.hunt-dex-dpad');
+if (dpadWrap) {
+var dir = btn.classList.contains('dpad-up') ? 'up' :
+btn.classList.contains('dpad-down') ? 'down' :
+btn.classList.contains('dpad-left') ? 'left' :
+btn.classList.contains('dpad-right') ? 'right' : null;
+if (dir) dpadWrap.classList.add('press-' + dir);
+}
 setTimeout(function() {
 runHuntAction(action, hunt, id, btn);
 }, 180);
@@ -4969,6 +5027,7 @@ if (btnLogCatch) btnLogCatch.addEventListener('click', function() {
 openCatchModal(null);
 });
 document.getElementById('btn-toggle-log-edit').addEventListener('click', function() {
+resetLogKeysExcept(['edit']);
 logEditMode = !logEditMode;
 this.classList.toggle('active', logEditMode);
 this.setAttribute('aria-pressed', logEditMode ? 'true' : 'false');
