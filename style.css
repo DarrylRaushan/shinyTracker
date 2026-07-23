@@ -4856,21 +4856,36 @@ display: flex;
 align-items: center;
 margin-top: 4px;
 }
+/* Living Dex pill: deliberately blue (rather than the red used everywhere
+   else on this shell) so it reads as a distinct "go somewhere else"
+   action instead of blending into the toolbar/nav buttons. Decorated like
+   a small hardware panel to match the handheld's physical-device look:
+   brushed stripe texture, corner rivets, a Poké Ball icon with a soft
+   pulsing "live" ring, a hover shine sweep, a trio of tiny status LEDs
+   echoing the ones on the header, and a satisfying click-bounce when
+   tapped. */
 .log-dex-pill {
+display: flex;
+align-items: center;
+gap: 9px;
 width: 100%;
-height: 42px;
+height: 46px;
 margin: 0;
-padding: 0;
+padding: 0 14px 0 10px;
 font: inherit;
 font-family: var(--hud);
 font-weight: 800;
 font-size: 13px;
 letter-spacing: 0.4px;
-color: #fff2ee;
+color: #eef1ff;
 appearance: none;
 -webkit-appearance: none;
 cursor: pointer;
-background: linear-gradient(180deg, var(--red-shell) 0%, var(--red-shell-dark) 100%);
+position: relative;
+overflow: hidden;
+background:
+repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 2px, transparent 2px, transparent 7px),
+linear-gradient(180deg, #3f52d6 0%, #1a2263 100%);
 border: 2px solid var(--line);
 border-radius: 12px;
 box-shadow:
@@ -4878,8 +4893,130 @@ inset 0 1px 0 rgba(255, 255, 255, 0.3),
 0 3px 0 rgba(43, 35, 32, 0.45);
 transition: transform 0.05s ease, box-shadow 0.05s ease, filter 0.15s ease;
 }
+/* Corner rivets - small recessed screw-heads, echoing the bolts/lights
+   motif used on the handheld chrome elsewhere in the app. Real elements
+   (not box-shadow offsets) so both corners stay put regardless of the
+   pill's width. */
+.log-dex-pill-rivet {
+position: absolute;
+width: 4px;
+height: 4px;
+border-radius: 50%;
+background: rgba(0, 0, 0, 0.35);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+pointer-events: none;
+}
+.log-dex-pill-rivet.rivet-tl {
+top: 5px;
+left: 6px;
+}
+.log-dex-pill-rivet.rivet-br {
+bottom: 5px;
+right: 6px;
+}
+.log-dex-pill-icon {
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+width: 26px;
+height: 26px;
+border-radius: 50%;
+color: #d7defe;
+background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.25) 75%);
+box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 0 3px rgba(255, 255, 255, 0.06);
+position: relative;
+transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+/* Soft pulsing ring around the icon badge - a small "device is live"
+   signal, reinforcing that the count next to it is live data. */
+.log-dex-pill-icon::after {
+content: '';
+position: absolute;
+inset: -3px;
+border-radius: 50%;
+border: 1.5px solid rgba(140, 170, 255, 0.55);
+animation: log-dex-pill-pulse 2.6s ease-out infinite;
+pointer-events: none;
+}
+@keyframes log-dex-pill-pulse {
+0% { transform: scale(0.85); opacity: 0.9; }
+70% { transform: scale(1.35); opacity: 0; }
+100% { transform: scale(1.35); opacity: 0; }
+}
+/* Depth-on-tap: the icon lens itself looks pressed in, not just the
+   whole pill translating down. */
+.log-dex-pill:active .log-dex-pill-icon {
+transform: scale(0.9);
+box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+.log-dex-pill-label {
+flex: 1 1 auto;
+text-align: left;
+white-space: nowrap;
+}
+.log-dex-pill-count {
+flex-shrink: 0;
+font-family: var(--mono);
+font-size: 10.5px;
+font-weight: 700;
+letter-spacing: 0.3px;
+color: #fff;
+background: rgba(0, 0, 0, 0.28);
+border: 1px solid rgba(255, 255, 255, 0.15);
+padding: 3px 8px;
+border-radius: 999px;
+}
+/* Micro status LEDs - a tiny row of three dots echoing the red/white/
+   green status lights on the header, purely decorative. */
+.log-dex-pill-leds {
+display: flex;
+gap: 3px;
+flex-shrink: 0;
+}
+.log-dex-pill-leds span {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.35);
+}
+.log-dex-pill-leds span:nth-child(1) { background: rgba(255, 120, 120, 0.6); }
+.log-dex-pill-leds span:nth-child(2) { background: rgba(255, 255, 255, 0.55); }
+.log-dex-pill-leds span:nth-child(3) { background: rgba(140, 255, 160, 0.6); }
+.log-dex-pill-arrow {
+display: none;
+}
+/* Click bounce: a quick squash-and-pop when tapped, retriggered from JS
+   by toggling this class, so there's real tactile feedback beyond the
+   plain :active translate. */
+.log-dex-pill.log-dex-pill-clicked {
+animation: log-dex-pill-click 0.32s ease;
+}
+@keyframes log-dex-pill-click {
+0% { transform: scale(1); }
+35% { transform: scale(0.9); }
+65% { transform: scale(1.05); }
+100% { transform: scale(1); }
+}
+/* Shine on hover/tap, matching the glossy handheld-hardware look used
+   elsewhere (e.g. the D-pad lens glint). */
+.log-dex-pill::after {
+content: '';
+position: absolute;
+top: 0;
+left: -60%;
+width: 35%;
+height: 100%;
+background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+transform: skewX(-18deg);
+transition: left 0.5s ease;
+pointer-events: none;
+}
 .log-dex-pill:hover {
-filter: brightness(1.08);
+filter: brightness(1.1);
+}
+.log-dex-pill:hover::after {
+left: 130%;
 }
 .log-dex-pill:active {
 transform: translateY(2px);
