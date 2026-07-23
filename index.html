@@ -75,11 +75,27 @@
                   <button type="button" class="log-dex-grid-btn" id="btn-log-reset-filters" title="Reset Filters" aria-label="Reset all filters">⟲</button>
                 </div>
                 <div class="log-dex-row">
-                  <button type="button" class="log-dex-pill" id="btn-log-to-livingdex-1" title="Living Dex" aria-label="Go to Living Dex">Living Dex →</button>
+                  <button type="button" class="log-dex-pill" id="btn-log-to-livingdex-1" title="Living Dex" aria-label="Go to Living Dex">
+                    <span class="log-dex-pill-rivet rivet-tl" aria-hidden="true"></span>
+                    <span class="log-dex-pill-rivet rivet-br" aria-hidden="true"></span>
+                    <span class="log-dex-pill-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" width="27" height="27" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.15"/>
+                        <path d="M3 12a9 9 0 0 1 18 0" fill="currentColor" opacity="0.55"/>
+                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
+                        <path d="M3 12H9M15 12H21" stroke="currentColor" stroke-width="1.8"/>
+                        <circle cx="12" cy="12" r="2.6" fill="#182463" stroke="currentColor" stroke-width="1.8"/>
+                      </svg>
+                    </span>
+                    <span class="log-dex-pill-label">Living Dex</span>
+                    <span class="log-dex-pill-count" id="log-dex-pill-count">0 / 0</span>
+                    <span class="log-dex-pill-leds" aria-hidden="true"><span></span><span></span><span></span></span>
+                    <span class="log-dex-pill-arrow" aria-hidden="true">→</span>
+                  </button>
                 </div>
                 <div class="log-dex-nav">
-                  <button class="log-dex-nav-btn" id="log-screen-prev" aria-label="Show previous catch">◀</button>
-                  <button class="log-dex-nav-btn" id="log-screen-next" aria-label="Show next catch">▶</button>
+                  <button class="log-dex-nav-btn" id="log-screen-prev" aria-label="Show previous catch">◀&#xFE0E;</button>
+                  <button class="log-dex-nav-btn" id="log-screen-next" aria-label="Show next catch">▶&#xFE0E;</button>
                 </div>
               </div>
             </div>
