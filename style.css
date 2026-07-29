@@ -280,8 +280,7 @@ justify-content: center;
 }
 .tabs-screen button span.tab-dot {
 display: none;
-}
-}
+}}
 .section-head {
 display: flex;
 align-items: center;
@@ -460,8 +459,7 @@ scroll-snap-type: y mandatory;
 flex-shrink: 0;
 scroll-snap-align: start;
 scroll-snap-stop: always;
-}
-}
+}}
 /* pin feature removed */
 /* Hinge: vertical strip along the entire right edge of the card, ~10%
 of the total width. A conic-style highlight down its left-center
@@ -796,8 +794,7 @@ filter: brightness(1);
 @media (prefers-reduced-motion: reduce) {
 .hunt-dex-light.lit {
 animation: none;
-}
-}
+}}
 /* CSS-2: The red light doubles as the abandon/cancel control — full rationale in NOTES.md */
 button.hunt-dex-light {
 appearance: none;
@@ -1735,8 +1732,7 @@ font-size: 13.5px;
 }
 .log-dex-shell {
 padding: 80px 14px 20px;
-}
-}
+}}
 .stat-cards {
 display: grid;
 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -1876,8 +1872,7 @@ border-color: var(--blue);
 .field select,
 .field textarea {
 font-size: 16px;
-}
-}
+}}
 .odds-display {
 background: var(--bg-panel-raised);
 border: 2px solid var(--line);
@@ -1972,12 +1967,13 @@ overflow: hidden;
 display: flex;
 flex-direction: column;
 background:
-linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 14%),
-linear-gradient(165deg, #5568e4 0%, var(--blue) 46%, var(--blue-dark) 100%);
+linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 14%),
+repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 2px, transparent 2px, transparent 6px),
+linear-gradient(165deg, #7c8695 0%, #4b525c 46%, #23272d 100%);
 box-shadow:
 0 8px 0 rgba(43, 35, 32, 0.25),
 0 0 0 4px rgba(238, 21, 21, 0.16),
-inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+inset 0 0 0 2px rgba(255, 255, 255, 0.12);
 }
 /* The device reads as a single sealed unit, not a scrolling page: it
    never scrolls (overflow: hidden above) and every internal dimension
@@ -2042,7 +2038,7 @@ transform: translateY(-50%) rotate(35deg);
 display: block;
 text-align: center;
 font-family: var(--hud);
-font-size: 9.5px;
+font-size: 15px;
 font-weight: 800;
 letter-spacing: 2.5px;
 color: rgba(255, 255, 255, 0.4);
@@ -2493,8 +2489,7 @@ fill: #6be4ff;
 filter: drop-shadow(0 0 2px rgba(107, 228, 255, 0.65));
 }
 @media (max-width: 340px) {
-.hunt-radar-lines { display: none; }
-}
+.hunt-radar-lines { display: none; }}
 .hunt-radar-name-field {
 margin-top: 2px;
 }
@@ -2622,8 +2617,7 @@ grid-template-areas:
 "orb"
 "odds"
 "charm";
-}
-}
+}}
 /* ---------- Shiny Found modal: celebratory sprite header ---------- */
 /* ---------- Shiny Found modal: TCG-card confirmation ---------- */
 /* Replaces the old ".modal.modal-found" through ".found-hero-name" block. */
@@ -2895,8 +2889,7 @@ grid-template-areas:
 .tcg-editnote { font-size: 11.5px; font-weight: 700; color: var(--ink-dim); margin: 0 2px 12px; flex-shrink: 0; }
 
 @media (prefers-reduced-motion: reduce) {
-  .tcg-card, .tcg-art-rays, .tcg-art-glow, .tcg-sprite-wrap, .tcg-spark, .is-pressing { animation: none; }
-}
+  .tcg-card, .tcg-art-rays, .tcg-art-glow, .tcg-sprite-wrap, .tcg-spark, .is-pressing { animation: none; }}
 @media (prefers-reduced-motion: reduce) {
 .found-hero-glow,
 .found-hero-rays,
@@ -2904,39 +2897,7 @@ grid-template-areas:
 .found-hero-spark,
 .found-hero-sprite-wrap {
 animation: none;
-}
-}
-/* ---------- Living Dex ---------- */
-.dex-mode-toggle {
-display: inline-flex;
-gap: 6px;
-background: var(--bg-panel-raised);
-padding: 5px;
-border-radius: 999px;
-border: 2px solid var(--line);
-margin-bottom: 16px;
-}
-.dex-mode-toggle button {
-font-family: var(--hud);
-font-size: 12.5px;
-letter-spacing: 0.3px;
-background: transparent;
-border: none;
-color: var(--ink-dim);
-padding: 8px 16px;
-border-radius: 999px;
-cursor: pointer;
-font-weight: 700;
-transition: all 0.15s ease;
-}
-.dex-mode-toggle button.active {
-background: var(--blue);
-color: #fff;
-box-shadow: 0 3px 0 var(--blue-dark);
-}
-.dex-mode-toggle button:hover:not(.active) {
-color: var(--ink);
-}
+}}
 .dex-toolbar {
 display: flex;
 align-items: flex-end;
@@ -3059,87 +3020,6 @@ flex: 1;
 padding: 6px 8px;
 font-size: 12px;
 }
-.dex-chip.variant-hidden {
-display: none;
-}
-/* ---------- Living Dex: Pokémon Center PC scene ---------- */
-.pc-scene {
-margin: 4px 0 22px;
-}
-.pc-monitor {
-background: linear-gradient(180deg, #f1f2f6 0%, #d3d6de 60%, #c2c5cf 100%);
-border: 3px solid var(--line);
-border-radius: 24px 24px 8px 8px;
-padding: 14px 14px 20px;
-position: relative;
-box-shadow:
-0 7px 0 rgba(43, 35, 32, 0.2),
-inset 0 -6px 10px rgba(0, 0, 0, 0.06);
-}
-.pc-monitor::before,
-.pc-monitor::after {
-content: "";
-position: absolute;
-top: 9px;
-width: 7px;
-height: 7px;
-border-radius: 50%;
-background: radial-gradient(circle at 35% 35%, #fff, #8d909b 70%, #6b6e78);
-box-shadow: inset 0 0 0 1px rgba(43, 35, 32, 0.4);
-}
-.pc-monitor::before {
-left: 11px;
-}
-.pc-monitor::after {
-right: 11px;
-}
-.pc-monitor-vents {
-display: flex;
-gap: 5px;
-justify-content: center;
-margin-bottom: 10px;
-}
-.pc-monitor-vents span {
-width: 24px;
-height: 4px;
-border-radius: 2px;
-background: rgba(43, 35, 32, 0.22);
-}
-.pc-monitor-topbar {
-display: flex;
-align-items: center;
-justify-content: space-between;
-padding: 0 6px;
-margin-bottom: 9px;
-}
-.pc-brand-text {
-font-family: var(--hud);
-font-size: 10.5px;
-letter-spacing: 1.4px;
-color: var(--ink-dim);
-font-weight: 800;
-}
-.pc-power {
-display: flex;
-align-items: center;
-gap: 5px;
-}
-.pc-power-light {
-width: 8px;
-height: 8px;
-border-radius: 50%;
-background: #3ee06a;
-box-shadow:
-0 0 5px #3ee06a,
-0 0 2px #3ee06a;
-animation: pc-power-blink 2.8s infinite ease-in-out;
-}
-.pc-power-label {
-font-family: var(--mono);
-font-size: 9px;
-color: var(--ink-dim);
-letter-spacing: 1px;
-}
 @keyframes pc-power-blink {
 0%,
 100% {
@@ -3152,74 +3032,6 @@ box-shadow:
 opacity: 0.4;
 box-shadow: 0 0 2px #3ee06a;
 }
-}
-.pc-screen-bezel {
-background: linear-gradient(160deg, #2c2c2e, #131315);
-border-radius: 15px;
-padding: 12px;
-box-shadow:
-inset 0 0 0 2px rgba(255, 255, 255, 0.05),
-inset 0 5px 14px rgba(0, 0, 0, 0.55);
-}
-.pc-screen {
-position: relative;
-overflow: hidden;
-border-radius: 8px;
-padding: 16px 14px 18px;
-background: radial-gradient(
-120% 100% at 28% 0%,
-#e4f7ea 0%,
-#c3ecd8 42%,
-#9fdcc4 100%
-);
-box-shadow: inset 0 0 34px rgba(0, 45, 25, 0.28);
-}
-/* CSS-5: Caps the visible screen to roughly 3 collapsed generation ca — full rationale in NOTES.md */
-.pc-screen-content {
-position: relative;
-z-index: 2;
-max-height: 600px;
-overflow-y: auto;
-overflow-x: hidden;
-padding-right: 4px;
-margin-right: -4px;
-scrollbar-width: thin;
-scrollbar-color: rgba(0, 50, 25, 0.4) transparent;
-}
-.pc-screen-content::-webkit-scrollbar {
-width: 6px;
-}
-.pc-screen-content::-webkit-scrollbar-track {
-background: transparent;
-}
-.pc-screen-content::-webkit-scrollbar-thumb {
-background: rgba(0, 50, 25, 0.35);
-border-radius: 3px;
-}
-.pc-scanlines {
-position: absolute;
-inset: 0;
-pointer-events: none;
-z-index: 3;
-background: repeating-linear-gradient(
-180deg,
-rgba(0, 20, 10, 0.09) 0px,
-rgba(0, 20, 10, 0.09) 1px,
-transparent 2px,
-transparent 3px
-);
-animation: pc-flicker 6.5s infinite;
-}
-.pc-screen-glare {
-position: absolute;
-inset: 0;
-pointer-events: none;
-z-index: 4;
-background: linear-gradient(
-135deg,
-rgba(255, 255, 255, 0.32) 0%,
-rgba(255, 255, 255, 0) 32%
-);
 }
 @keyframes pc-flicker {
 0%,
@@ -3245,840 +3057,11 @@ opacity: 1;
 opacity: 0.8;
 }
 }
-.pc-screen .dex-mode-toggle {
-background: rgba(255, 255, 255, 0.55);
-}
-.pc-screen .dex-summary {
-box-shadow: 0 5px 0 rgba(0, 30, 15, 0.18);
-}
-/* CSS-6: dex-card — full rationale in NOTES.md */
-.pc-screen .dex-card.expanded {
-margin-left: 0;
-margin-right: 0;
-}
-/* ---------- keyboard ---------- */
-.pc-keyboard-tray {
-margin: -6px auto 0;
-width: 96%;
-padding: 22px 16px 18px;
-position: relative;
-}
-.pc-keyboard-tray::before {
-content: "";
-position: absolute;
-inset: 0;
-z-index: 0;
-background: linear-gradient(180deg, #dde0e6 0%, #b6b9c3 100%);
-border: 3px solid var(--line);
-border-top: none;
-clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
-box-shadow: 0 6px 0 rgba(43, 35, 32, 0.18);
-}
-.pc-keyboard-slit {
-position: absolute;
-top: 8px;
-left: 50%;
-transform: translateX(-50%);
-z-index: 1;
-width: 36%;
-height: 5px;
-border-radius: 3px;
-background: rgba(43, 35, 32, 0.28);
-}
-/* Decorative QWERTY rows - not interactive, purely there to read as areal keyboard. Staggered left offsets mimic a real key layout. */
-.pc-deco-keys {
-position: relative;
-z-index: 1;
-margin-bottom: 10px;
-}
-.pc-deco-row {
-display: flex;
-justify-content: center;
-gap: 3px;
-margin-bottom: 3px;
-}
-.pc-deco-row-2 {
-padding-left: 10px;
-}
-.pc-deco-row-3 {
-padding-left: 20px;
-}
-.pc-deco-row span {
-flex: 1 1 0;
-max-width: 28px;
-height: 22px;
-display: flex;
-align-items: center;
-justify-content: center;
-background: linear-gradient(180deg, #fdfdfe 0%, #d8dae0 100%);
-border: 1.5px solid var(--line);
-border-radius: 5px;
-box-shadow: 0 2px 0 var(--line);
-font-family: var(--mono);
-font-size: 9px;
-font-weight: 700;
-color: var(--ink-dim);
-}
-.pc-key-row {
-position: relative;
-z-index: 1;
-display: flex;
-gap: 10px;
-justify-content: center;
-flex-wrap: wrap;
-}
-.pc-key-row + .pc-key-row {
-margin-top: 10px;
-}
-.pc-key-row-space {
-padding: 0 2px;
-}
-.pc-key {
-background: linear-gradient(180deg, #ffffff 0%, #eceef2 100%);
-border: 2px solid var(--line);
-border-radius: 8px;
-padding: 8px 12px;
-box-shadow: 0 4px 0 var(--line);
-}
-/* the search field is shaped like an actual keyboard spacebar - wide,low, and only lightly rounded, instead of a tall pill-shaped search box */
-.pc-key-search {
-flex: 1;
-width: 100%;
-padding: 6px 10px;
-border-radius: 6px;
-}
-.pc-key-label {
-display: block;
-font-family: var(--mono);
-font-size: 9px;
-letter-spacing: 1.2px;
-color: var(--ink-dim);
-text-transform: uppercase;
-text-align: center;
-margin-bottom: 4px;
-}
-.pc-key-search .field input {
-height: 34px;
-border-radius: 5px;
-text-align: center;
-letter-spacing: 0.3px;
-}
-/* Sort / Type / Forms keys - styled like a row of F-keys: squarer,slightly shorter, equal width */
-.pc-key-fn {
-flex: 1 1 0;
-min-width: 0;
-max-width: 150px;
-padding: 7px 8px 8px;
-}
-.pc-key-fn .pc-key-label {
-font-size: 8px;
-}
-.pc-key .field {
-margin-bottom: 0;
-width: 100%;
-}
-.pc-key .field input {
-text-align: center;
-}
-.pc-key .dex-select-wrap,
-.pc-key .variant-filter-wrap {
-position: relative;
-}
-.pc-key .ghost {
-padding: 8px 10px;
-font-size: 12px;
-width: 100%;
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-}
-/* CSS-7: Living Dex mobile: Handheld Pokédex — full rationale in NOTES.md */
-.dex-handheld-topbar,
-.dex-handheld-controls {
-display: none;
-}
-@media (max-width: 520px) {
-/* CSS-8: Mobile: the person is already holding a phone-sized rectangl — full rationale in NOTES.md */
-.pc-scene {
-margin: 0 0 22px;
-}
-.pc-monitor {
-background: linear-gradient(
-155deg,
-var(--red-shell) 0%,
-var(--red-shell-dark) 100%
-);
-border: 3px solid var(--line);
-border-radius: 26px 26px 16px 16px;
-padding: 14px 12px 18px;
-position: relative;
-box-shadow:
-0 7px 0 rgba(43, 35, 32, 0.28),
-inset 0 2px 0 rgba(255, 255, 255, 0.22);
-}
-.pc-monitor::before,
-.pc-monitor::after {
-display: none;
-}
-.pc-monitor-vents {
-display: none;
-}
-/* The desktop "POKÉMON STORAGE SYSTEM" readout is PC-specific copy;swap it for the handheld chrome instead. */
-.pc-monitor-topbar {
-display: none;
-}
-.dex-handheld-topbar {
-display: flex;
-align-items: center;
-gap: 10px;
-padding: 2px 6px 12px;
-}
-.dex-handheld-lens {
-width: 30px;
-height: 30px;
-border-radius: 50%;
-flex-shrink: 0;
-background: radial-gradient(
-circle at 35% 30%,
-#bfe8ff,
-#2a6fd6 55%,
-#0f3a80
-);
-border: 2.5px solid var(--line);
-position: relative;
-overflow: hidden;
-box-shadow:
-inset 0 0 0 2px rgba(255, 255, 255, 0.35),
-0 2px 0 rgba(43, 35, 32, 0.3);
-}
-.dex-handheld-lens-glint {
-position: absolute;
-top: 3px;
-left: 5px;
-width: 9px;
-height: 9px;
-border-radius: 50%;
-background: rgba(255, 255, 255, 0.75);
-filter: blur(1px);
-}
-.dex-handheld-lights {
-display: flex;
-gap: 6px;
-}
-.dex-handheld-light {
-width: 8px;
-height: 8px;
-border-radius: 50%;
-border: 1.5px solid rgba(43, 35, 32, 0.5);
-opacity: 0.35;
-}
-.dex-handheld-light.g {
-background: #3ddc4a;
-}
-.dex-handheld-light.y {
-background: var(--yellow);
-}
-.dex-handheld-light.r {
-background: #ff5c5c;
-}
-.dex-handheld-light.lit {
-opacity: 1;
-box-shadow: 0 0 5px 1px rgba(61, 220, 74, 0.85);
-}
-.dex-handheld-brand {
-margin-left: auto;
-font-family: var(--hud);
-font-size: 14px;
-font-weight: 800;
-letter-spacing: 1px;
-color: #fff;
--webkit-text-stroke: 0.5px var(--line);
-text-shadow: 0 2px 0 rgba(43, 35, 32, 0.35);
-}
-.pc-brand-text {
-font-size: 11px;
-}
-.pc-screen-bezel {
-background: linear-gradient(160deg, #2c2c2e, #131315);
-padding: 9px;
-border-radius: 16px;
-}
-.pc-screen {
-position: relative;
-overflow: hidden;
-border-radius: 11px;
-padding: 12px;
-box-shadow: inset 0 0 24px rgba(0, 45, 25, 0.28);
-}
-.pc-screen-content {
-max-height: 520px;
-}
-.pc-scanlines {
-opacity: 0.7;
-}
-.pc-screen-glare {
-display: block;
-}
-.pc-screen .dex-mode-toggle {
-background: rgba(255, 255, 255, 0.55);
-}
-/* CSS-9: Control deck: a stubby hinge slit, a decorative D-pad + A/B — full rationale in NOTES.md */
-.pc-keyboard-tray {
-margin: 12px 0 0;
-width: 100%;
-padding: 14px 12px 12px;
-position: relative;
-}
-.pc-keyboard-tray::before {
-background: linear-gradient(180deg, #f1f2f6 0%, #cfd2da 100%);
-clip-path: none;
-border-radius: 16px;
-}
-.pc-keyboard-slit {
-width: 28%;
-height: 5px;
-top: 9px;
-}
-.pc-deco-keys {
-display: none;
-}
-.dex-handheld-controls {
-display: flex;
-align-items: center;
-justify-content: space-between;
-position: relative;
-z-index: 1;
-padding: 2px 6px 12px;
-}
-.dex-handheld-dpad {
-position: relative;
-width: 56px;
-height: 56px;
-flex-shrink: 0;
-border-radius: 8px;
-background: linear-gradient(150deg, #3d424b, #22252a);
-box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.06);
-}
-.dex-handheld-dpad::before {
-content: "";
-position: absolute;
-inset: 5px;
-border-radius: 50%;
-background: radial-gradient(circle at 38% 34%, #cdd1d7, #989ca4 68%, #7c8089);
-box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-.dex-handheld-dpad span {
-position: absolute;
-background: linear-gradient(180deg, #f4f5f7, #c7cbd1);
-border: none;
-box-shadow:
-inset 0 1px 0 rgba(255, 255, 255, 0.75),
-inset 0 -2px 0 rgba(0, 0, 0, 0.18);
-z-index: 1;
-}
-.hh-dpad-up,
-.hh-dpad-down {
-width: 18px;
-height: 20px;
-left: 19px;
-}
-.hh-dpad-up {
-top: 2px;
-clip-path: polygon(18% 0%, 82% 0%, 100% 100%, 0% 100%);
-}
-.hh-dpad-down {
-bottom: 2px;
-clip-path: polygon(0% 0%, 100% 0%, 82% 100%, 18% 100%);
-}
-.hh-dpad-left,
-.hh-dpad-right {
-width: 20px;
-height: 18px;
-top: 19px;
-}
-.hh-dpad-left {
-left: 2px;
-clip-path: polygon(0% 18%, 0% 82%, 100% 100%, 100% 0%);
-}
-.hh-dpad-right {
-right: 2px;
-clip-path: polygon(100% 18%, 100% 82%, 0% 100%, 0% 0%);
-}
-.hh-dpad-center {
-width: 15px;
-height: 15px;
-left: 20.5px;
-top: 20.5px;
-border-radius: 50%;
-z-index: 1;
-background: radial-gradient(circle at 38% 34%, #d8dbe0, #a3a7ae 70%, #888c94);
-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.28);
-}
-.dex-handheld-ab {
-display: flex;
-gap: 8px;
-align-items: center;
-}
-.dex-handheld-btn {
-width: 30px;
-height: 30px;
-border-radius: 50%;
-display: flex;
-align-items: center;
-justify-content: center;
-font-family: var(--hud);
-font-weight: 800;
-font-size: 12px;
-color: #fff;
-border: 2px solid var(--line);
-box-shadow: 0 3px 0 rgba(43, 35, 32, 0.4);
-}
-.dex-handheld-btn.a {
-background: var(--blue);
-}
-.dex-handheld-btn.b {
-background: var(--red);
-margin-top: 10px;
-}
-.pc-key-row {
-gap: 8px;
-position: relative;
-z-index: 1;
-}
-.pc-key-row + .pc-key-row {
-margin-top: 8px;
-}
-.pc-key-row-fn {
-flex-wrap: wrap;
-}
-.pc-key {
-background: linear-gradient(180deg, #ffffff 0%, #eceef2 100%);
-border: 2px solid var(--line);
-border-radius: 12px;
-padding: 9px 11px;
-box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
-}
-.pc-key-search {
-border-radius: 12px;
-padding: 9px 11px;
-}
-.pc-key-label {
-text-align: left;
-font-size: 9.5px;
-}
-.pc-key-search .field input {
-height: 36px;
-border-radius: 8px;
-text-align: left;
-}
-.pc-key-fn {
-max-width: none;
-flex: 1 1 30%;
-padding: 7px 8px 8px;
-}
-.pc-key .ghost {
-padding: 8px 8px;
-font-size: 11.5px;
-}
-}
-.dex-summary {
-display: flex;
-align-items: center;
-gap: 18px;
-flex-wrap: wrap;
-background: var(--bg-panel);
-border: 2.5px solid var(--line);
-border-radius: var(--radius);
-padding: 16px 20px;
-margin-bottom: 20px;
-box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
-}
-.dex-summary .num {
-font-family: var(--hud);
-font-size: 32px;
-font-weight: 800;
-color: var(--red);
-line-height: 1;
-}
-.dex-summary .lbl {
-font-size: 11px;
-color: var(--ink-dim);
-text-transform: uppercase;
-letter-spacing: 1px;
-font-weight: 700;
-margin-top: 4px;
-}
-.dex-summary .bar-track {
-flex: 1;
-min-width: 160px;
-height: 14px;
-border-radius: 999px;
-background: #fff;
-border: 2px solid var(--line);
-overflow: hidden;
-}
-.dex-summary .bar-fill {
-height: 100%;
-background: linear-gradient(90deg, var(--green), var(--yellow));
-border-radius: 999px;
-transition: width 0.3s ease;
-}
-.dex-summary .dex-hint {
-width: 100%;
-font-size: 11.5px;
-color: var(--ink-dim);
-font-weight: 600;
-}
-.dex-grid {
-display: flex;
-flex-direction: column;
-gap: 14px;
-}
-.dex-card {
-background: var(--bg-panel);
-border: 2.5px solid var(--line);
-border-radius: var(--radius);
-overflow: hidden;
-box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
-transition:
-background-color 0.15s ease,
-margin 0.2s ease;
-}
-.dex-card.expanded {
-margin-left: 0;
-margin-right: 0;
-}
-.dex-card-banner {
-background-size: cover;
-background-position: center;
-background-repeat: no-repeat;
-}
-.dex-card-head {
-display: flex;
-align-items: center;
-gap: 14px;
-padding: 44px 18px;
-cursor: pointer;
-user-select: none;
-}
-/* CSS-10: REGION BALL CONTAINER (Living Dex page)This is the round "pokeball" badge shown next to eachgeneration/region card (e.g. Kanto, Johto, Hoenn...).The actual per-region ball image + fallback markup is built inscript.js (see REGION_BALLS map + the dex-gen-badge buildernear GEN_DATA / renderLivingDex). This rule just handles thecircular frame, the <img> sizing, and the number fallback.Ball image files expected at: images/region-balls/<filename>.png — full rationale in NOTES.md */
-.dex-gen-badge {
-width: 56px;
-height: 56px;
-border-radius: 50%;
-flex-shrink: 0;
-border: 2px solid var(--line);
-display: flex;
-align-items: center;
-justify-content: center;
-font-family: var(--hud);
-font-weight: 800;
-color: #fff;
-font-size: 18px;
-text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
-overflow: hidden;
-position: relative;
-}
-.dex-gen-badge img {
-position: absolute;
-top: -14%;
-left: -14%;
-width: 124%;
-height: 124%;
-object-fit: cover;
-display: block;
-}
-.dex-gen-badge-fallback {
-display: none;
-align-items: center;
-justify-content: center;
-width: 100%;
-height: 100%;
-background: conic-gradient(from 90deg, var(--blue) 50%, var(--yellow) 50%);
-}
-.dex-gen-badge.complete::after {
-content: "✓";
-position: absolute;
-bottom: -2px;
-right: -2px;
-z-index: 3;
-width: 20px;
-height: 20px;
-border-radius: 50%;
-background: var(--green);
-color: #fff;
-border: 2px solid var(--bg-panel);
-display: flex;
-align-items: center;
-justify-content: center;
-font-family: var(--hud);
-font-weight: 800;
-font-size: 11px;
-line-height: 1;
-}
-.dex-card-title {
-flex: 1;
-min-width: 0;
-}
-.dex-card-title .region {
-font-family: var(--hud);
-font-weight: 800;
-font-size: 16px;
-color: var(--ink);
-}
-.dex-card-title .gen-label {
-font-size: 10.5px;
-color: var(--ink);
-text-transform: uppercase;
-letter-spacing: 1px;
-font-weight: 700;
-margin-top: 2px;
-}
-.dex-card-count {
-font-family: var(--hud);
-font-weight: 800;
-font-size: 15px;
-color: var(--red-dark);
-flex-shrink: 0;
-}
 .dex-chevron {
 font-size: 14px;
 color: var(--ink);
 transition: transform 0.2s ease;
 flex-shrink: 0;
-}
-.dex-card.expanded .dex-chevron {
-transform: rotate(180deg);
-}
-.dex-card-progress {
-padding: 0 18px 18px;
-}
-.dex-card-progress .bar-track {
-height: 10px;
-border-radius: 999px;
-background: #fff;
-border: 2px solid var(--line);
-overflow: hidden;
-}
-.dex-card-progress .bar-fill {
-height: 100%;
-background: linear-gradient(90deg, var(--green), var(--yellow));
-border-radius: 999px;
-transition: width 0.3s ease;
-}
-.dex-species-panel {
-display: none;
-border-top: 2.5px dashed var(--line);
-padding: 14px 18px 18px;
-background: var(--bg-panel-raised);
-background-size: cover;
-background-position: center;
-background-repeat: no-repeat;
-}
-.dex-card.expanded .dex-species-panel {
-display: block;
-}
-.dex-card[data-gen="1"] .dex-species-panel {
-background-image: url("images/dex-regions/gen1-kanto.webp");
-}
-.dex-card[data-gen="2"] .dex-species-panel {
-background-image: url("images/dex-regions/gen2-johto.jpg");
-}
-.dex-card[data-gen="3"] .dex-species-panel {
-background-image: url("images/dex-regions/gen3-hoenn.jpg");
-}
-.dex-card[data-gen="4"] .dex-species-panel {
-background-image: url("images/dex-regions/gen4-sinnoh.jpg");
-}
-.dex-card[data-gen="5"] .dex-species-panel {
-background-image: url("images/dex-regions/gen5-unova.jpg");
-}
-.dex-card[data-gen="6"] .dex-species-panel {
-background-image: url("images/dex-regions/gen6-kalos.jpg");
-}
-.dex-card[data-gen="7"] .dex-species-panel {
-background-image: url("images/dex-regions/gen7-alola.jpg");
-}
-.dex-card[data-gen="8"] .dex-species-panel {
-background-image: url("images/dex-regions/gen8-galar.jpg");
-}
-.dex-card[data-gen="9"] .dex-species-panel {
-background-image: url("images/dex-regions/gen9-paldea.jpg");
-}
-/* CSS-11: minmax(0,1fr) instead of a bare 1fr - grid tracks otherwise — full rationale in NOTES.md */
-.dex-species-grid {
-display: grid;
-grid-template-columns: repeat(6, minmax(0, 1fr));
-gap: 8px;
-}
-.dex-card[data-gen="1"] .dex-card-banner {
-background-image: url("images/dex-banners/gen1-kantobanner.jpg");
-}
-.dex-card[data-gen="2"] .dex-card-banner {
-background-image: url("images/dex-banners/gen2-johto.jpg");
-}
-.dex-card[data-gen="3"] .dex-card-banner {
-background-image: url("images/dex-banners/gen3-hoennbanner.jpg");
-}
-.dex-card[data-gen="4"] .dex-card-banner {
-background-image: url("images/dex-banners/gen4-sinnoh.jpg");
-}
-.dex-card[data-gen="5"] .dex-card-banner {
-background-image: url("images/dex-banners/gen5-unova.jpg");
-}
-.dex-card[data-gen="6"] .dex-card-banner {
-background-image: url("images/dex-banners/gen6-kalos.jpg");
-}
-.dex-card[data-gen="7"] .dex-card-banner {
-background-image: url("images/dex-banners/gen7-alola.jpg");
-}
-.dex-card[data-gen="8"] .dex-card-banner {
-background-image: url("images/dex-banners/gen8-galar.jpg");
-}
-.dex-card[data-gen="9"] .dex-card-banner {
-background-image: url("images/dex-banners/gen9-paldea.jpg");
-}
-.dex-chip {
-display: flex;
-align-items: center;
-gap: 8px;
-font-size: 13.5px;
-font-weight: 700;
-background: #fff;
-border: 1.5px solid var(--line);
-border-radius: 999px;
-padding: 8px 8px 8px 6px;
-color: var(--ink-dim);
-min-width: 0;
-}
-.dex-chip-sprite {
-width: 36px;
-height: 36px;
-flex-shrink: 0;
-display: flex;
-align-items: center;
-justify-content: center;
-position: relative;
-z-index: 1;
-}
-.dex-chip-sprite img {
-max-width: 100%;
-max-height: 100%;
-width: auto;
-height: auto;
-object-fit: contain;
-transform: scale(2.1) translateY(-6px);
-image-rendering: pixelated;
-image-rendering: crisp-edges;
-}
-.dex-chip-sprite .fallback-letter {
-font-family: var(--hud);
-font-weight: 800;
-font-size: 12px;
-color: var(--ink-dim);
-}
-.dex-chip .n {
-width: 26px;
-text-align: right;
-color: var(--ink-dim);
-font-size: 11px;
-flex-shrink: 0;
-}
-.dex-chip-name {
-display: inline-flex;
-align-items: center;
-gap: 5px;
-flex-wrap: wrap;
-min-width: 0;
-}
-.dex-chip-name-text {
-overflow: hidden;
-text-overflow: ellipsis;
-white-space: nowrap;
-min-width: 0;
-}
-.dex-chip-tag {
-display: inline-block;
-font-family: var(--hud);
-font-size: 8.5px;
-font-weight: 800;
-letter-spacing: 0.4px;
-color: #fff;
-padding: 2px 6px;
-border-radius: 999px;
-line-height: 1.4;
-text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
-}
-.dex-chip-tag-alolan {
-background: var(--yellow-dark);
-}
-.dex-chip-tag-galarian {
-background: var(--blue);
-}
-.dex-chip-tag-hisuian {
-background: var(--green-dark);
-}
-.dex-chip-tag-paldean {
-background: var(--red);
-}
-.dex-chip.caught {
-background: rgba(76, 175, 80, 0.16);
-border-color: var(--green);
-color: var(--ink);
-box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.18);
-}
-.dex-chip.caught .n {
-color: var(--green-dark);
-}
-.dex-grid.shiny-mode .dex-chip.caught {
-background-image:
-linear-gradient(
-90deg,
-rgba(255, 110, 199, 0.16),
-rgba(255, 209, 102, 0.16),
-rgba(110, 231, 183, 0.16),
-rgba(96, 165, 250, 0.16),
-rgba(192, 132, 252, 0.16)
-),
-linear-gradient(90deg, #ff6ec7, #ffd166, #6ee7b7, #60a5fa, #c084fc);
-background-origin: border-box;
-background-clip: padding-box, border-box;
-border: 1.5px solid transparent;
-color: var(--ink);
-box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.18);
-}
-.dex-grid.shiny-mode .dex-chip.caught .n {
-color: var(--ink-dim);
-}
-.dex-chip.type-dimmed {
-opacity: 0.18;
-filter: grayscale(0.5);
-transition:
-opacity 0.2s ease,
-filter 0.2s ease;
-}
-.dex-chip {
-transition:
-opacity 0.2s ease,
-filter 0.2s ease;
-}
-.dex-chip.interactive {
-cursor: pointer;
-transition:
-transform 0.08s ease,
-filter 0.15s ease,
-opacity 0.2s ease;
-}
-.dex-chip.interactive:hover {
-filter: brightness(0.97);
-border-color: var(--blue);
-}
-.dex-chip.interactive:active {
-transform: scale(0.96);
-}
-.dex-chip-highlighted {
-border-width: 2.5px;
-animation: dex-chip-attention-flash 1s ease-in-out infinite;
 }
 @keyframes dex-chip-attention-flash {
 0%,
@@ -4094,8 +3077,7 @@ box-shadow:
 0 0 0 6px rgba(255, 241, 168, 0.95),
 0 0 26px 8px rgba(255, 255, 255, 0.9);
 }
-}
-@media (max-width: 600px) {
+}@media (max-width: 600px) {
 .hunt-dex-actions {
 display: none;
 }
@@ -4191,9 +3173,6 @@ right: 0;
 .hunt-dex-dpad .hdpad-btn {
 font-size: 13px;
 }
-.dex-species-grid {
-grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 /* CSS-12: Bottom action row: on desktop the +5/timer buttons only need — full rationale in NOTES.md */
 .hunt-dex-actions {
 gap: 8px;
@@ -4216,37 +3195,7 @@ font-size: 16px;
 .hunt-dex-btn-found {
 height: 46px;
 font-size: 14px;
-}
-/* CSS-13: The 44px top/bottom padding on a collapsed generation row ex — full rationale in NOTES.md */
-.dex-card-head {
-padding: 20px 16px;
-gap: 12px;
-}
-.dex-gen-badge {
-width: 44px;
-height: 44px;
-}
-/* CSS-14: At 3-per-row, a horizontal sprite+number+name chip only leav — full rationale in NOTES.md */
-.dex-chip {
-flex-direction: column;
-text-align: center;
-padding: 10px 6px 8px;
-gap: 4px;
-}
-.dex-chip .n {
-width: auto;
-}
-.dex-chip-name {
-justify-content: center;
-}
-.dex-chip-name-text {
-white-space: normal;
-overflow: visible;
-text-overflow: clip;
-font-size: 12px;
-line-height: 1.2;
-}
-}
+}}
 /* CSS-15: Below ~440px the side-by-side portrait+info row in the hunt — full rationale in NOTES.md */
 @media (max-width: 440px) {
 .hunt-dex-screen {
@@ -4282,8 +3231,7 @@ padding: 2px 4px 0;
 }
 .hunt-dex-pokeball-row {
 margin-top: 2px;
-}
-}
+}}
 :focus-visible {
 outline: 3px solid var(--blue);
 outline-offset: 2px;
@@ -4330,8 +3278,7 @@ margin-right: -24px;
 }
 .dex-clamshell[data-active="collection"] .dex-frame {
 margin-left: -24px;
-}
-}
+}}
 .dex-clamshell[data-active="hunts"] .dex-track {
 transform: translateX(0);
 }
@@ -4345,8 +3292,7 @@ transform: translateX(calc(-1 * (100vw - 48px) + 24px));
 @media (prefers-reduced-motion: reduce) {
 .dex-track {
 transition: none;
-}
-}
+}}
 /* Living Dex: standalone page, button-only, no carousel/peek/swipe. Hidden
    whenever it isn't the active tab; when it is, it takes over in place of
    the clamshell rather than sharing the track with it. */
@@ -5366,3 +4312,1398 @@ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
   font-size: 11px;
   padding: 5px 10px;
 }
+/* ============================================================
+   LIVING DEX CSS STARTS HERE
+   (Pokémon Center PC scene, mobile Kalos clamshell, closed cover,
+   handheld chrome, species grid/cards/chips, dex-mode-toggle, dex-summary)
+   ============================================================ */
+
+/* ---------- Living Dex ---------- */
+.dex-mode-toggle {
+display: inline-flex;
+gap: 6px;
+background: var(--bg-panel-raised);
+padding: 5px;
+border-radius: 999px;
+border: 2px solid var(--line);
+margin-bottom: 16px;
+}
+.dex-mode-toggle button {
+font-family: var(--hud);
+font-size: 12.5px;
+letter-spacing: 0.3px;
+background: transparent;
+border: none;
+color: var(--ink-dim);
+padding: 8px 16px;
+border-radius: 999px;
+cursor: pointer;
+font-weight: 700;
+transition: all 0.15s ease;
+}
+.dex-mode-toggle button.active {
+background: var(--blue);
+color: #fff;
+box-shadow: 0 3px 0 var(--blue-dark);
+}
+.dex-mode-toggle button:hover:not(.active) {
+color: var(--ink);
+}
+.dex-chip.variant-hidden {
+display: none;
+}
+/* ---------- Living Dex: Pokémon Center PC scene ---------- */
+.pc-scene {
+margin: 4px 0 22px;
+}
+.pc-monitor {
+/* CSS-KALOS: Living Dex outer shell — vertical crimson Kalos-dex casing.
+   Metallic double-groove arcs are inlaid near each rounded corner via
+   layered radial-gradients (no extra markup needed); the two navy lens
+   studs live on ::before/::after, centered top and bottom. — see NOTES.md */
+background:
+radial-gradient(circle at 30px 30px, transparent 0 19px, rgba(232, 221, 184, 0.55) 19px 20.5px, transparent 20.5px, transparent 23px, rgba(232, 221, 184, 0.3) 23px 24px, transparent 24px),
+radial-gradient(circle at calc(100% - 30px) 30px, transparent 0 19px, rgba(232, 221, 184, 0.55) 19px 20.5px, transparent 20.5px, transparent 23px, rgba(232, 221, 184, 0.3) 23px 24px, transparent 24px),
+radial-gradient(circle at 30px calc(100% - 30px), transparent 0 19px, rgba(232, 221, 184, 0.55) 19px 20.5px, transparent 20.5px, transparent 23px, rgba(232, 221, 184, 0.3) 23px 24px, transparent 24px),
+radial-gradient(circle at calc(100% - 30px) calc(100% - 30px), transparent 0 19px, rgba(232, 221, 184, 0.55) 19px 20.5px, transparent 20.5px, transparent 23px, rgba(232, 221, 184, 0.3) 23px 24px, transparent 24px),
+linear-gradient(180deg, var(--red-shell) 0%, var(--red-shell-dark) 100%);
+border: 3px solid var(--line);
+border-radius: 32px;
+padding: 16px 16px 20px;
+position: relative;
+box-shadow:
+0 7px 0 rgba(43, 35, 32, 0.32),
+inset 0 2px 0 rgba(255, 255, 255, 0.22),
+inset 0 -8px 14px rgba(0, 0, 0, 0.12);
+}
+.pc-monitor::before,
+.pc-monitor::after {
+content: "";
+position: absolute;
+left: 50%;
+transform: translateX(-50%);
+width: 14px;
+height: 14px;
+border-radius: 50%;
+background: radial-gradient(circle at 35% 30%, #4a5fd0, var(--blue-dark) 65%, #0a1140);
+border: 2px solid rgba(232, 221, 184, 0.9);
+box-shadow:
+0 0 0 1.5px var(--line),
+inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+0 0 7px 1px rgba(42, 58, 160, 0.55);
+z-index: 3;
+}
+.pc-monitor::before {
+top: -4px;
+}
+.pc-monitor::after {
+bottom: -4px;
+}
+.pc-monitor-vents {
+display: none;
+}
+.pc-monitor-topbar {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 0 8px;
+margin-bottom: 40px;
+}
+.pc-brand-text {
+font-family: var(--hud);
+font-size: 10.5px;
+letter-spacing: 1.4px;
+color: rgba(255, 255, 255, 0.88);
+font-weight: 800;
+text-shadow: 0 1px 0 rgba(43, 35, 32, 0.4);
+}
+.pc-power {
+display: flex;
+align-items: center;
+gap: 5px;
+}
+.pc-power-light {
+width: 8px;
+height: 8px;
+border-radius: 50%;
+background: #3ee06a;
+box-shadow:
+0 0 5px #3ee06a,
+0 0 2px #3ee06a;
+animation: pc-power-blink 2.8s infinite ease-in-out;
+}
+.pc-power-label {
+font-family: var(--mono);
+font-size: 9px;
+color: rgba(255, 255, 255, 0.75);
+letter-spacing: 1px;
+}
+.pc-screen-bezel {
+position: relative;
+background: linear-gradient(160deg, #2c2c2e, #131315);
+border-radius: 20px;
+padding: 12px;
+box-shadow:
+0 0 0 3px rgba(232, 221, 184, 0.9),
+0 0 0 5px rgba(150, 140, 110, 0.55),
+inset 0 0 0 2px rgba(255, 255, 255, 0.05),
+inset 0 5px 14px rgba(0, 0, 0, 0.55);
+}
+/* Glowing ice-cyan horizontal band — the "capsule" the app's shell splits
+   around, sitting just above the dark aperture ring. */
+.pc-screen-bezel::before {
+content: "";
+position: absolute;
+left: -14px;
+right: -14px;
+top: -22px;
+height: 44px;
+border-radius: 999px;
+background: radial-gradient(ellipse at center, #eafcff 0%, #9fe8f7 45%, #bdeef7 100%);
+box-shadow:
+0 3px 10px rgba(0, 0, 0, 0.35),
+inset 0 2px 4px rgba(255, 255, 255, 0.6);
+z-index: -1;
+}
+/* Central circle core — the aperture the band expands into at its middle. */
+.pc-screen-bezel::after {
+content: "";
+position: absolute;
+left: 50%;
+top: -22px;
+transform: translateX(-50%);
+width: 72px;
+height: 72px;
+border-radius: 50%;
+background: radial-gradient(circle at 38% 32%, #ffffff 0%, #cdf6ff 35%, #6fd8ee 75%, #3fa8c4 100%);
+border: 3px solid rgba(232, 221, 184, 0.9);
+box-shadow:
+0 0 0 2px var(--line),
+0 3px 8px rgba(0, 0, 0, 0.35);
+z-index: -1;
+}
+.pc-screen {
+position: relative;
+overflow: hidden;
+border-radius: 8px;
+padding: 16px 14px 18px;
+background: radial-gradient(
+120% 100% at 28% 0%,
+#e4f7ea 0%,
+#c3ecd8 42%,
+#9fdcc4 100%
+);
+box-shadow: inset 0 0 34px rgba(0, 45, 25, 0.28);
+}
+/* CSS-5: Caps the visible screen to roughly 3 collapsed generation ca — full rationale in NOTES.md */
+.pc-screen-content {
+position: relative;
+z-index: 2;
+max-height: 600px;
+overflow-y: auto;
+overflow-x: hidden;
+padding-right: 4px;
+margin-right: -4px;
+scrollbar-width: thin;
+scrollbar-color: rgba(0, 50, 25, 0.4) transparent;
+}
+.pc-screen-content::-webkit-scrollbar {
+width: 6px;
+}
+.pc-screen-content::-webkit-scrollbar-track {
+background: transparent;
+}
+.pc-screen-content::-webkit-scrollbar-thumb {
+background: rgba(0, 50, 25, 0.35);
+border-radius: 3px;
+}
+.pc-scanlines {
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 3;
+background: repeating-linear-gradient(
+180deg,
+rgba(0, 20, 10, 0.09) 0px,
+rgba(0, 20, 10, 0.09) 1px,
+transparent 2px,
+transparent 3px
+);
+animation: pc-flicker 6.5s infinite;
+}
+.pc-screen-glare {
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 4;
+background: linear-gradient(
+135deg,
+rgba(255, 255, 255, 0.32) 0%,
+rgba(255, 255, 255, 0) 32%
+);
+}
+.pc-screen .dex-mode-toggle {
+background: rgba(255, 255, 255, 0.55);
+}
+.pc-screen .dex-summary {
+box-shadow: 0 5px 0 rgba(0, 30, 15, 0.18);
+}
+/* CSS-6: dex-card — full rationale in NOTES.md */
+.pc-screen .dex-card.expanded {
+margin-left: 0;
+margin-right: 0;
+}
+/* ---------- keyboard ---------- */
+.pc-keyboard-tray {
+margin: -6px auto 0;
+width: 96%;
+padding: 22px 16px 18px;
+position: relative;
+}
+.pc-keyboard-tray::before {
+content: "";
+position: absolute;
+inset: 0;
+z-index: 0;
+background: linear-gradient(180deg, #dde0e6 0%, #b6b9c3 100%);
+border: 3px solid var(--line);
+border-top: none;
+clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+box-shadow: 0 6px 0 rgba(43, 35, 32, 0.18);
+}
+.pc-keyboard-slit {
+position: absolute;
+top: 8px;
+left: 50%;
+transform: translateX(-50%);
+z-index: 1;
+width: 36%;
+height: 5px;
+border-radius: 3px;
+background: rgba(43, 35, 32, 0.28);
+}
+/* Decorative QWERTY rows - not interactive, purely there to read as areal keyboard. Staggered left offsets mimic a real key layout. */
+.pc-deco-keys {
+position: relative;
+z-index: 1;
+margin-bottom: 10px;
+}
+.pc-deco-row {
+display: flex;
+justify-content: center;
+gap: 3px;
+margin-bottom: 3px;
+}
+.pc-deco-row-2 {
+padding-left: 10px;
+}
+.pc-deco-row-3 {
+padding-left: 20px;
+}
+.pc-deco-row span {
+flex: 1 1 0;
+max-width: 28px;
+height: 22px;
+display: flex;
+align-items: center;
+justify-content: center;
+background: linear-gradient(180deg, #fdfdfe 0%, #d8dae0 100%);
+border: 1.5px solid var(--line);
+border-radius: 5px;
+box-shadow: 0 2px 0 var(--line);
+font-family: var(--mono);
+font-size: 9px;
+font-weight: 700;
+color: var(--ink-dim);
+}
+.pc-key-row {
+position: relative;
+z-index: 1;
+display: flex;
+gap: 10px;
+justify-content: center;
+flex-wrap: wrap;
+}
+.pc-key-row + .pc-key-row {
+margin-top: 10px;
+}
+.pc-key-row-space {
+padding: 0 2px;
+}
+.pc-key {
+background: linear-gradient(180deg, #ffffff 0%, #eceef2 100%);
+border: 2px solid var(--line);
+border-radius: 8px;
+padding: 8px 12px;
+box-shadow: 0 4px 0 var(--line);
+}
+/* the search field is shaped like an actual keyboard spacebar - wide,low, and only lightly rounded, instead of a tall pill-shaped search box */
+.pc-key-search {
+flex: 1;
+width: 100%;
+padding: 6px 10px;
+border-radius: 6px;
+}
+.pc-key-label {
+display: block;
+font-family: var(--mono);
+font-size: 9px;
+letter-spacing: 1.2px;
+color: var(--ink-dim);
+text-transform: uppercase;
+text-align: center;
+margin-bottom: 4px;
+}
+.pc-key-search .field input {
+height: 34px;
+border-radius: 5px;
+text-align: center;
+letter-spacing: 0.3px;
+}
+/* Sort / Type / Forms keys - styled like a row of F-keys: squarer,slightly shorter, equal width */
+.pc-key-fn {
+flex: 1 1 0;
+min-width: 0;
+max-width: 150px;
+padding: 7px 8px 8px;
+}
+.pc-key-fn .pc-key-label {
+font-size: 8px;
+}
+.pc-key .field {
+margin-bottom: 0;
+width: 100%;
+}
+.pc-key .field input {
+text-align: center;
+}
+.pc-key .dex-select-wrap,
+.pc-key .variant-filter-wrap {
+position: relative;
+}
+.pc-key .ghost {
+padding: 8px 10px;
+font-size: 12px;
+width: 100%;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+/* CSS-7: Living Dex mobile: Handheld Pokédex — full rationale in NOTES.md */
+/* CSS-KALOS-MOBILE: Living Dex mobile - Kalos-style Pokédex clamshell.
+   Desktop's .pc-monitor/.pc-keyboard-tray/.dex-closed-cover are untouched
+   above and stay in normal document flow at desktop widths; at the mobile
+   breakpoint below, that whole trio is hidden and swapped for the
+   .kalos-dex markup instead (see index.html, right after .pc-keyboard-tray
+   closes). .kalos-dex is a real two-piece shell: .kalos-top and
+   .kalos-bottom sit flush together (closed) with .kalos-seam's ring/band
+   graphic centered on the seam between them - closed, this reads as one
+   solid shell (matches the reference photo). Opening it doesn't hide or
+   flip anything away: .kalos-screen-wrap (sandwiched between the two
+   halves in normal flow) grows from 0 height to its content height, which
+   pushes .kalos-bottom straight down to the new bottom edge while
+   .kalos-top simply stays put at the top edge it was already pinned to -
+   both halves stay fully visible throughout, exactly like the two jaws of
+   a Pokédex swinging open. — full rationale in NOTES.md */
+.dex-handheld-topbar,
+.dex-handheld-controls {
+display: none;
+}
+.dex-closed-cover {
+display: none;
+}
+.kalos-dex {
+display: none;
+}
+@media (max-width: 520px) {
+.pc-scene {
+margin: 0 0 22px;
+position: relative;
+}
+.pc-monitor,
+.pc-keyboard-tray,
+.dex-closed-cover {
+display: none !important;
+}
+.kalos-dex {
+--kalos-half-h: min(23vw, 100px);
+display: flex;
+flex-direction: column;
+position: relative;
+width: 100%;
+/* The whole shell - both halves plus the open screen - is capped to fit
+   within the viewport, so opening it never pushes content off-screen or
+   grows the page itself; only the screen's own content scrolls. */
+max-height: calc(100vh - 28px);
+}
+/* Closed, the shell locks to a tall 1:1.25 (width:height) portrait
+   rectangle - matching the reference photo - at whatever width it
+   already has (same width as open, never narrowed). The two shell
+   halves split that fixed total height evenly between them instead of
+   using the compact var(--kalos-half-h), which is reserved for the
+   open state below, where the halves shrink back down so the screen
+   gets the room. */
+.kalos-dex[data-open="false"] {
+aspect-ratio: 3 / 4;
+box-shadow: 0 14px 26px rgba(0, 0, 0, 0.4);
+border-radius: 26px;
+}
+.kalos-dex[data-open="false"] .kalos-shell-half {
+flex: 1 1 0;
+height: auto;
+}
+.kalos-shell-half {
+position: relative;
+z-index: 2;
+flex: 0 0 auto;
+overflow: hidden;
+background: var(--red-shell);
+border: 3px solid var(--line);
+height: var(--kalos-half-h);
+cursor: pointer;
+}
+.kalos-shell-half:focus-visible {
+outline: 3px solid var(--yellow);
+outline-offset: -3px;
+}
+.kalos-top {
+border-radius: 26px 26px 0 0;
+border-bottom: none;
+background:
+linear-gradient(45deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.15) 22%, rgba(255, 255, 255, 0) 45%),
+linear-gradient(225deg, #ff5a4d 0%, #d81c1c 48%, #6b0f0f 100%);
+box-shadow:
+inset 0 3px 0 rgba(255, 255, 255, 0.35),
+inset 0 -3px 6px rgba(60, 15, 10, 0.4),
+0 8px 16px rgba(0, 0, 0, 0.3);
+}
+.kalos-bottom {
+border-radius: 0 0 16px 16px;
+border-top: none;
+background: linear-gradient(225deg, #b81616 0%, #7a0f0f 50%, #4a0808 100%);
+box-shadow:
+inset 0 -3px 6px rgba(0, 0, 0, 0.4),
+0 8px 16px rgba(0, 0, 0, 0.3);
+}
+/* Corner Panel Accent Lines: thin dark maroon/black curved "engraved
+   groove" lines at each of the shell's 4 outer corners. Built as circular
+   elements (not ::before/::after, since those two slots are already used
+   below for the lens-ring halves and the meridian arc) positioned with
+   their center pinned exactly on the corner point and sized well beyond
+   it - each .kalos-shell-half's own overflow: hidden (plus its rounded
+   corner) crops away everything but the thin inner arc of the circle's
+   border, which reads as a single curved engraved line hugging that
+   corner. */
+.kalos-corner {
+position: absolute;
+width: 125px;
+height: 125px;
+border-radius: 50%;
+border: 7px solid #2b2320;
+pointer-events: none;
+z-index: 1;
+}
+.kalos-corner-tl {
+top: -45px;
+left: -45px;
+}
+.kalos-corner-tr {
+top: -45px;
+right: -45px;
+}
+.kalos-corner-bl {
+bottom: -45px;
+left: -45px;
+}
+.kalos-corner-br {
+bottom: -45px;
+right: -45px;
+}
+/* A second, larger curved line layered outside each first corner line -
+   same centered-on-the-corner technique, just a bigger circle, so the two
+   arcs read as nested engraved grooves instead of one. */
+.kalos-corner-big {
+width: 200px;
+height: 200px;
+border-color: #2b2320;
+}
+.kalos-corner-big.kalos-corner-tl {
+top: -75px;
+left: -75px;
+}
+.kalos-corner-big.kalos-corner-tr {
+top: -75px;
+right: -75px;
+}
+.kalos-corner-big.kalos-corner-bl {
+bottom: -75px;
+left: -75px;
+}
+.kalos-corner-big.kalos-corner-br {
+bottom: -75px;
+right: -75px;
+}
+/* The lens seam-ring is split in half and permanently welded onto each
+   shell half (clipped to a half-circle by the half's own overflow:
+   hidden), rather than living only on the floating .kalos-seam overlay.
+   Closed, the two halves sit flush and the floating .kalos-seam draws
+   directly on top of them, so it just looks like one solid lens - but
+   open, .kalos-seam fades away (see .kalos-dex[data-open="true"]
+   .kalos-seam below) and these two permanent halves are what's left:
+   a half-circle frame notch at the top of the screen and another at
+   the bottom, exactly like the reference photo, and always correctly
+   positioned since they never depend on the shell's overall height. */
+.kalos-top::before,
+.kalos-bottom::before {
+content: "";
+position: absolute;
+left: 50%;
+width: min(46vw, 190px);
+height: min(46vw, 190px);
+border-radius: 50%;
+background: #141414;
+border: 4px solid rgba(232, 221, 184, 0.9);
+box-shadow:
+0 0 0 2px var(--line),
+0 4px 10px rgba(0, 0, 0, 0.4);
+pointer-events: none;
+z-index: 1;
+}
+.kalos-top::before {
+top: 100%;
+transform: translate(-50%, -50%);
+}
+.kalos-bottom::before {
+top: 0%;
+transform: translate(-50%, -50%);
+}
+/* Poke Ball meridian arc: a big ring centered exactly on the seam,
+   mostly cropped away by each half's own overflow: hidden, so only its
+   curved edge shows through - reads as the seam-line of a much larger
+   ball, matching the reference art's swoosh lines instead of the old
+   corner-groove texture. */
+.kalos-top::after,
+.kalos-bottom::after {
+content: "";
+position: absolute;
+left: 50%;
+width: min(85vw, 260px);
+height: min(85vw, 260px);
+border-radius: 50%;
+border: 2px solid rgba(43, 35, 32, 0.35);
+pointer-events: none;
+z-index: 1;
+}
+.kalos-top::after {
+top: 100%;
+transform: translate(-50%, -50%);
+}
+.kalos-bottom::after {
+top: 0%;
+transform: translate(-50%, -50%);
+}
+/* The seam graphic (band + ring + core) sits centered exactly on the
+   boundary between .kalos-top and .kalos-bottom, so half of it visually
+   belongs to each shell half while closed - together with the two flush
+   shell halves, this is the whole closed-shell look. It fades out (not
+   away) once opened, since the screen behind it becomes the focus. */
+.kalos-seam {
+position: absolute;
+left: 0;
+right: 0;
+top: 50%;
+transform: translateY(-50%);
+z-index: 3;
+display: flex;
+align-items: center;
+justify-content: center;
+pointer-events: none;
+transition: opacity 0.35s ease;
+}
+/* Seam outline — a large faint ring concentric with the chrome bezel,
+   traced directly on the red shell. Reads as the arc where the case's top
+   and bottom halves are cut apart, rather than a straight split. Painted
+   first (::before), so it sits behind everything else in .kalos-seam. */
+.kalos-seam::before {
+content: "";
+position: absolute;
+left: 50%;
+top: 50%;
+width: min(62vw, 244px);
+height: min(62vw, 244px);
+transform: translate(-50%, -50%);
+border-radius: 50%;
+border: 2px solid rgba(43, 35, 32, 0.35);
+pointer-events: none;
+}
+/* Horizontal Light Bar & Metallic Trims — a full-bleed cyan light bar
+   running edge-to-edge behind the center lens, sandwiched between two thin
+   brushed-aluminum rails. Layered background gradients on the one element:
+   the rails (vertical brushed-metal gradient) top and bottom, and the bar
+   itself (horizontal cyan gradient, with an extra radial hot-spot glowing
+   brightest directly behind the lens). */
+.kalos-seam-band {
+position: relative;
+width: 100%;
+height: 46px;
+background:
+linear-gradient(180deg, #ffffff 0%, #b9bec2 50%, #6b6f72 100%) top / 100% 4px no-repeat,
+linear-gradient(180deg, #ffffff 0%, #b9bec2 50%, #6b6f72 100%) bottom / 100% 4px no-repeat,
+radial-gradient(ellipse 26% 160% at 50% 50%, rgba(255, 255, 255, 0.95) 0%, rgba(179, 241, 255, 0.85) 32%, rgba(120, 210, 240, 0.35) 62%, transparent 82%) center / 100% calc(100% - 8px) no-repeat,
+linear-gradient(90deg, #0a6675 0%, #0f97ab 15%, #2ccfe8 35%, #8ceefb 50%, #2ccfe8 65%, #0f97ab 85%, #0a6675 100%) center / 100% calc(100% - 8px) no-repeat;
+box-shadow:
+inset 0 1px 2px rgba(255, 255, 255, 0.25),
+inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+display: flex;
+align-items: center;
+justify-content: center;
+}
+/* Central Metallic Ring Assembly (Pokéball Emblem). Chrome outer bezel on
+   the element itself; ::before is the nested charcoal ring with a
+   horizontal cutout band (cream stripe), clipped to the circle by the
+   element's own border-radius; ::after draws both rivet/screw studs at
+   the ring's true top/bottom-dead-center — the top one is the real
+   pseudo-element, the bottom one is a box-shadow copy offset by exactly
+   the ring's own diameter, so both track the responsive min() size. */
+.kalos-seam-ring {
+position: relative;
+width: min(46vw, 190px);
+height: min(46vw, 190px);
+border-radius: 50%;
+background: conic-gradient(from 210deg,
+#f7f8fa 0deg,
+#ffffff 40deg,
+#c3c8cd 95deg,
+#6c7176 145deg,
+#dfe2e5 195deg,
+#ffffff 255deg,
+#9a9fa4 315deg,
+#f7f8fa 360deg);
+box-shadow:
+0 8px 18px rgba(0, 0, 0, 0.45),
+inset 0 2px 3px rgba(255, 255, 255, 0.65),
+inset 0 -3px 5px rgba(0, 0, 0, 0.35);
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+}
+.kalos-seam-ring::before {
+content: "";
+position: absolute;
+left: 50%;
+top: 50%;
+width: 82%;
+height: 82%;
+transform: translate(-50%, -50%);
+border-radius: 50%;
+background:
+linear-gradient(180deg, transparent calc(50% - 7%), rgba(232, 221, 184, 0.9) calc(50% - 7%), rgba(232, 221, 184, 0.9) calc(50% + 7%), transparent calc(50% + 7%)),
+radial-gradient(circle at 42% 34%, #47474a 0%, #2a2a2c 42%, #131314 76%, #000 100%);
+box-shadow:
+inset 0 2px 4px rgba(255, 255, 255, 0.08),
+inset 0 -3px 7px rgba(0, 0, 0, 0.6);
+z-index: 1;
+}
+.kalos-seam-ring::after {
+content: "";
+position: absolute;
+left: 50%;
+top: 0;
+width: 7px;
+height: 7px;
+border-radius: 50%;
+transform: translate(-50%, -50%);
+background: radial-gradient(circle at 35% 30%, #5a5a5c 0%, #1a1a1b 65%, #000 100%);
+box-shadow:
+0 1px 1px rgba(255, 255, 255, 0.35),
+inset 0 0 1px rgba(0, 0, 0, 0.8),
+0 min(46vw, 190px) 0 0 #0d0d0e;
+z-index: 3;
+}
+/* Glowing center lens — the illuminated aperture nestled inside the dark
+   charcoal ring. Layered radial-gradients build the glass glare (top-left
+   specular highlight) over the aqua-cyan light core; the box-shadow casts
+   a bright cyan glow outward onto the surrounding dark ring. */
+.kalos-seam-core {
+position: relative;
+width: min(26vw, 108px);
+height: min(26vw, 108px);
+border-radius: 50%;
+background:
+radial-gradient(ellipse 34% 20% at 32% 27%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.32) 45%, transparent 72%),
+radial-gradient(circle at 50% 50%, #ffffff 0%, #d9fcff 14%, #8ceefb 34%, #2ccfe8 60%, #0f97ab 84%, #0a6675 100%);
+border: 3px solid rgba(232, 221, 184, 0.9);
+box-shadow:
+0 0 18px 6px rgba(60, 225, 245, 0.85),
+0 0 40px 18px rgba(20, 190, 215, 0.55),
+inset 0 0 0 2px rgba(6, 60, 70, 0.7);
+z-index: 2;
+}
+.kalos-dex[data-open="true"] .kalos-seam {
+opacity: 0;
+}
+/* The screen itself: closed, it's 0-height and invisible, wedged shut
+   between the two shell halves; open, it grows to fit whatever's inside
+   it (the gen grid, or one gen's opened detail), pushing .kalos-bottom
+   down ahead of it - but never past what's left of the viewport once the
+   two shell halves are accounted for, so the whole shell always fits the
+   screen and the screen's own content scrolls internally instead. */
+.kalos-screen-wrap {
+flex: 0 1 auto;
+max-height: 0;
+overflow: hidden;
+transition: max-height 0.55s cubic-bezier(0.65, 0, 0.35, 1);
+background: linear-gradient(160deg, #2c2c2e, #131315);
+position: relative;
+z-index: 1;
+min-height: 0;
+}
+.kalos-dex[data-open="true"] .kalos-screen-wrap {
+max-height: calc(100vh - 28px - (var(--kalos-half-h) * 2));
+}
+.kalos-screen {
+position: relative;
+height: 100%;
+max-height: calc(100vh - 28px - (var(--kalos-half-h) * 2));
+overflow-y: auto;
+-webkit-overflow-scrolling: touch;
+background: var(--screen);
+padding: 14px 10px 16px;
+box-shadow: inset 0 0 24px rgba(0, 45, 25, 0.28);
+}
+.kalos-screen-content {
+opacity: 0;
+transition: opacity 0.3s ease 0.15s;
+}
+.kalos-dex[data-open="true"] .kalos-screen-content {
+opacity: 1;
+}
+.kalos-screen .pc-scanlines {
+opacity: 0.7;
+}
+.kalos-screen .pc-screen-glare {
+display: block;
+}
+.kalos-mode-toggle {
+margin-bottom: 10px;
+}
+.kalos-gen-grid {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+align-items: start;
+gap: 8px;
+margin-top: 10px;
+}
+/* Tapping a collapsed tile hides its siblings (see renderKalosMobileDex /
+   expandKalosTile in script.js) and turns that same tile into the full
+   banner, growing outward from wherever it was sitting in the grid - a
+   FLIP transform (not a fixed-position flight to some other spot) is what
+   makes the growth look anchored on that exact square. */
+.kalos-gen-tile {
+font: inherit;
+font-family: var(--body);
+position: relative;
+overflow: hidden;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 6px;
+padding: 10px 6px 8px;
+border: 2px solid var(--line);
+border-radius: 12px;
+background-color: var(--bg-panel);
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
+cursor: pointer;
+}
+.kalos-gen-tile:active {
+transform: translateY(2px);
+box-shadow: 0 1px 0 rgba(43, 35, 32, 0.28);
+}
+/* Without this, the tile's own "display: flex" above wins over the
+   browser's built-in "[hidden] { display: none }" rule, so setting
+   tile.hidden = true in script.js (expandKalosTile) silently failed to
+   actually hide the other gen squares - they kept rendering underneath
+   the expanded one instead of disappearing. */
+.kalos-gen-tile[hidden] {
+display: none;
+}
+/* Dark scrim so the region name/count stay legible over each gen's photo
+   - same banner images the desktop accordion uses (images/dex-banners/). */
+.kalos-gen-tile::before {
+content: "";
+position: absolute;
+inset: 0;
+background: linear-gradient(195deg, rgba(20, 15, 12, 0.18) 0%, rgba(20, 15, 12, 0.82) 100%);
+z-index: 0;
+}
+.kalos-gen-tile[data-gen="1"] {
+background-image: url("images/dex-banners/gen1-kantobanner.jpg");
+}
+.kalos-gen-tile[data-gen="2"] {
+background-image: url("images/dex-banners/gen2-johto.jpg");
+}
+.kalos-gen-tile[data-gen="3"] {
+background-image: url("images/dex-banners/gen3-hoennbanner.jpg");
+}
+.kalos-gen-tile[data-gen="4"] {
+background-image: url("images/dex-banners/gen4-sinnoh.jpg");
+}
+.kalos-gen-tile[data-gen="5"] {
+background-image: url("images/dex-banners/gen5-unova.jpg");
+}
+.kalos-gen-tile[data-gen="6"] {
+background-image: url("images/dex-banners/gen6-kalos.jpg");
+}
+.kalos-gen-tile[data-gen="7"] {
+background-image: url("images/dex-banners/gen7-alola.jpg");
+}
+.kalos-gen-tile[data-gen="8"] {
+background-image: url("images/dex-banners/gen8-galar.jpg");
+}
+.kalos-gen-tile[data-gen="9"] {
+background-image: url("images/dex-banners/gen9-paldea.jpg");
+}
+.kalos-gen-tile .dex-gen-badge,
+.kalos-gen-tile-label {
+position: relative;
+z-index: 1;
+}
+.kalos-gen-tile .dex-gen-badge {
+width: 40px;
+height: 40px;
+}
+.kalos-gen-tile-label {
+text-align: center;
+}
+.kalos-gen-tile-region {
+font-family: var(--hud);
+font-weight: 700;
+font-size: 11.5px;
+color: #fff;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.kalos-gen-tile-count {
+font-family: var(--mono);
+font-size: 10px;
+color: rgba(255, 255, 255, 0.85);
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+/* Expanded state: the tile itself becomes the .dex-card banner, spanning
+   the full grid row it was already in. Reuses .dex-card/.dex-card-banner/
+   .dex-species-panel (added in script.js) purely to inherit the exact
+   same per-gen banner/region background images the desktop accordion
+   already defines - no new image rules needed. */
+.kalos-gen-tile-expanded {
+grid-column: 1 / -1;
+flex-direction: column;
+align-items: stretch;
+gap: 0;
+padding: 0;
+cursor: default;
+background-image: none;
+}
+.kalos-gen-tile-expanded::before {
+display: none;
+}
+.kalos-gen-tile-expanded:active {
+transform: none;
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
+}
+.kalos-gen-tile-expanded .dex-species-panel {
+display: block;
+background-color: transparent;
+}
+.kalos-gen-detail-banner {
+padding: 0;
+cursor: pointer;
+}
+.kalos-gen-detail-head {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 14px;
+background: linear-gradient(195deg, rgba(20, 15, 12, 0.2) 0%, rgba(20, 15, 12, 0.82) 100%);
+}
+.kalos-gen-back {
+font: inherit;
+font-family: var(--hud);
+font-weight: 700;
+font-size: 12.5px;
+padding: 7px 10px;
+border: 2px solid var(--line);
+border-radius: 10px;
+background: var(--bg-panel);
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
+cursor: pointer;
+flex-shrink: 0;
+}
+.kalos-gen-detail-title {
+display: flex;
+align-items: baseline;
+gap: 8px;
+flex-wrap: wrap;
+}
+.kalos-gen-detail-title .region {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 15px;
+color: #fff;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+.kalos-gen-detail-title .gen-label {
+font-family: var(--mono);
+font-size: 10.5px;
+color: rgba(255, 255, 255, 0.8);
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+.kalos-gen-detail-title .dex-card-count {
+font-family: var(--mono);
+font-size: 11px;
+color: #ffd166;
+font-weight: 700;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}}
+.dex-summary {
+display: flex;
+align-items: center;
+gap: 18px;
+flex-wrap: wrap;
+background: var(--bg-panel);
+border: 2.5px solid var(--line);
+border-radius: var(--radius);
+padding: 16px 20px;
+margin-bottom: 20px;
+box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
+}
+.dex-summary .num {
+font-family: var(--hud);
+font-size: 32px;
+font-weight: 800;
+color: var(--red);
+line-height: 1;
+}
+.dex-summary .lbl {
+font-size: 11px;
+color: var(--ink-dim);
+text-transform: uppercase;
+letter-spacing: 1px;
+font-weight: 700;
+margin-top: 4px;
+}
+.dex-summary .bar-track {
+flex: 1;
+min-width: 160px;
+height: 14px;
+border-radius: 999px;
+background: #fff;
+border: 2px solid var(--line);
+overflow: hidden;
+}
+.dex-summary .bar-fill {
+height: 100%;
+background: linear-gradient(90deg, var(--green), var(--yellow));
+border-radius: 999px;
+transition: width 0.3s ease;
+}
+.dex-summary .dex-hint {
+width: 100%;
+font-size: 11.5px;
+color: var(--ink-dim);
+font-weight: 600;
+}
+.dex-grid {
+display: flex;
+flex-direction: column;
+gap: 14px;
+}
+.dex-card {
+background: var(--bg-panel);
+border: 2.5px solid var(--line);
+border-radius: var(--radius);
+overflow: hidden;
+box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
+transition:
+background-color 0.15s ease,
+margin 0.2s ease;
+}
+.dex-card.expanded {
+margin-left: 0;
+margin-right: 0;
+}
+.dex-card-banner {
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+}
+.dex-card-head {
+display: flex;
+align-items: center;
+gap: 14px;
+padding: 44px 18px;
+cursor: pointer;
+user-select: none;
+}
+/* CSS-10: REGION BALL CONTAINER (Living Dex page)This is the round "pokeball" badge shown next to eachgeneration/region card (e.g. Kanto, Johto, Hoenn...).The actual per-region ball image + fallback markup is built inscript.js (see REGION_BALLS map + the dex-gen-badge buildernear GEN_DATA / renderLivingDex). This rule just handles thecircular frame, the <img> sizing, and the number fallback.Ball image files expected at: images/region-balls/<filename>.png — full rationale in NOTES.md */
+.dex-gen-badge {
+width: 56px;
+height: 56px;
+border-radius: 50%;
+flex-shrink: 0;
+border: 2px solid var(--line);
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--hud);
+font-weight: 800;
+color: #fff;
+font-size: 18px;
+text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+overflow: hidden;
+position: relative;
+}
+.dex-gen-badge img {
+position: absolute;
+top: -14%;
+left: -14%;
+width: 124%;
+height: 124%;
+object-fit: cover;
+display: block;
+}
+.dex-gen-badge-fallback {
+display: none;
+align-items: center;
+justify-content: center;
+width: 100%;
+height: 100%;
+background: conic-gradient(from 90deg, var(--blue) 50%, var(--yellow) 50%);
+}
+.dex-gen-badge.complete::after {
+content: "✓";
+position: absolute;
+bottom: -2px;
+right: -2px;
+z-index: 3;
+width: 20px;
+height: 20px;
+border-radius: 50%;
+background: var(--green);
+color: #fff;
+border: 2px solid var(--bg-panel);
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--hud);
+font-weight: 800;
+font-size: 11px;
+line-height: 1;
+}
+.dex-card-title {
+flex: 1;
+min-width: 0;
+}
+.dex-card-title .region {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 16px;
+color: var(--ink);
+}
+.dex-card-title .gen-label {
+font-size: 10.5px;
+color: var(--ink);
+text-transform: uppercase;
+letter-spacing: 1px;
+font-weight: 700;
+margin-top: 2px;
+}
+.dex-card-count {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 15px;
+color: var(--red-dark);
+flex-shrink: 0;
+}
+.dex-card.expanded .dex-chevron {
+transform: rotate(180deg);
+}
+.dex-card-progress {
+padding: 0 18px 18px;
+}
+.dex-card-progress .bar-track {
+height: 10px;
+border-radius: 999px;
+background: #fff;
+border: 2px solid var(--line);
+overflow: hidden;
+}
+.dex-card-progress .bar-fill {
+height: 100%;
+background: linear-gradient(90deg, var(--green), var(--yellow));
+border-radius: 999px;
+transition: width 0.3s ease;
+}
+.dex-species-panel {
+display: none;
+border-top: 2.5px dashed var(--line);
+padding: 14px 18px 18px;
+background: var(--bg-panel-raised);
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+}
+.dex-card.expanded .dex-species-panel {
+display: block;
+}
+.dex-card[data-gen="1"] .dex-species-panel {
+background-image: url("images/dex-regions/gen1-kanto.webp");
+}
+.dex-card[data-gen="2"] .dex-species-panel {
+background-image: url("images/dex-regions/gen2-johto.jpg");
+}
+.dex-card[data-gen="3"] .dex-species-panel {
+background-image: url("images/dex-regions/gen3-hoenn.jpg");
+}
+.dex-card[data-gen="4"] .dex-species-panel {
+background-image: url("images/dex-regions/gen4-sinnoh.jpg");
+}
+.dex-card[data-gen="5"] .dex-species-panel {
+background-image: url("images/dex-regions/gen5-unova.jpg");
+}
+.dex-card[data-gen="6"] .dex-species-panel {
+background-image: url("images/dex-regions/gen6-kalos.jpg");
+}
+.dex-card[data-gen="7"] .dex-species-panel {
+background-image: url("images/dex-regions/gen7-alola.jpg");
+}
+.dex-card[data-gen="8"] .dex-species-panel {
+background-image: url("images/dex-regions/gen8-galar.jpg");
+}
+.dex-card[data-gen="9"] .dex-species-panel {
+background-image: url("images/dex-regions/gen9-paldea.jpg");
+}
+/* CSS-11: minmax(0,1fr) instead of a bare 1fr - grid tracks otherwise — full rationale in NOTES.md */
+.dex-species-grid {
+display: grid;
+grid-template-columns: repeat(6, minmax(0, 1fr));
+gap: 8px;
+}
+.dex-card[data-gen="1"] .dex-card-banner {
+background-image: url("images/dex-banners/gen1-kantobanner.jpg");
+}
+.dex-card[data-gen="2"] .dex-card-banner {
+background-image: url("images/dex-banners/gen2-johto.jpg");
+}
+.dex-card[data-gen="3"] .dex-card-banner {
+background-image: url("images/dex-banners/gen3-hoennbanner.jpg");
+}
+.dex-card[data-gen="4"] .dex-card-banner {
+background-image: url("images/dex-banners/gen4-sinnoh.jpg");
+}
+.dex-card[data-gen="5"] .dex-card-banner {
+background-image: url("images/dex-banners/gen5-unova.jpg");
+}
+.dex-card[data-gen="6"] .dex-card-banner {
+background-image: url("images/dex-banners/gen6-kalos.jpg");
+}
+.dex-card[data-gen="7"] .dex-card-banner {
+background-image: url("images/dex-banners/gen7-alola.jpg");
+}
+.dex-card[data-gen="8"] .dex-card-banner {
+background-image: url("images/dex-banners/gen8-galar.jpg");
+}
+.dex-card[data-gen="9"] .dex-card-banner {
+background-image: url("images/dex-banners/gen9-paldea.jpg");
+}
+.dex-chip {
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 13.5px;
+font-weight: 700;
+background: #fff;
+border: 1.5px solid var(--line);
+border-radius: 999px;
+padding: 8px 8px 8px 6px;
+color: var(--ink-dim);
+min-width: 0;
+}
+.dex-chip-sprite {
+width: 36px;
+height: 36px;
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+position: relative;
+z-index: 1;
+}
+.dex-chip-sprite img {
+max-width: 100%;
+max-height: 100%;
+width: auto;
+height: auto;
+object-fit: contain;
+transform: scale(2.1) translateY(-6px);
+image-rendering: pixelated;
+image-rendering: crisp-edges;
+}
+.dex-chip-sprite .fallback-letter {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 12px;
+color: var(--ink-dim);
+}
+.dex-chip .n {
+width: 26px;
+text-align: right;
+color: var(--ink-dim);
+font-size: 11px;
+flex-shrink: 0;
+}
+.dex-chip-name {
+display: inline-flex;
+align-items: center;
+gap: 5px;
+flex-wrap: wrap;
+min-width: 0;
+}
+.dex-chip-name-text {
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+min-width: 0;
+}
+.dex-chip-tag {
+display: inline-block;
+font-family: var(--hud);
+font-size: 8.5px;
+font-weight: 800;
+letter-spacing: 0.4px;
+color: #fff;
+padding: 2px 6px;
+border-radius: 999px;
+line-height: 1.4;
+text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+.dex-chip-tag-alolan {
+background: var(--yellow-dark);
+}
+.dex-chip-tag-galarian {
+background: var(--blue);
+}
+.dex-chip-tag-hisuian {
+background: var(--green-dark);
+}
+.dex-chip-tag-paldean {
+background: var(--red);
+}
+.dex-chip.caught {
+background: rgba(76, 175, 80, 0.16);
+border-color: var(--green);
+color: var(--ink);
+box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.18);
+}
+.dex-chip.caught .n {
+color: var(--green-dark);
+}
+.dex-grid.shiny-mode .dex-chip.caught {
+background-image:
+linear-gradient(
+90deg,
+rgba(255, 110, 199, 0.16),
+rgba(255, 209, 102, 0.16),
+rgba(110, 231, 183, 0.16),
+rgba(96, 165, 250, 0.16),
+rgba(192, 132, 252, 0.16)
+),
+linear-gradient(90deg, #ff6ec7, #ffd166, #6ee7b7, #60a5fa, #c084fc);
+background-origin: border-box;
+background-clip: padding-box, border-box;
+border: 1.5px solid transparent;
+color: var(--ink);
+box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.18);
+}
+.dex-grid.shiny-mode .dex-chip.caught .n {
+color: var(--ink-dim);
+}
+.dex-chip.type-dimmed {
+opacity: 0.18;
+filter: grayscale(0.5);
+transition:
+opacity 0.2s ease,
+filter 0.2s ease;
+}
+.dex-chip {
+transition:
+opacity 0.2s ease,
+filter 0.2s ease;
+}
+.dex-chip.interactive {
+cursor: pointer;
+transition:
+transform 0.08s ease,
+filter 0.15s ease,
+opacity 0.2s ease;
+}
+.dex-chip.interactive:hover {
+filter: brightness(0.97);
+border-color: var(--blue);
+}
+.dex-chip.interactive:active {
+transform: scale(0.96);
+}
+.dex-chip-highlighted {
+border-width: 2.5px;
+animation: dex-chip-attention-flash 1s ease-in-out infinite;
+}
+@media (max-width: 600px) {
+.dex-species-grid {
+grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+/* CSS-13: The 44px top/bottom padding on a collapsed generation row ex — full rationale in NOTES.md */
+.dex-card-head {
+padding: 20px 16px;
+gap: 12px;
+}
+.dex-gen-badge {
+width: 44px;
+height: 44px;
+}
+/* CSS-14: At 3-per-row, a horizontal sprite+number+name chip only leav — full rationale in NOTES.md */
+.dex-chip {
+flex-direction: column;
+text-align: center;
+padding: 10px 6px 20px;
+gap: 4px;
+aspect-ratio: 1 / 1;
+justify-content: center;
+position: relative;
+overflow: visible;
+}
+.dex-chip .n {
+width: auto;
+}
+.dex-chip-name {
+justify-content: center;
+}
+.dex-chip-name-text {
+white-space: normal;
+overflow: visible;
+text-overflow: clip;
+font-size: 12px;
+line-height: 1.2;
+}
+.dex-chip-tag {
+position: absolute;
+left: 50%;
+bottom: 6px;
+transform: translateX(-50%);
+white-space: nowrap;
+}}
