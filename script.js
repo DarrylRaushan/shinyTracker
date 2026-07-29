@@ -3127,9 +3127,9 @@ var TAB_POSITION = { hunts: 0, collection: 1 };
 // background - everything that's safe to do immediately, with no
 // dependency on later parts of the script. Kept separate from
 // applyTabState() below because the very first call happens at init time,
-// before things like dexOpenGens (declared further down this file) exist
+// before things like dexOpenGen (declared further down this file) exists
 // yet - calling the render pass that early throws (renderLivingDex reads
-// dexOpenGens) and silently aborts the rest of this script, which is why
+// dexOpenGen) and silently aborts the rest of this script, which is why
 // swiping and the hunts list could look "gone": nothing after the
 // throwing line ever ran, including the swipe handler setup below.
 function syncTabChrome(tab) {
@@ -4096,10 +4096,18 @@ resetLogKeysExcept([]);
 renderCollection();
 });
 /* ---------- rendering: living dex ---------- */
-var dexOpenGens = {};
+// Which generation (if any) is currently expanded into its full banner on
+// the desktop Living Dex grid. Only one gen can be open at a time - opening
+// a new one hides every other gen square, mirroring the mobile Kalos
+// single-open drill-down (kalosOpenGen) instead of the old multi-open
+// accordion this used to be.
+var dexOpenGen = null;
 var dexMode = 'living';
 var dexSortMode = 'dex';
 var dexTypeFilter = '';
+// Which generation (if any) is currently drilled into on the mobile Kalos
+// dex's gen-detail screen (null = showing the 3-per-row gen tile grid).
+var kalosOpenGen = null;
 function normName(s) {
 return String(s || '').trim().toLowerCase();
 }
@@ -4357,9 +4365,13 @@ if (!card) return;
 document.querySelectorAll('.dex-chip-highlighted').forEach(function(chip) {
 chip.classList.remove('dex-chip-highlighted');
 });
-dexOpenGens[loc.gen] = true;
-card.classList.add('expanded');
-updateDexExpandAllLabel();
+if (dexOpenGen !== String(loc.gen)) {
+if (dexOpenGen) {
+var prevCard = document.querySelector('#dex-grid .dex-card[data-gen="' + dexOpenGen + '"]');
+if (prevCard) prevCard.classList.remove('expanded');
+}
+expandDexCard(card);
+}
 if (typeof card.scrollIntoView === 'function') card.scrollIntoView({
 behavior: 'smooth',
 block: 'start'
@@ -4377,15 +4389,40 @@ void target.offsetWidth;
 target.classList.add('dex-chip-highlighted');
 }
 }
-// Keeps the Expand All / Collapse All button label in sync with
-// whether every generation card is currently open.
-function updateDexExpandAllLabel() {
-var btn = document.getElementById('btn-dex-expand-all');
-if (!btn) return;
-var allOpen = GEN_DATA.length > 0 && GEN_DATA.every(function(g) {
-return !!dexOpenGens[g.gen];
+// Expands one gen square into its full banner right where it's sitting in
+// the grid, and hides every other square - the desktop counterpart of
+// expandKalosTile(), reusing the same flipAnimate() grow so it visibly
+// swells into place instead of just popping open.
+function expandDexCard(card) {
+var grid = card.parentNode;
+if (!grid) return;
+var first = card.getBoundingClientRect();
+Array.prototype.forEach.call(grid.children, function(c) {
+if (c !== card) c.hidden = true;
 });
-btn.textContent = allOpen ? 'Collapse All' : 'Expand All';
+dexOpenGen = card.dataset.gen;
+card.classList.add('expanded');
+flipAnimate(card, first);
+}
+// Collapses the expanded gen card back into its square and brings the
+// other squares back - the desktop counterpart of collapseKalosTile().
+function collapseDexCard(card) {
+var grid = card.parentNode;
+if (!grid) return;
+var first = card.getBoundingClientRect();
+dexOpenGen = null;
+card.classList.remove('expanded');
+// A search-jump highlight is meant to last only as long as its region
+// stays open - once the person collapses the card, clear any
+// highlighted chip inside it so it doesn't stay lit the next time
+// the card is reopened.
+card.querySelectorAll('.dex-chip-highlighted').forEach(function(chip) {
+chip.classList.remove('dex-chip-highlighted');
+});
+Array.prototype.forEach.call(grid.children, function(c) {
+c.hidden = false;
+});
+flipAnimate(card, first);
 }
 function shinyCaughtSet() {
 var set = {};
@@ -4412,14 +4449,16 @@ base: name,
 tag: null
 };
 }
-document.getElementById('dex-mode-toggle').addEventListener('click', function(e) {
+document.querySelectorAll('.dex-mode-toggle').forEach(function(toggle) {
+toggle.addEventListener('click', function(e) {
 var btn = e.target.closest('button[data-mode]');
 if (!btn) return;
 dexMode = btn.dataset.mode;
-document.querySelectorAll('#dex-mode-toggle button').forEach(function(b) {
+document.querySelectorAll('.dex-mode-toggle button').forEach(function(b) {
 b.classList.toggle('active', b.dataset.mode === dexMode);
 });
 renderLivingDex();
+});
 });
 var DEX_SORT_LABELS = {
 dex: 'Dex Number',
@@ -4444,21 +4483,6 @@ document.getElementById('btn-dex-sort').classList.toggle('active', dexSortMode !
 document.getElementById('dex-sort-wrap').classList.remove('open');
 resortDexGrid();
 });
-var btnDexExpandAll = document.getElementById('btn-dex-expand-all');
-if (btnDexExpandAll) {
-btnDexExpandAll.addEventListener('click', function() {
-var allOpen = GEN_DATA.length > 0 && GEN_DATA.every(function(g) {
-return !!dexOpenGens[g.gen];
-});
-GEN_DATA.forEach(function(g) {
-dexOpenGens[g.gen] = !allOpen;
-});
-document.querySelectorAll('#dex-grid .dex-card').forEach(function(card) {
-card.classList.toggle('expanded', !allOpen);
-});
-updateDexExpandAllLabel();
-});
-}
 var dexSearchInput = document.getElementById('dex-search');
 attachPokemonAutocomplete(dexSearchInput);
 dexSearchInput.addEventListener('change', function() {
@@ -4467,6 +4491,37 @@ if (!val) return;
 jumpToDexSpecies(val);
 this.value = '';
 });
+// Builds the species-chip grid markup for one generation - shared by the
+// desktop dex-grid cards and the mobile Kalos dex's gen-detail screen so
+// both stay in sync without duplicating the chip-building logic.
+function buildDexChipsHtml(g, caught) {
+var displaySpecies = sortDexSpecies(g.species, caught, dexSortMode);
+return displaySpecies.map(function(sp) {
+var has = !!caught[normName(sp[1])];
+var variant = parseRegionalVariant(sp[1]);
+var nameHtml = '<span class="dex-chip-name-text">' + escapeHtml(variant.base) + '</span>' + (variant.tag ? ' <span class="dex-chip-tag dex-chip-tag-' + variant.tag.toLowerCase() + '">' + variant.tag.toUpperCase() + '</span>' : '');
+var interactive = ' data-action="toggle-species" data-name="' + escapeHtml(normName(sp[1])) + '"';
+// data-variant tags each chip with its regional-variant category (or
+// "Original" for base-form species) so applyDexVariantFilter() can
+// show/hide chips by category without re-parsing the display name.
+var variantAttr = ' data-variant="' + escapeHtml(variant.tag || 'Original') + '"';
+var spriteImg = '<span class="dex-chip-sprite">' + smallSpriteMarkup(sp[1], dexEntrySpriteUrls(sp[1], dexMode === 'shiny')) + '</span>';
+return '<div class="dex-chip' + (has ? ' caught' : '') + ' interactive"' + interactive + variantAttr + '>' + spriteImg + '<span class="n">#' + sp[0] + '</span><span class="dex-chip-name">' + nameHtml + '</span></div>';
+}).join('');
+}
+// Builds the round region-ball badge (with gen-number fallback) for one
+// generation - shared by the desktop dex-grid cards and the mobile Kalos
+// dex's gen tiles.
+function buildDexGenBadgeHtml(g, badgeCompleteClass) {
+var ballFile = REGION_BALLS[g.region];
+if (ballFile) {
+return '<div class="dex-gen-badge' + badgeCompleteClass + '">' +
+'<img src="images/region-balls/' + ballFile + '" alt="' + escapeHtml(g.region) + ' ball" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' +
+'<span class="dex-gen-badge-fallback">' + g.gen + '</span>' +
+'</div>';
+}
+return '<div class="dex-gen-badge' + badgeCompleteClass + '"><span class="dex-gen-badge-fallback" style="display:flex;">' + g.gen + '</span></div>';
+}
 function renderLivingDex() {
 var caught = (dexMode === 'shiny') ?
 Object.assign({}, shinyCaughtSet(), state.livingDexShiny) :
@@ -4489,23 +4544,12 @@ if (caught[normName(sp[1])]) genCaught++;
 });
 totalCaught += genCaught;
 var pct = Math.round((genCaught / g.species.length) * 100);
-var isOpen = !!dexOpenGens[g.gen];
+var isOpen = dexOpenGen !== null && String(dexOpenGen) === String(g.gen);
 var card = document.createElement('div');
 card.className = 'dex-card' + (isOpen ? ' expanded' : '');
 card.dataset.gen = g.gen;
-var displaySpecies = sortDexSpecies(g.species, caught, dexSortMode);
-var chipsHtml = displaySpecies.map(function(sp) {
-var has = !!caught[normName(sp[1])];
-var variant = parseRegionalVariant(sp[1]);
-var nameHtml = '<span class="dex-chip-name-text">' + escapeHtml(variant.base) + '</span>' + (variant.tag ? ' <span class="dex-chip-tag dex-chip-tag-' + variant.tag.toLowerCase() + '">' + variant.tag.toUpperCase() + '</span>' : '');
-var interactive = ' data-action="toggle-species" data-name="' + escapeHtml(normName(sp[1])) + '"';
-// data-variant tags each chip with its regional-variant category (or
-// "Original" for base-form species) so applyDexVariantFilter() can
-// show/hide chips by category without re-parsing the display name.
-var variantAttr = ' data-variant="' + escapeHtml(variant.tag || 'Original') + '"';
-var spriteImg = '<span class="dex-chip-sprite">' + smallSpriteMarkup(sp[1], dexEntrySpriteUrls(sp[1], dexMode === 'shiny')) + '</span>';
-return '<div class="dex-chip' + (has ? ' caught' : '') + ' interactive"' + interactive + variantAttr + '>' + spriteImg + '<span class="n">#' + sp[0] + '</span><span class="dex-chip-name">' + nameHtml + '</span></div>';
-}).join('');
+if (dexOpenGen !== null && !isOpen) card.hidden = true;
+var chipsHtml = buildDexChipsHtml(g, caught);
 var badgeCompleteClass = (pct === 100) ? ' complete' : '';
 card.innerHTML =
 '<div class="dex-card-banner">' +
@@ -4515,16 +4559,7 @@ card.innerHTML =
 // with the plain gen-number badge as a fallback if it's missing/fails to load.
 // Gets a small green checkmark corner badge (see .dex-gen-badge.complete
 // in style.css) once every species in this generation is caught.
-(function() {
-var ballFile = REGION_BALLS[g.region];
-if (ballFile) {
-return '<div class="dex-gen-badge' + badgeCompleteClass + '">' +
-'<img src="images/region-balls/' + ballFile + '" alt="' + escapeHtml(g.region) + ' ball" onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' +
-'<span class="dex-gen-badge-fallback">' + g.gen + '</span>' +
-'</div>';
-}
-return '<div class="dex-gen-badge' + badgeCompleteClass + '"><span class="dex-gen-badge-fallback" style="display:flex;">' + g.gen + '</span></div>';
-})() +
+buildDexGenBadgeHtml(g, badgeCompleteClass) +
 '<div class="dex-card-title">' +
 '<div class="region">' + escapeHtml(g.region) + '</div>' +
 '<div class="gen-label">Generation ' + g.gen + '</div>' +
@@ -4544,11 +4579,239 @@ summary.innerHTML =
 '<div><div class="num">' + totalCaught + ' / ' + totalSpecies + '</div><div class="lbl">' + label + '</div></div>' +
 '<div class="bar-track"><div class="bar-fill" style="width:' + overallPct + '%"></div></div>' +
 '<div style="font-weight:800; font-family:var(--hud); color:var(--red);">' + overallPct + '%</div>';
-updateDexExpandAllLabel();
+var kalosSummary = document.getElementById('kalos-summary');
+if (kalosSummary) kalosSummary.innerHTML = summary.innerHTML;
+renderKalosMobileDex(caught);
 applyDexTypeFilter();
 applyDexVariantFilter();
 updateLivingDexPillBadge();
 }
+// ---------- mobile Kalos dex: gen-tile grid + gen-detail drill-down ----------
+// Renders the 3-per-row gen tile grid inside the mobile Kalos dex's screen,
+// and (if a gen is currently drilled into) refreshes that gen's detail
+// panel too, so both stay accurate after every caught-toggle or mode
+// switch without needing their own separate render pass to stay in sync.
+function kalosGenCaughtCount(g, caught) {
+var n = 0;
+g.species.forEach(function(sp) {
+if (caught[normName(sp[1])]) n++;
+});
+return n;
+}
+function buildKalosTileCollapsedHtml(g, badgeCompleteClass, genCaught) {
+return (
+buildDexGenBadgeHtml(g, badgeCompleteClass) +
+'<div class="kalos-gen-tile-label">' +
+'<div class="kalos-gen-tile-region">' + escapeHtml(g.region) + '</div>' +
+'<div class="kalos-gen-tile-count">' + genCaught + ' / ' + g.species.length + '</div>' +
+'</div>'
+);
+}
+function buildKalosTileExpandedHtml(g, caught, genCaught) {
+return (
+'<div class="dex-card-banner kalos-gen-detail-banner">' +
+'<div class="kalos-gen-detail-head">' +
+'<button type="button" class="kalos-gen-back" aria-label="Back to generations">◀&#xFE0E; Back</button>' +
+'<div class="kalos-gen-detail-title">' +
+'<div class="region">' + escapeHtml(g.region) + '</div>' +
+'<div class="gen-label">Generation ' + g.gen + '</div>' +
+'<div class="dex-card-count">' + genCaught + ' / ' + g.species.length + '</div>' +
+'</div>' +
+'</div>' +
+'</div>' +
+'<div class="dex-species-panel">' +
+'<div class="dex-species-grid">' + buildDexChipsHtml(g, caught) + '</div>' +
+'</div>'
+);
+}
+// Rebuilds the gen tile grid. If a gen is currently expanded
+// (kalosOpenGen), that one tile is (re)built in its expanded/banner form
+// in its own slot and every other tile stays hidden, instead of a
+// separate detail panel living elsewhere - so counts/chips stay accurate
+// after every caught-toggle without disturbing which square is open.
+function renderKalosMobileDex(caught) {
+var tileGrid = document.getElementById('kalos-gen-grid');
+if (!tileGrid) return;
+tileGrid.innerHTML = '';
+GEN_DATA.forEach(function(g) {
+var genCaught = kalosGenCaughtCount(g, caught);
+var pct = Math.round((genCaught / g.species.length) * 100);
+var badgeCompleteClass = (pct === 100) ? ' complete' : '';
+var isOpen = kalosOpenGen && String(g.gen) === String(kalosOpenGen);
+var tile = document.createElement('div');
+tile.className = isOpen ? 'kalos-gen-tile kalos-gen-tile-expanded dex-card' : 'kalos-gen-tile';
+tile.dataset.gen = g.gen;
+if (isOpen) {
+tile.innerHTML = buildKalosTileExpandedHtml(g, caught, genCaught);
+} else {
+tile.setAttribute('role', 'button');
+tile.setAttribute('tabindex', '0');
+tile.innerHTML = buildKalosTileCollapsedHtml(g, badgeCompleteClass, genCaught);
+if (kalosOpenGen) tile.hidden = true;
+}
+tileGrid.appendChild(tile);
+});
+}
+function kalosCurrentCaughtMap() {
+return (dexMode === 'shiny') ?
+Object.assign({}, shinyCaughtSet(), state.livingDexShiny) :
+state.livingDex;
+}
+// Animates an element's own transition from looking like `first` (its
+// pre-change box) to its actual current box, via a transform FLIP: since
+// the element has already been changed to its final DOM state (grid-column,
+// content, etc.) by the time this runs, `last` is measured live, and we
+// fake the "still small/still big" starting look with translate+scale,
+// then release it to transform:none - so the element visibly grows or
+// shrinks exactly where it already, correctly, sits in the grid, instead
+// of flying to some other fixed position.
+function flipAnimate(el, first) {
+var last = el.getBoundingClientRect();
+var dx = first.left - last.left;
+var dy = first.top - last.top;
+var sx = first.width / last.width;
+var sy = first.height / last.height;
+el.style.transformOrigin = 'top left';
+el.style.transition = 'none';
+el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + sx + ',' + sy + ')';
+el.getBoundingClientRect(); // force reflow so the starting transform is committed
+requestAnimationFrame(function() {
+el.style.transition = 'transform 0.4s cubic-bezier(.65,0,.35,1)';
+el.style.transform = 'none';
+});
+function onEnd(e) {
+if (e && e.target !== el) return;
+el.removeEventListener('transitionend', onEnd);
+el.style.transition = '';
+el.style.transformOrigin = '';
+el.style.transform = '';
+}
+el.addEventListener('transitionend', onEnd);
+}
+// All the other squares disappear the instant one is tapped, and that
+// tile grows into the banner right where it was sitting in the grid.
+function expandKalosTile(tile) {
+var gen = tile.dataset.gen;
+var g = GEN_DATA.filter(function(x) {
+return String(x.gen) === String(gen);
+})[0];
+if (!g) return;
+var first = tile.getBoundingClientRect();
+var grid = tile.parentNode;
+Array.prototype.forEach.call(grid.children, function(t) {
+if (t !== tile) t.hidden = true;
+});
+kalosOpenGen = gen;
+var caught = kalosCurrentCaughtMap();
+tile.className = 'kalos-gen-tile kalos-gen-tile-expanded dex-card';
+tile.removeAttribute('role');
+tile.removeAttribute('tabindex');
+tile.innerHTML = buildKalosTileExpandedHtml(g, caught, kalosGenCaughtCount(g, caught));
+flipAnimate(tile, first);
+}
+// Collapses the currently-expanded tile back down into its own square and
+// brings the other squares back.
+function collapseKalosTile() {
+var grid = document.getElementById('kalos-gen-grid');
+if (!grid) {
+kalosOpenGen = null;
+return;
+}
+var tile = grid.querySelector('.kalos-gen-tile-expanded');
+if (!tile) {
+kalosOpenGen = null;
+return;
+}
+var g = GEN_DATA.filter(function(x) {
+return String(x.gen) === String(kalosOpenGen);
+})[0];
+var first = tile.getBoundingClientRect();
+kalosOpenGen = null;
+if (g) {
+var caught = kalosCurrentCaughtMap();
+var genCaught = kalosGenCaughtCount(g, caught);
+var pct = Math.round((genCaught / g.species.length) * 100);
+tile.className = 'kalos-gen-tile';
+tile.setAttribute('role', 'button');
+tile.setAttribute('tabindex', '0');
+tile.innerHTML = buildKalosTileCollapsedHtml(g, (pct === 100) ? ' complete' : '', genCaught);
+}
+Array.prototype.forEach.call(grid.children, function(t) {
+t.hidden = false;
+});
+flipAnimate(tile, first);
+}
+(function() {
+var kalosGrid = document.getElementById('kalos-gen-grid');
+if (kalosGrid) {
+kalosGrid.addEventListener('click', function(e) {
+var chip = e.target.closest('[data-action="toggle-species"]');
+if (chip) {
+var name = chip.dataset.name;
+var store = (dexMode === 'shiny') ? state.livingDexShiny : state.livingDex;
+var nowCaught;
+if (store[name]) {
+delete store[name];
+nowCaught = false;
+} else {
+store[name] = true;
+nowCaught = true;
+}
+save();
+chip.classList.toggle('caught', nowCaught);
+updateDexCounters();
+return;
+}
+// Tapping the banner (the photo/header area of the opened gen, not
+// the species chips) collapses it back into its square - the back
+// button lives inside that same banner, so its clicks bubble up here
+// too and don't need their own separate handler.
+var banner = e.target.closest('.kalos-gen-detail-banner');
+if (banner) {
+collapseKalosTile();
+return;
+}
+var tile = e.target.closest('.kalos-gen-tile');
+if (tile && !tile.classList.contains('kalos-gen-tile-expanded')) {
+expandKalosTile(tile);
+}
+});
+kalosGrid.addEventListener('keydown', function(e) {
+if (e.key !== 'Enter' && e.key !== ' ') return;
+var tile = e.target.closest('.kalos-gen-tile');
+if (tile && !tile.classList.contains('kalos-gen-tile-expanded')) {
+e.preventDefault();
+expandKalosTile(tile);
+}
+});
+}
+// The two shell halves both toggle the same open/closed state - tapping
+// either one opens the closed shell, and tapping either one again closes
+// it back up. Neither half nor the screen ever disappears mid-transition;
+// see CSS-KALOS-MOBILE in style.css for the actual slide.
+var kalosDex = document.getElementById('kalos-dex');
+var kalosTop = document.getElementById('kalos-top');
+var kalosBottom = document.getElementById('kalos-bottom');
+if (kalosDex && kalosTop && kalosBottom) {
+var setKalosOpen = function(open) {
+kalosDex.dataset.open = open ? 'true' : 'false';
+kalosTop.setAttribute('aria-expanded', open ? 'true' : 'false');
+kalosBottom.setAttribute('aria-expanded', open ? 'true' : 'false');
+};
+var toggleKalosOpen = function() {
+setKalosOpen(kalosDex.dataset.open !== 'true');
+};
+[kalosTop, kalosBottom].forEach(function(half) {
+half.addEventListener('click', toggleKalosOpen);
+half.addEventListener('keydown', function(e) {
+if (e.key === 'Enter' || e.key === ' ') {
+e.preventDefault();
+toggleKalosOpen();
+}
+});
+});
+}
+})();
 document.getElementById('dex-grid').addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
@@ -4581,23 +4844,14 @@ return;
 }
 var head = e.target.closest('[data-action="toggle-dex"]');
 if (!head) return;
-var gen = head.dataset.gen;
-dexOpenGens[gen] = !dexOpenGens[gen];
-// Expanding/collapsing a card is pure CSS (the .expanded class toggles
-// a display rule) so just flip the class - no need to rebuild the grid
-// (and every sprite in it) just to open one card.
 var genCard = head.closest('.dex-card');
-genCard.classList.toggle('expanded', !!dexOpenGens[gen]);
-// A search-jump highlight is meant to last only as long as its region
-// stays open - once the person collapses the card, clear any
-// highlighted chip inside it so it doesn't stay lit the next time
-// the card is reopened.
-if (!dexOpenGens[gen]) {
-genCard.querySelectorAll('.dex-chip-highlighted').forEach(function(chip) {
-chip.classList.remove('dex-chip-highlighted');
-});
+if (!genCard) return;
+var gen = head.dataset.gen;
+if (dexOpenGen === gen) {
+collapseDexCard(genCard);
+} else {
+expandDexCard(genCard);
 }
-updateDexExpandAllLabel();
 });
 // Recomputes and updates the per-card and overall Living Dex counters
 // (caught/total counts, progress bars, percentages) without touching any
@@ -4635,6 +4889,9 @@ summary.innerHTML =
 '<div><div class="num">' + totalCaught + ' / ' + totalSpecies + '</div><div class="lbl">' + label + '</div></div>' +
 '<div class="bar-track"><div class="bar-fill" style="width:' + overallPct + '%"></div></div>' +
 '<div style="font-weight:800; font-family:var(--hud); color:var(--red);">' + overallPct + '%</div>';
+var kalosSummary = document.getElementById('kalos-summary');
+if (kalosSummary) kalosSummary.innerHTML = summary.innerHTML;
+renderKalosMobileDex(caught);
 }
 function renderAll() {
 renderHunts();
