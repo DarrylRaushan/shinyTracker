@@ -109,6 +109,20 @@
           <h2>Living Dex</h2>
         </div>
         <div class="pc-scene">
+          <!-- Mobile-only closed Pokédex cover: a decorative red-shell overlay
+               shown before the Living Dex is opened. Tapping/activating it
+               (or, once open, tapping the lens in .dex-handheld-topbar) toggles
+               '.livingdex-open' on .pc-scene, which flips this cover away via
+               CSS (see style.css). Hidden entirely on desktop. -->
+          <div class="dex-closed-cover" id="dex-closed-cover" role="button" tabindex="0" aria-label="Open Living Dex" aria-expanded="false">
+            <span class="dex-closed-stud dex-closed-stud-top" aria-hidden="true"></span>
+            <span class="dex-closed-stud dex-closed-stud-bottom" aria-hidden="true"></span>
+            <div class="dex-closed-band" aria-hidden="true">
+              <div class="dex-closed-ring">
+                <div class="dex-closed-core"></div>
+              </div>
+            </div>
+          </div>
           <div class="pc-monitor">
             <!-- Handheld Pokédex chrome: hidden on desktop, shown only at the
                  mobile breakpoint (see style.css) where the PC monitor is swapped
@@ -258,6 +272,62 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Mobile-only Kalos-style Pokédex clamshell: a two-piece hinge
+               (top shell half / bottom shell half) that starts flush together
+               (closed), and on tap slides the top half up and the bottom half
+               down - neither piece disappears, they just come to rest at the
+               top/bottom edges of the now-taller shell, revealing the sunken
+               screen (gen tiles, then a single gen's Pokémon list) between
+               them. Entirely separate markup from the desktop .pc-monitor/
+               .pc-keyboard-tray above - hidden on desktop, and the old
+               .pc-monitor/.pc-keyboard-tray/.dex-closed-cover are hidden at
+               the mobile breakpoint instead (see CSS-KALOS-MOBILE in
+               style.css). No ids/classes are shared with the desktop markup
+               except the reused .dex-mode-toggle / .dex-summary / .dex-chip /
+               .dex-species-grid / .dex-gen-badge look, which already exists in
+               style.css and just gets inherited here. -->
+          <div class="kalos-dex" id="kalos-dex" data-open="false">
+            <div class="kalos-shell-half kalos-top" id="kalos-top" role="button" tabindex="0" aria-label="Open Living Dex" aria-expanded="false">
+              <span class="kalos-corner kalos-corner-tl" aria-hidden="true"></span>
+              <span class="kalos-corner kalos-corner-tr" aria-hidden="true"></span>
+              <span class="kalos-corner kalos-corner-big kalos-corner-tl" aria-hidden="true"></span>
+              <span class="kalos-corner kalos-corner-big kalos-corner-tr" aria-hidden="true"></span>
+            </div>
+            <span class="kalos-seam" aria-hidden="true">
+              <span class="kalos-seam-band">
+                <span class="kalos-seam-ring"><span class="kalos-seam-core"></span></span>
+              </span>
+            </span>
+            <div class="kalos-screen-wrap" id="kalos-screen-wrap">
+              <div class="kalos-screen">
+                <div class="kalos-screen-content">
+                  <div class="dex-mode-toggle kalos-mode-toggle" id="kalos-mode-toggle">
+                    <button type="button" data-mode="living" class="active">Living Dex</button>
+                    <button type="button" data-mode="shiny">Shiny Living Dex</button>
+                  </div>
+                  <div class="dex-summary" id="kalos-summary"></div>
+                  <!-- Each .kalos-gen-tile is built entirely in script.js
+                       (renderKalosMobileDex). Tapping a collapsed tile grows
+                       it, in its own grid slot, into the same
+                       .dex-card/.dex-card-banner/.dex-species-panel markup
+                       the desktop accordion uses (so it inherits the exact
+                       same per-generation banner + region background images
+                       for free) - the other tiles just disappear rather
+                       than the expanded one flying off to a separate panel. -->
+                  <div class="kalos-gen-grid" id="kalos-gen-grid"></div>
+                </div>
+                <div class="pc-scanlines"></div>
+                <div class="pc-screen-glare"></div>
+              </div>
+            </div>
+            <div class="kalos-shell-half kalos-bottom" id="kalos-bottom" role="button" tabindex="0" aria-label="Close Living Dex" aria-expanded="false">
+              <span class="kalos-corner kalos-corner-bl" aria-hidden="true"></span>
+              <span class="kalos-corner kalos-corner-br" aria-hidden="true"></span>
+              <span class="kalos-corner kalos-corner-big kalos-corner-bl" aria-hidden="true"></span>
+              <span class="kalos-corner kalos-corner-big kalos-corner-br" aria-hidden="true"></span>
             </div>
           </div>
         </div>
