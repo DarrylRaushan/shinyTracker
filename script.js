@@ -4792,12 +4792,69 @@ expandKalosTile(tile);
 var kalosDex = document.getElementById('kalos-dex');
 var kalosTop = document.getElementById('kalos-top');
 var kalosBottom = document.getElementById('kalos-bottom');
-if (kalosDex && kalosTop && kalosBottom) {
+var kalosScreenWrap = document.getElementById('kalos-screen-wrap');
+var kalosContent = kalosScreenWrap ? kalosScreenWrap.querySelector('.kalos-screen-content') : null;
+var kalosGenGrid = document.getElementById('kalos-gen-grid');
+
+if (kalosDex && kalosTop && kalosBottom && kalosScreenWrap) {
+var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var kalosBusy = false;
+
 var setKalosOpen = function(open) {
-kalosDex.dataset.open = open ? 'true' : 'false';
+if (kalosBusy) return;
 kalosTop.setAttribute('aria-expanded', open ? 'true' : 'false');
 kalosBottom.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+// No Motion (or reduced-motion preference): fall back to the plain CSS transition.
+if (reduceMotion || !(window.Motion && window.Motion.animate)) {
+kalosDex.dataset.open = open ? 'true' : 'false';
+return;
+}
+
+var animate = window.Motion.animate;
+var stagger = window.Motion.stagger;
+kalosBusy = true;
+kalosScreenWrap.style.transition = 'none'; // hand this element over to Motion
+if (kalosContent) kalosContent.style.transition = 'none';
+
+if (open) {
+// Flip the data-open flag first so the CSS max-height cap lifts
+// immediately - otherwise it clips the height Motion is growing.
+kalosDex.dataset.open = 'true';
+
+animate(kalosScreenWrap, { height: [0, 'auto'] }, { duration: 0.5, ease: [0.65, 0, 0.35, 1] })
+.finished.then(function() {
+kalosScreenWrap.style.transition = '';
+kalosBusy = false;
+});
+
+if (kalosContent) {
+animate(kalosContent, { opacity: [0, 1], y: [10, 0] }, { duration: 0.3, delay: 0.16 });
+}
+if (kalosGenGrid) {
+var tiles = kalosGenGrid.querySelectorAll('.kalos-gen-tile');
+if (tiles.length) {
+animate(tiles, { opacity: [0, 1], y: [8, 0] }, {
+duration: 0.25,
+delay: stagger(0.025, { startDelay: 0.22 })
+});
+}
+}
+} else {
+if (kalosContent) animate(kalosContent, { opacity: 0 }, { duration: 0.15 });
+
+animate(kalosScreenWrap, { height: 0 }, { duration: 0.4, ease: [0.65, 0, 0.35, 1] })
+.finished.then(function() {
+// Only drop the max-height cap back down once the shell has
+// actually finished closing, so it doesn't clip mid-collapse.
+kalosDex.dataset.open = 'false';
+kalosScreenWrap.style.transition = '';
+if (kalosContent) kalosContent.style.transition = '';
+kalosBusy = false;
+});
+}
 };
+
 var toggleKalosOpen = function() {
 setKalosOpen(kalosDex.dataset.open !== 'true');
 };
