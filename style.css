@@ -4861,11 +4861,12 @@ left: 50%;
 width: min(46vw, 190px);
 height: min(46vw, 190px);
 border-radius: 50%;
-background: #141414;
-border: 4px solid rgba(232, 221, 184, 0.9);
+border: min(11.5vw, 8px) solid transparent;
+background:
+linear-gradient(#141414, #141414) padding-box,
+#c0c0c0 border-box;
 box-shadow:
-0 0 0 2px var(--line),
-0 4px 10px rgba(0, 0, 0, 0.4);
+0 0 0 2px var(--line);
 pointer-events: none;
 z-index: 1;
 }
@@ -4890,7 +4891,8 @@ left: 50%;
 width: min(85vw, 260px);
 height: min(85vw, 260px);
 border-radius: 50%;
-border: 2px solid rgba(43, 35, 32, 0.35);
+border: 2px solid #2ccfe8;
+box-shadow: 0 0 6px 1px rgba(44, 207, 232, 0.5);
 pointer-events: none;
 z-index: 1;
 }
@@ -4933,7 +4935,11 @@ width: min(62vw, 244px);
 height: min(62vw, 244px);
 transform: translate(-50%, -50%);
 border-radius: 50%;
+background: #2a2a2c;
 border: 2px solid rgba(43, 35, 32, 0.35);
+box-shadow:
+0 0 0 min(11.5vw, 8px) #c0c0c0,
+0 0 10px 2px rgba(192, 192, 192, 0.55);
 pointer-events: none;
 }
 /* Horizontal Light Bar & Metallic Trims — a full-bleed cyan light bar
@@ -4949,17 +4955,14 @@ height: 46px;
 background:
 linear-gradient(180deg, #ffffff 0%, #b9bec2 50%, #6b6f72 100%) top / 100% 4px no-repeat,
 linear-gradient(180deg, #ffffff 0%, #b9bec2 50%, #6b6f72 100%) bottom / 100% 4px no-repeat,
-radial-gradient(ellipse 26% 160% at 50% 50%, rgba(255, 255, 255, 0.95) 0%, rgba(179, 241, 255, 0.85) 32%, rgba(120, 210, 240, 0.35) 62%, transparent 82%) center / 100% calc(100% - 8px) no-repeat,
 linear-gradient(90deg, #0a6675 0%, #0f97ab 15%, #2ccfe8 35%, #8ceefb 50%, #2ccfe8 65%, #0f97ab 85%, #0a6675 100%) center / 100% calc(100% - 8px) no-repeat;
-box-shadow:
-inset 0 1px 2px rgba(255, 255, 255, 0.25),
-inset 0 -1px 2px rgba(0, 0, 0, 0.35);
 display: flex;
 align-items: center;
 justify-content: center;
 }
 /* Central Metallic Ring Assembly (Pokéball Emblem). Chrome outer bezel on
-   the element itself; ::before is the nested charcoal ring with a
+   the element itself; ::before is the nested ring, recolored to match the
+   cyan lens core so the glowing center reads as one larger circle, with a
    horizontal cutout band (cream stripe), clipped to the circle by the
    element's own border-radius; ::after draws both rivet/screw studs at
    the ring's true top/bottom-dead-center — the top one is the real
@@ -4970,19 +4973,7 @@ position: relative;
 width: min(46vw, 190px);
 height: min(46vw, 190px);
 border-radius: 50%;
-background: conic-gradient(from 210deg,
-#f7f8fa 0deg,
-#ffffff 40deg,
-#c3c8cd 95deg,
-#6c7176 145deg,
-#dfe2e5 195deg,
-#ffffff 255deg,
-#9a9fa4 315deg,
-#f7f8fa 360deg);
-box-shadow:
-0 8px 18px rgba(0, 0, 0, 0.45),
-inset 0 2px 3px rgba(255, 255, 255, 0.65),
-inset 0 -3px 5px rgba(0, 0, 0, 0.35);
+background: transparent;
 display: flex;
 align-items: center;
 justify-content: center;
@@ -4998,28 +4989,15 @@ height: 82%;
 transform: translate(-50%, -50%);
 border-radius: 50%;
 background:
-linear-gradient(180deg, transparent calc(50% - 7%), rgba(232, 221, 184, 0.9) calc(50% - 7%), rgba(232, 221, 184, 0.9) calc(50% + 7%), transparent calc(50% + 7%)),
-radial-gradient(circle at 42% 34%, #47474a 0%, #2a2a2c 42%, #131314 76%, #000 100%);
+radial-gradient(ellipse 34% 20% at 32% 27%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.32) 45%, transparent 72%),
+radial-gradient(circle at 50% 50%, #ffffff 0%, #d9fcff 14%, #8ceefb 34%, #2ccfe8 60%, #0f97ab 84%, #0a6675 100%);
 box-shadow:
-inset 0 2px 4px rgba(255, 255, 255, 0.08),
-inset 0 -3px 7px rgba(0, 0, 0, 0.6);
+inset 0 2px 4px rgba(255, 255, 255, 0.25),
+inset 0 -3px 7px rgba(0, 0, 0, 0.35);
 z-index: 1;
 }
 .kalos-seam-ring::after {
-content: "";
-position: absolute;
-left: 50%;
-top: 0;
-width: 7px;
-height: 7px;
-border-radius: 50%;
-transform: translate(-50%, -50%);
-background: radial-gradient(circle at 35% 30%, #5a5a5c 0%, #1a1a1b 65%, #000 100%);
-box-shadow:
-0 1px 1px rgba(255, 255, 255, 0.35),
-inset 0 0 1px rgba(0, 0, 0, 0.8),
-0 min(46vw, 190px) 0 0 #0d0d0e;
-z-index: 3;
+display: none;
 }
 /* Glowing center lens — the illuminated aperture nestled inside the dark
    charcoal ring. Layered radial-gradients build the glass glare (top-left
@@ -5027,17 +5005,16 @@ z-index: 3;
    a bright cyan glow outward onto the surrounding dark ring. */
 .kalos-seam-core {
 position: relative;
-width: min(26vw, 108px);
-height: min(26vw, 108px);
+width: 74%;
+height: 74%;
 border-radius: 50%;
-background:
-radial-gradient(ellipse 34% 20% at 32% 27%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.32) 45%, transparent 72%),
-radial-gradient(circle at 50% 50%, #ffffff 0%, #d9fcff 14%, #8ceefb 34%, #2ccfe8 60%, #0f97ab 84%, #0a6675 100%);
-border: 3px solid rgba(232, 221, 184, 0.9);
-box-shadow:
-0 0 18px 6px rgba(60, 225, 245, 0.85),
-0 0 40px 18px rgba(20, 190, 215, 0.55),
-inset 0 0 0 2px rgba(6, 60, 70, 0.7);
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='rgba(255,255,255,0.15)' stroke='%232ccfe8' stroke-width='3'/%3E%3Cline x1='6' y1='50' x2='94' y2='50' stroke='%232ccfe8' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='11' fill='none' stroke='%232ccfe8' stroke-width='3'/%3E%3Ccircle cx='50' cy='50' r='4' fill='%232ccfe8'/%3E%3C/svg%3E");
+background-size: contain;
+background-repeat: no-repeat;
+background-position: center;
+opacity: 1;
+mix-blend-mode: normal;
+pointer-events: none;
 z-index: 2;
 }
 .kalos-dex[data-open="true"] .kalos-seam {
