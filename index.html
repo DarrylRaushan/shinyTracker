@@ -108,10 +108,6 @@
           </div>
         </div>
       <div id="view-livingdex" class="dex-page">
-        <div class="section-head">
-          <button type="button" class="ghost" id="btn-livingdex-back">← Active Hunts</button>
-          <h2>Living Dex</h2>
-        </div>
         <div class="pc-scene">
           <!-- Mobile-only closed Pokédex cover: a decorative red-shell overlay
                shown before the Living Dex is opened. Tapping/activating it
@@ -154,9 +150,12 @@
             <div class="pc-screen-bezel">
               <div class="pc-screen">
                 <div class="pc-screen-content">
-                  <div class="dex-mode-toggle" id="dex-mode-toggle">
-                    <button data-mode="living" class="active">Living Dex</button>
-                    <button data-mode="shiny">Shiny Living Dex</button>
+                  <div class="dex-mode-toggle-row">
+                    <div class="dex-mode-toggle" id="dex-mode-toggle">
+                      <button data-mode="living" class="active">Living Dex</button>
+                      <button data-mode="shiny">Shiny Living Dex</button>
+                    </div>
+                    <button type="button" class="dex-toggle-back-btn" title="Back to Active Hunts" aria-label="Back to Active Hunts">←</button>
                   </div>
                   <div class="dex-summary" id="dex-summary"></div>
                   <div class="dex-grid" id="dex-grid"></div>
@@ -295,22 +294,27 @@
                style.css and just gets inherited here. -->
           <div class="kalos-dex" id="kalos-dex" data-open="false">
             <div class="kalos-shell-half kalos-top" id="kalos-top" role="button" tabindex="0" aria-label="Open Living Dex" aria-expanded="false">
+              <span class="kalos-fill" aria-hidden="true"></span>
               <span class="kalos-corner kalos-corner-tl" aria-hidden="true"></span>
               <span class="kalos-corner kalos-corner-tr" aria-hidden="true"></span>
               <span class="kalos-corner kalos-corner-big kalos-corner-tl" aria-hidden="true"></span>
               <span class="kalos-corner kalos-corner-big kalos-corner-tr" aria-hidden="true"></span>
+              <span class="kalos-band-half kalos-band-top" aria-hidden="true"></span>
+              <span class="kalos-rail-half kalos-rail-top" aria-hidden="true"></span>
+              <span class="kalos-lens kalos-lens-top" aria-hidden="true"></span>
             </div>
             <span class="kalos-seam" aria-hidden="true">
-              <span class="kalos-seam-band">
-                <span class="kalos-seam-ring"><span class="kalos-seam-core"></span></span>
-              </span>
+              <span class="kalos-seam-ring"><span class="kalos-seam-core"></span></span>
             </span>
             <div class="kalos-screen-wrap" id="kalos-screen-wrap">
               <div class="kalos-screen">
                 <div class="kalos-screen-content">
-                  <div class="dex-mode-toggle kalos-mode-toggle" id="kalos-mode-toggle">
-                    <button type="button" data-mode="living" class="active">Living Dex</button>
-                    <button type="button" data-mode="shiny">Shiny Living Dex</button>
+                  <div class="dex-mode-toggle-row">
+                    <div class="dex-mode-toggle kalos-mode-toggle" id="kalos-mode-toggle">
+                      <button type="button" data-mode="living" class="active">Living Dex</button>
+                      <button type="button" data-mode="shiny">Shiny Living Dex</button>
+                    </div>
+                    <button type="button" class="dex-toggle-back-btn" title="Back to Active Hunts" aria-label="Back to Active Hunts">←</button>
                   </div>
                   <div class="dex-summary" id="kalos-summary"></div>
                   <!-- Each .kalos-gen-tile is built entirely in script.js
@@ -328,6 +332,10 @@
               </div>
             </div>
             <div class="kalos-shell-half kalos-bottom" id="kalos-bottom" role="button" tabindex="0" aria-label="Close Living Dex" aria-expanded="false">
+              <span class="kalos-fill" aria-hidden="true"></span>
+              <span class="kalos-band-half kalos-band-bottom" aria-hidden="true"></span>
+              <span class="kalos-rail-half kalos-rail-bottom" aria-hidden="true"></span>
+              <span class="kalos-lens kalos-lens-bottom" aria-hidden="true"></span>
               <span class="kalos-corner kalos-corner-bl" aria-hidden="true"></span>
               <span class="kalos-corner kalos-corner-br" aria-hidden="true"></span>
               <span class="kalos-corner kalos-corner-big kalos-corner-bl" aria-hidden="true"></span>
