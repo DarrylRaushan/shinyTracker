@@ -5387,14 +5387,36 @@ background: var(--kalos-strip-cyan);
 #kalos-summary {
 background: var(--kalos-strip-cyan);
 }
+/* CSS-KALOS-CAROUSEL: peek/coverflow carousel (see initKalosCarousel in
+   script.js). Horizontal scroll-snap track with side padding so the
+   centered tile's neighbors peek in at both edges; each tile's
+   scale/opacity is driven continuously from script.js as the person
+   drags, so it visibly grows into focus as it nears the center instead
+   of just snapping between two fixed states. */
 .kalos-gen-grid {
-display: grid;
-grid-template-columns: repeat(3, 1fr);
-align-items: start;
-gap: 8px;
+display: flex;
+align-items: stretch;
+gap: 10px;
 margin-top: 10px;
+padding: 0 13%;
+overflow-x: auto;
+overflow-y: hidden;
+scroll-snap-type: x mandatory;
+-webkit-overflow-scrolling: touch;
+scrollbar-width: none;
 }
-/* Tapping a collapsed tile hides its siblings (see renderKalosMobileDex /
+.kalos-gen-grid::-webkit-scrollbar {
+display: none;
+}
+/* While a tile is expanded, the grid holds exactly one visible child at
+   full width - scrolling/snapping would be meaningless (and the side
+   padding would just look like stray inset), so both are switched off. */
+.kalos-gen-grid.kalos-gen-grid-open {
+overflow: hidden;
+scroll-snap-type: none;
+padding: 0;
+}
+/* Tapping the centered tile hides its siblings (see renderKalosMobileDex /
    expandKalosTile in script.js) and turns that same tile into the full
    banner, growing outward from wherever it was sitting in the grid - a
    FLIP transform (not a fixed-position flight to some other spot) is what
@@ -5405,6 +5427,7 @@ font-family: var(--body);
 position: relative;
 overflow: hidden;
 display: flex;
+flex: 0 0 74%;
 flex-direction: column;
 align-items: center;
 gap: 6px;
@@ -5417,6 +5440,9 @@ background-position: center;
 background-repeat: no-repeat;
 box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
 cursor: pointer;
+scroll-snap-align: center;
+scroll-snap-stop: always;
+transform-origin: center center;
 }
 .kalos-gen-tile:active {
 transform: translateY(2px);
@@ -5500,24 +5526,52 @@ text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
    same per-gen banner/region background images the desktop accordion
    already defines - no new image rules needed. */
 .kalos-gen-tile-expanded {
-grid-column: 1 / -1;
+flex: 0 0 100%;
 flex-direction: column;
 align-items: stretch;
 gap: 0;
 padding: 0;
 cursor: default;
 background-image: none;
+scroll-snap-align: none;
 }
 .kalos-gen-tile-expanded::before {
 display: none;
 }
 .kalos-gen-tile-expanded:active {
-transform: none;
+transform: none !important;
 box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
 }
 .kalos-gen-tile-expanded .dex-species-panel {
 display: block;
 background-color: transparent;
+}
+/* Dot indicators below the carousel, one per generation - kept in sync
+   with the centered tile via updateKalosDots() and hidden outright while
+   a tile is expanded (see renderKalosMobileDex). */
+.kalos-gen-dots {
+display: flex;
+justify-content: center;
+align-items: center;
+gap: 7px;
+margin-top: 10px;
+}
+.kalos-gen-dots[hidden] {
+display: none;
+}
+.kalos-gen-dot {
+width: 6px;
+height: 6px;
+padding: 0;
+border: none;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.38);
+cursor: pointer;
+transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.kalos-gen-dot.active {
+background: #fff;
+transform: scale(1.4);
 }
 .kalos-gen-detail-banner {
 padding: 0;
