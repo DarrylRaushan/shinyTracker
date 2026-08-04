@@ -3177,10 +3177,13 @@ if (e.animationName === 'log-dex-pill-click') btn.classList.remove('log-dex-pill
 });
 });
 // Living Dex has no tab bar to get back out through either, so it gets
-// its own explicit way back to Active Hunts.
-var livingDexBackBtn = document.getElementById('btn-livingdex-back');
-if (livingDexBackBtn) livingDexBackBtn.addEventListener('click', function() {
+// its own explicit way back to Active Hunts - now a small button next to
+// each mode toggle (desktop .dex-mode-toggle and mobile .kalos-mode-toggle)
+// instead of the old shared page-header bar.
+document.querySelectorAll('.dex-toggle-back-btn').forEach(function(btn) {
+btn.addEventListener('click', function() {
 activateTab('hunts');
+});
 });
 // ---------- swipe between Active Hunts <-> Shiny Log <-> Living Dex (mobile) ----------
 // The clamshell always shows exactly one of these three "pages" as
@@ -5907,11 +5910,21 @@ logScreenStep(1);
 });
 (function initStars() {
 var container = document.getElementById('stars');
+// Stars are placed at fully random positions across the whole viewport,
+// which occasionally drops one right at the very top edge - directly
+// behind the Living Dex shell's rounded top corners, where it reads as
+// a stray blue blip sitting on the corner-groove artwork. Keeping a
+// clear band at the top (and a smaller one at the bottom, for symmetry)
+// avoids that coincidental overlap without changing how the starfield
+// looks anywhere else on the page.
+var TOP_CLEAR_PERCENT = 8;
+var BOTTOM_CLEAR_PERCENT = 4;
+var usableRange = 100 - TOP_CLEAR_PERCENT - BOTTOM_CLEAR_PERCENT;
 for (var i = 0; i < 60; i++) {
 var s = document.createElement('div');
 s.className = 'star';
 s.style.left = (Math.random() * 100) + '%';
-s.style.top = (Math.random() * 100) + '%';
+s.style.top = (TOP_CLEAR_PERCENT + Math.random() * usableRange) + '%';
 s.style.animationDelay = (Math.random() * 4) + 's';
 container.appendChild(s);
 }
