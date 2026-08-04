@@ -4111,6 +4111,12 @@ var dexTypeFilter = '';
 // Which generation (if any) is currently drilled into on the mobile Kalos
 // dex's gen-detail screen (null = showing the 3-per-row gen tile grid).
 var kalosOpenGen = null;
+// Index (into GEN_DATA order) of whichever tile is currently centered in
+// the peek carousel. Kept up to date by syncKalosCarousel() as the person
+// drags, used to know which tile a tap should expand vs. bring to center,
+// and to restore scroll position after renderKalosMobileDex() rebuilds
+// the tiles (innerHTML = '' resets scrollLeft to 0 otherwise).
+var kalosCarouselIndex = 0;
 function normName(s) {
 return String(s || '').trim().toLowerCase();
 }
@@ -4654,6 +4660,114 @@ if (kalosOpenGen) tile.hidden = true;
 }
 tileGrid.appendChild(tile);
 });
+tileGrid.classList.toggle('kalos-gen-grid-open', !!kalosOpenGen);
+buildKalosDots();
+if (kalosOpenGen) {
+var dots = document.getElementById('kalos-gen-dots');
+if (dots) dots.hidden = true;
+} else {
+// innerHTML = '' above just reset scrollLeft to 0 - snap the rebuilt
+// track back to whichever tile was centered before this render (no
+// animation, this is a data refresh, not a navigation) and refresh
+// the scale/opacity of every tile from that position.
+scrollKalosCarouselToIndex(kalosCarouselIndex, false);
+syncKalosCarousel();
+var dots2 = document.getElementById('kalos-gen-dots');
+if (dots2) dots2.hidden = false;
+}
+}
+// ---------- mobile Kalos dex: peek/coverflow carousel ----------
+// Builds the dot row underneath the carousel, one dot per generation.
+function buildKalosDots() {
+var dotsWrap = document.getElementById('kalos-gen-dots');
+if (!dotsWrap) return;
+dotsWrap.innerHTML = GEN_DATA.map(function(g, i) {
+return '<button type="button" class="kalos-gen-dot' + (i === kalosCarouselIndex ? ' active' : '') +
+'" data-index="' + i + '" aria-label="Go to Generation ' + g.gen + '"></button>';
+}).join('');
+}
+function updateKalosDots(index) {
+var dotsWrap = document.getElementById('kalos-gen-dots');
+if (!dotsWrap) return;
+Array.prototype.forEach.call(dotsWrap.querySelectorAll('.kalos-gen-dot'), function(dot, i) {
+dot.classList.toggle('active', i === index);
+});
+}
+// Scrolls the carousel so the tile at `index` sits centered. Smooth moves
+// (dot taps, tapping a peeking neighbor) are driven by Motion so they
+// share the same easing as the rest of the app's motion; non-smooth moves
+// (restoring position after a data-only re-render) jump straight there.
+function scrollKalosCarouselToIndex(index, smooth) {
+var grid = document.getElementById('kalos-gen-grid');
+if (!grid) return;
+var tile = grid.children[index];
+if (!tile) return;
+var target = tile.offsetLeft - (grid.clientWidth - tile.clientWidth) / 2;
+if (smooth && window.Motion && window.Motion.animate) {
+window.Motion.animate(grid.scrollLeft, target, {
+duration: 0.4,
+ease: [0.65, 0, 0.35, 1],
+onUpdate: function(v) { grid.scrollLeft = v; }
+});
+} else {
+grid.scrollLeft = target;
+}
+}
+var kalosCarouselSyncQueued = false;
+// Continuously scales/fades every tile based on its live distance from
+// the carousel's center, so the centered card visibly swells into focus
+// as the person drags rather than just popping between two fixed states.
+// Called on every scroll frame (throttled to one measurement per animation
+// frame) plus once after any re-render.
+function syncKalosCarousel() {
+kalosCarouselSyncQueued = false;
+var grid = document.getElementById('kalos-gen-grid');
+if (!grid || kalosOpenGen) return;
+var tiles = grid.querySelectorAll('.kalos-gen-tile');
+if (!tiles.length) return;
+var gridRect = grid.getBoundingClientRect();
+var center = gridRect.left + gridRect.width / 2;
+var closestIdx = 0, closestDist = Infinity;
+Array.prototype.forEach.call(tiles, function(tile, i) {
+var tRect = tile.getBoundingClientRect();
+var dist = (tRect.left + tRect.width / 2) - center;
+var norm = Math.min(Math.abs(dist) / (gridRect.width / 2), 1);
+var scale = 1 - norm * 0.16;
+var opacity = 1 - norm * 0.5;
+tile.style.transform = 'scale(' + scale.toFixed(3) + ')';
+tile.style.opacity = opacity.toFixed(3);
+if (Math.abs(dist) < closestDist) {
+closestDist = Math.abs(dist);
+closestIdx = i;
+}
+});
+if (closestIdx !== kalosCarouselIndex) {
+kalosCarouselIndex = closestIdx;
+updateKalosDots(closestIdx);
+}
+}
+function queueKalosCarouselSync() {
+if (kalosCarouselSyncQueued) return;
+kalosCarouselSyncQueued = true;
+requestAnimationFrame(syncKalosCarousel);
+}
+// One-time wiring for the carousel's scroll tracking, dot taps, and
+// resize handling. Safe to call once at startup - renderKalosMobileDex()
+// re-renders the tiles themselves on every subsequent data change.
+function initKalosCarousel() {
+var grid = document.getElementById('kalos-gen-grid');
+var dotsWrap = document.getElementById('kalos-gen-dots');
+if (!grid) return;
+grid.addEventListener('scroll', queueKalosCarouselSync, { passive: true });
+window.addEventListener('resize', queueKalosCarouselSync);
+if (dotsWrap) {
+dotsWrap.addEventListener('click', function(e) {
+var dot = e.target.closest('.kalos-gen-dot');
+if (!dot) return;
+scrollKalosCarouselToIndex(parseInt(dot.dataset.index, 10), true);
+});
+}
+syncKalosCarousel();
 }
 function kalosCurrentCaughtMap() {
 return (dexMode === 'shiny') ?
@@ -4701,14 +4815,24 @@ return String(x.gen) === String(gen);
 if (!g) return;
 var first = tile.getBoundingClientRect();
 var grid = tile.parentNode;
+kalosCarouselIndex = Array.prototype.indexOf.call(grid.children, tile);
 Array.prototype.forEach.call(grid.children, function(t) {
 if (t !== tile) t.hidden = true;
 });
 kalosOpenGen = gen;
+grid.classList.add('kalos-gen-grid-open');
+var dots = document.getElementById('kalos-gen-dots');
+if (dots) dots.hidden = true;
 var caught = kalosCurrentCaughtMap();
 tile.className = 'kalos-gen-tile kalos-gen-tile-expanded dex-card';
 tile.removeAttribute('role');
 tile.removeAttribute('tabindex');
+// Clear whatever scale/opacity syncKalosCarousel() left inline on this
+// tile from its carousel life - flipAnimate() below sets its own
+// transform to drive the grow animation, so a leftover scale here would
+// make it grow from the wrong size.
+tile.style.transform = '';
+tile.style.opacity = '';
 tile.innerHTML = buildKalosTileExpandedHtml(g, caught, kalosGenCaughtCount(g, caught));
 flipAnimate(tile, first);
 }
@@ -4742,6 +4866,14 @@ tile.innerHTML = buildKalosTileCollapsedHtml(g, (pct === 100) ? ' complete' : ''
 Array.prototype.forEach.call(grid.children, function(t) {
 t.hidden = false;
 });
+grid.classList.remove('kalos-gen-grid-open');
+// The tile that was expanded is still the one that should be centered -
+// snap the track back to it (no animation; this is a state restore, not
+// a navigation) before re-measuring everyone's scale/opacity.
+scrollKalosCarouselToIndex(kalosCarouselIndex, false);
+syncKalosCarousel();
+var dots = document.getElementById('kalos-gen-dots');
+if (dots) dots.hidden = false;
 flipAnimate(tile, first);
 }
 (function() {
@@ -4776,7 +4908,12 @@ return;
 }
 var tile = e.target.closest('.kalos-gen-tile');
 if (tile && !tile.classList.contains('kalos-gen-tile-expanded')) {
+var idx = Array.prototype.indexOf.call(kalosGrid.children, tile);
+if (idx === kalosCarouselIndex) {
 expandKalosTile(tile);
+} else {
+scrollKalosCarouselToIndex(idx, true);
+}
 }
 });
 kalosGrid.addEventListener('keydown', function(e) {
@@ -4784,9 +4921,15 @@ if (e.key !== 'Enter' && e.key !== ' ') return;
 var tile = e.target.closest('.kalos-gen-tile');
 if (tile && !tile.classList.contains('kalos-gen-tile-expanded')) {
 e.preventDefault();
+var idx = Array.prototype.indexOf.call(kalosGrid.children, tile);
+if (idx === kalosCarouselIndex) {
 expandKalosTile(tile);
+} else {
+scrollKalosCarouselToIndex(idx, true);
+}
 }
 });
+initKalosCarousel();
 }
 // The two shell halves both toggle the same open/closed state - tapping
 // either one opens the closed shell, and tapping either one again closes
@@ -4840,6 +4983,12 @@ if (tiles.length) {
 animate(tiles, { opacity: [0, 1], y: [8, 0] }, {
 duration: 0.25,
 delay: stagger(0.025, { startDelay: 0.22 })
+}).finished.then(function() {
+// The entrance stagger just took over each tile's transform/opacity
+// - hand it back to the carousel so neighbors settle into their
+// scaled-down, dimmed resting look instead of staying at the
+// stagger's final translateY(0)/opacity:1.
+if (!kalosOpenGen) syncKalosCarousel();
 });
 }
 }
