@@ -148,16 +148,10 @@
               </div>
             </div>
             <div class="pc-screen-bezel">
+              <button type="button" class="dex-toggle-back-btn" title="Back to Active Hunts" aria-label="Back to Active Hunts">←</button>
               <div class="pc-screen">
                 <div class="pc-screen-content">
-                  <div class="dex-mode-toggle-row">
-                    <div class="dex-mode-toggle" id="dex-mode-toggle">
-                      <button data-mode="living" class="active">Living Dex</button>
-                      <button data-mode="shiny">Shiny Living Dex</button>
-                    </div>
-                    <button type="button" class="dex-toggle-back-btn" title="Back to Active Hunts" aria-label="Back to Active Hunts">←</button>
-                  </div>
-                  <div class="dex-summary" id="dex-summary"></div>
+                  <div class="dex-split-toggle" id="dex-mode-toggle"></div>
                   <div class="dex-grid" id="dex-grid"></div>
                 </div>
                 <div class="pc-scanlines"></div>
@@ -289,7 +283,7 @@
                .pc-monitor/.pc-keyboard-tray/.dex-closed-cover are hidden at
                the mobile breakpoint instead (see CSS-KALOS-MOBILE in
                style.css). No ids/classes are shared with the desktop markup
-               except the reused .dex-mode-toggle / .dex-summary / .dex-chip /
+               except the reused .dex-split-toggle / .dex-chip /
                .dex-species-grid / .dex-gen-badge look, which already exists in
                style.css and just gets inherited here. -->
           <div class="kalos-dex" id="kalos-dex" data-open="false">
@@ -302,6 +296,18 @@
               <span class="kalos-band-half kalos-band-top" aria-hidden="true"></span>
               <span class="kalos-rail-half kalos-rail-top" aria-hidden="true"></span>
               <span class="kalos-lens kalos-lens-top" aria-hidden="true"></span>
+              <!-- Back-to-Active-Hunts control, mounted as a real shoulder
+                   button on the shell's top-left corner (nested in the
+                   engraved corner grooves above) instead of floating on the
+                   screen glass in .kalos-screen-wrap - reads as part of the
+                   case, not a UI overlay. No arrow glyph inside it (just a
+                   plain hardware button) - the label/title still say what
+                   it does for screen readers and on hover. Still shares the
+                   .dex-toggle-back-btn class so the existing click wiring
+                   (script.js) picks it up automatically; .kalos-shell-back-btn
+                   only adds the shell-mounted position/look at the mobile
+                   breakpoint (see CSS-KALOS-MOBILE in style.css). -->
+              <button type="button" class="dex-toggle-back-btn kalos-shell-back-btn" title="Back to Active Hunts" aria-label="Back to Active Hunts"></button>
             </div>
             <span class="kalos-seam" aria-hidden="true">
               <span class="kalos-seam-ring"><span class="kalos-seam-core"></span></span>
@@ -309,14 +315,7 @@
             <div class="kalos-screen-wrap" id="kalos-screen-wrap">
               <div class="kalos-screen">
                 <div class="kalos-screen-content">
-                  <div class="dex-mode-toggle-row">
-                    <div class="dex-mode-toggle kalos-mode-toggle" id="kalos-mode-toggle">
-                      <button type="button" data-mode="living" class="active">Living Dex</button>
-                      <button type="button" data-mode="shiny">Shiny Living Dex</button>
-                    </div>
-                    <button type="button" class="dex-toggle-back-btn" title="Back to Active Hunts" aria-label="Back to Active Hunts">←</button>
-                  </div>
-                  <div class="dex-summary" id="kalos-summary"></div>
+                  <div class="dex-split-toggle kalos-mode-toggle" id="kalos-mode-toggle"></div>
                   <!-- Each .kalos-gen-tile is built entirely in script.js
                        (renderKalosMobileDex). Tapping a collapsed tile grows
                        it, in its own grid slot, into the same
