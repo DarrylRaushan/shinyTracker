@@ -5251,17 +5251,16 @@ if (kalosGrid) {
 // transform for its slide/scroll animation) confuses Safari's
 // focus-into-view logic - it computes the chip's pre-transform layout
 // position, decides it's off-screen, and scrolls the whole document
-// back to the top to "reveal" it. Calling preventDefault() on
-// mousedown/touchstart stops the browser from focusing the chip on
-// tap without blocking the click event itself, so tapping a sprite no
-// longer yanks the page back to the top. Keyboard access (Tab, then
-// Enter/Space) is untouched since that never goes through mousedown.
+// back to the top to "reveal" it. Calling preventDefault() on mousedown
+// stops the browser from focusing the chip on tap without blocking the
+// click event itself, so tapping a sprite no longer yanks the page back
+// to the top. (touchstart preventDefault is deliberately NOT used here -
+// it suppresses the synthetic click iOS fires after a tap, which broke
+// tapping sprites entirely.) Keyboard access (Tab, then Enter/Space) is
+// untouched since that never goes through mousedown.
 kalosGrid.addEventListener('mousedown', function(e) {
 if (e.target.closest('[data-action="toggle-species"]')) e.preventDefault();
 });
-kalosGrid.addEventListener('touchstart', function(e) {
-if (e.target.closest('[data-action="toggle-species"]')) e.preventDefault();
-}, { passive: false });
 kalosGrid.addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
@@ -5426,9 +5425,6 @@ var dexGridEl = document.getElementById('dex-grid');
 dexGridEl.addEventListener('mousedown', function(e) {
 if (e.target.closest('[data-action="toggle-species"]')) e.preventDefault();
 });
-dexGridEl.addEventListener('touchstart', function(e) {
-if (e.target.closest('[data-action="toggle-species"]')) e.preventDefault();
-}, { passive: false });
 })();
 document.getElementById('dex-grid').addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
