@@ -5699,7 +5699,7 @@ background-color: transparent;
 /* Same fixed-height + internal scroll treatment as the desktop accordion
    panel above, sized down for the narrower mobile viewport this tile
    layout only ever renders in. */
-max-height: 75vh;
+max-height: 65vh;
 }
 /* Dot indicators below the carousel, one per generation - kept in sync
    with the centered tile via updateKalosDots() and hidden outright while
@@ -6075,11 +6075,11 @@ transition: filter 0.3s ease;
    (a Caterpie sprite vs. a Butterfree one, say), so the flat 1.75 zoom
    above leaves early-evolution chips looking noticeably smaller than their
    evolved neighbors even though nothing else about the chip differs.
-   .dex-chip-stage-boost is added in script.js (applyEvoStageBoosts) after
-   a PokeAPI evolution-stage lookup flags a species as stage 0 or 1, and
-   just pushes the scale further than the shared default above. Final
-   evolutions (stage 2+, or species with no PokeAPI evolution data) are
-   left at the normal scale on purpose. */
+   .dex-chip-stage-boost / .dex-chip-stage-boost-mid are added in
+   script.js (applyEvoStageBoosts) after a PokeAPI evolution-chain lookup
+   classifies each species - see that function for the exact tier rules.
+   A 2-stage line's final evo (e.g. Raichu) is deliberately left at the
+   normal scale, unboosted. */
 .dex-chip.dex-chip-stage-boost .dex-chip-sprite img {
 transform: scale(2.2);
 /* Default transform-origin (center) grows the enlarged sprite equally
@@ -6088,6 +6088,18 @@ transform: scale(2.2);
    center (rather than all the way at the bottom) makes the boost grow
    more upward than downward without overshooting and floating the
    sprite too high in the chip. */
+transform-origin: 50% 65%;
+}
+/* Middle evolutions (stage 1+, not yet final - e.g. Charmeleon) sit
+   between basic and final in the boost hierarchy: basic and final forms
+   both stay at the 2.2 scale above (see applyEvoStageBoosts in script.js
+   for why those two ended up landing on the same number - their sprites'
+   own baked-in padding naturally makes finals read bigger than basics at
+   an identical scale, so no separate value was needed for either end),
+   but a middle evo needs a nudge past that shared 2.2 to actually read as
+   "bigger than basic" instead of blending in with it. */
+.dex-chip.dex-chip-stage-boost-mid .dex-chip-sprite img {
+transform: scale(2.6);
 transform-origin: 50% 65%;
 }
 .dex-chip-sprite .fallback-letter {
