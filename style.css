@@ -282,25 +282,20 @@ justify-content: center;
 .tabs-screen button span.tab-dot {
 display: none;
 }}
-/* Small button that sits to the right of the Living Dex mode toggle,
-   replacing the old .section-head bar (title + separate "← Active Hunts"
-   button) that used to sit above the whole Living Dex page. */
-.dex-mode-toggle-row {
-display: flex;
-align-items: center;
-gap: 8px;
-}
-.dex-mode-toggle-row .dex-mode-toggle {
-flex: 1 1 auto;
-min-width: 0;
-}
+/* Back-to-Active-Hunts button, now mounted in the device frame itself
+   (.pc-screen-bezel on desktop, .kalos-screen-wrap on mobile) rather than
+   sitting in a row next to the mode toggle - a separate floating corner
+   control instead of something bundled with the Living/Shiny toggle. */
 .dex-toggle-back-btn {
-flex: 0 0 auto;
-width: 34px;
-height: 34px;
+position: absolute;
+top: 8px;
+right: 8px;
+z-index: 6;
+width: 30px;
+height: 30px;
 border-radius: 50%;
-border: 2px solid var(--line);
-background: var(--bg-panel);
+border: 1.5px solid rgba(255, 255, 255, 0.9);
+background: rgba(255, 255, 255, 0.85);
 color: var(--ink);
 font-size: 16px;
 font-weight: 800;
@@ -309,15 +304,14 @@ display: flex;
 align-items: center;
 justify-content: center;
 cursor: pointer;
-box-shadow: 0 3px 0 rgba(43, 35, 32, 0.14);
+box-shadow: 0 2px 8px rgba(20, 40, 70, 0.10);
 transition: transform 0.15s ease, background 0.15s ease;
 }
 .dex-toggle-back-btn:hover {
-background: var(--bg-panel-raised);
+background: #fff;
 }
 .dex-toggle-back-btn:active {
-transform: translateY(2px);
-box-shadow: 0 1px 0 rgba(43, 35, 32, 0.14);
+transform: translateY(1px) scale(0.96);
 }
 button.primary {
 background: var(--red);
@@ -4322,35 +4316,154 @@ box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
    ============================================================ */
 
 /* ---------- Living Dex ---------- */
-.dex-mode-toggle {
-display: inline-flex;
-gap: 6px;
-background: var(--bg-panel-raised);
-padding: 5px;
-border-radius: 999px;
+/* Split Living/Shiny toggle: both halves - and both percentages - are
+   always visible side by side (built by buildDexSplitToggleHtml() in
+   script.js), so comparing progress never means digging one number out
+   from behind the other. The active half is picked out with a tinted
+   background plus bolder/brighter text; the inactive half is dimmed but
+   never hidden. Tapping a half switches dexMode (see the .dex-split-toggle
+   click handler in script.js). */
+.dex-split-toggle {
+position: relative;
+display: flex;
+align-items: stretch;
+background: var(--bg-panel);
 border: 2px solid var(--line);
-margin-bottom: 16px;
+border-radius: 14px;
+box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
+padding: 3px;
+margin-bottom: 12px;
+overflow: hidden;
 }
-.dex-mode-toggle button {
-font-family: var(--hud);
-font-size: 12.5px;
-letter-spacing: 0.3px;
+.dex-split-half {
+position: relative;
+flex: 1 1 0;
+min-width: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 0px;
 background: transparent;
 border: none;
-color: var(--ink-dim);
-padding: 8px 16px;
-border-radius: 999px;
+border-radius: 10px;
+padding: 3px 6px;
 cursor: pointer;
+transition: background 0.15s ease, opacity 0.15s ease;
+opacity: 0.55;
+}
+.dex-split-half:hover:not(.active) {
+opacity: 0.8;
+}
+.dex-split-half.active {
+opacity: 1;
+}
+.dex-split-half.dex-split-living.active {
+background: rgba(42, 58, 160, 0.12);
+box-shadow: inset 0 0 0 1.5px rgba(42, 58, 160, 0.35);
+}
+.dex-split-half.dex-split-shiny.active {
+background: rgba(165, 118, 10, 0.12);
+box-shadow: inset 0 0 0 1.5px rgba(165, 118, 10, 0.35);
+}
+.dex-split-icon {
+display: flex;
+color: var(--ink-dim);
+transition: color 0.15s ease;
+}
+.dex-split-half.dex-split-living.active .dex-split-icon {
+color: var(--blue);
+}
+.dex-split-half.dex-split-shiny.active .dex-split-icon {
+color: var(--yellow-dark);
+}
+.dex-split-pct {
+font-family: var(--hud);
+font-size: 11.5px;
+font-weight: 800;
+line-height: 1.1;
+color: var(--ink-dim);
+margin-top: 1px;
+transition: font-size 0.15s ease, color 0.15s ease;
+}
+.dex-split-half.active .dex-split-pct {
+font-size: 15px;
+animation: dex-split-pct-pulse 2.6s ease-in-out infinite;
+}
+.dex-split-living.active .dex-split-pct {
+color: var(--blue);
+}
+.dex-split-shiny.active .dex-split-pct {
+color: var(--yellow-dark);
+}
+@keyframes dex-split-pct-pulse {
+0%, 100% { filter: brightness(1); }
+50% { filter: brightness(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+.dex-split-half.active .dex-split-pct {
+animation: none;
+}}
+.dex-split-frac {
+font-family: var(--body);
+font-size: 8.5px;
+letter-spacing: 0.2px;
+color: var(--ink-dim);
 font-weight: 700;
-transition: all 0.15s ease;
 }
-.dex-mode-toggle button.active {
-background: var(--blue);
-color: #fff;
-box-shadow: 0 3px 0 var(--blue-dark);
-}
-.dex-mode-toggle button:hover:not(.active) {
+.dex-split-half.active .dex-split-frac {
 color: var(--ink);
+}
+.dex-split-bar {
+width: 80%;
+height: 4px;
+border-radius: 999px;
+background: #fff;
+border: 1.5px solid var(--line);
+overflow: hidden;
+margin-top: 3px;
+}
+.dex-split-bar-fill {
+display: block;
+height: 100%;
+border-radius: 999px;
+background: var(--ink-dim);
+transition: background 0.15s ease;
+}
+.dex-split-living .dex-split-bar-fill {
+background: var(--blue);
+}
+.dex-split-shiny .dex-split-bar-fill {
+background: var(--yellow-dark);
+}
+.dex-split-half:not(.active) .dex-split-bar-fill {
+opacity: 0.55;
+}
+.dex-split-divider {
+flex: 0 0 auto;
+width: 2px;
+margin: 3px 2px;
+background: var(--line);
+opacity: 0.15;
+}
+/* Throwaway comet-trail element, created and animated by
+   slideDexSplitTrail() in script.js (via Motion) whenever the Living/Shiny
+   half is switched, then removed once it lands. Absolutely positioned in
+   px by JS to match real element rects, so only color/glow live here. */
+.dex-split-trail {
+position: absolute;
+border-radius: 12px;
+pointer-events: none;
+z-index: 2;
+}
+.dex-split-trail-living {
+background: rgba(42, 58, 160, 0.22);
+box-shadow: inset 0 0 0 1.5px rgba(42, 58, 160, 0.4);
+}
+
+.dex-split-trail-shiny {
+background: rgba(165, 118, 10, 0.22);
+box-shadow: inset 0 0 0 1.5px rgba(165, 118, 10, 0.4);
 }
 .dex-chip.variant-hidden {
 display: none;
@@ -4553,11 +4666,8 @@ rgba(255, 255, 255, 0.32) 0%,
 rgba(255, 255, 255, 0) 32%
 );
 }
-.pc-screen .dex-mode-toggle {
+.pc-screen .dex-split-toggle {
 background: rgba(255, 255, 255, 0.55);
-}
-.pc-screen .dex-summary {
-box-shadow: 0 5px 0 rgba(0, 30, 15, 0.18);
 }
 /* CSS-6: dex-card — full rationale in NOTES.md */
 .pc-screen .dex-card.expanded {
@@ -4937,6 +5047,39 @@ left: -75px;
 .kalos-corner-big.kalos-corner-br {
 bottom: -75px;
 right: -75px;
+}
+/* Back-to-Active-Hunts, restyled as a physical shoulder button mounted on
+   the shell's top-left corner instead of the plain white circle that used
+   to float on the screen glass (.dex-toggle-back-btn's base rule, still
+   used as-is on desktop). Dark recessed metal to match the engraved
+   corner-groove language above, so it reads as hardware built into the
+   case rather than a UI element sitting on top of the content. Overrides
+   the base .dex-toggle-back-btn position/skin via the extra
+   .kalos-shell-back-btn class + .kalos-top ancestor, both only more
+   specific than the base rule (no !important needed). */
+.kalos-top .dex-toggle-back-btn.kalos-shell-back-btn {
+position: absolute;
+top: 16px;
+left: 16px;
+z-index: 4;
+width: 34px;
+height: 34px;
+border-radius: 50%;
+border: 2px solid rgba(0, 0, 0, 0.4);
+background: linear-gradient(160deg, #4a4440 0%, #221d1a 100%);
+color: rgba(255, 255, 255, 0.85);
+font-size: 14px;
+box-shadow:
+0 2px 0 rgba(0, 0, 0, 0.5),
+inset 0 1px 0 rgba(255, 255, 255, 0.18),
+inset 0 -2px 3px rgba(0, 0, 0, 0.4);
+}
+.kalos-top .dex-toggle-back-btn.kalos-shell-back-btn:hover {
+background: linear-gradient(160deg, #554e49 0%, #2b2521 100%);
+}
+.kalos-top .dex-toggle-back-btn.kalos-shell-back-btn:active {
+transform: translateY(2px);
+box-shadow: inset 0 3px 4px rgba(0, 0, 0, 0.5);
 }
 /* The lens seam-ring is split in half and permanently welded onto each
    shell half (clipped to a half-circle by the half's own overflow:
@@ -5382,10 +5525,6 @@ display: block;
 }
 .kalos-mode-toggle {
 margin-bottom: 10px;
-background: var(--kalos-strip-cyan);
-}
-#kalos-summary {
-background: var(--kalos-strip-cyan);
 }
 /* CSS-KALOS-CAROUSEL: peek/coverflow carousel (see initKalosCarousel in
    script.js). Horizontal scroll-snap track with side padding so the
@@ -5492,7 +5631,7 @@ background-image: url("images/dex-banners/gen8-galar.jpg");
 .kalos-gen-tile[data-gen="9"] {
 background-image: url("images/dex-banners/gen9-paldea.jpg");
 }
-.kalos-gen-tile .dex-gen-badge,
+.kalos-gen-tile .dex-gen-badge-ring,
 .kalos-gen-tile-label {
 position: relative;
 z-index: 1;
@@ -5500,6 +5639,18 @@ z-index: 1;
 .kalos-gen-tile .dex-gen-badge {
 width: 40px;
 height: 40px;
+}
+.kalos-gen-tile .dex-gen-badge-ring-svg {
+inset: -6px;
+width: calc(100% + 12px);
+height: calc(100% + 12px);
+}
+.kalos-gen-tile .dex-gen-badge-ring-svg .ring-track {
+stroke: rgba(255, 255, 255, 0.3);
+stroke-width: 6;
+}
+.kalos-gen-tile .dex-gen-badge-ring-svg .ring-fill {
+stroke-width: 6;
 }
 .kalos-gen-tile-label {
 text-align: center;
@@ -5545,6 +5696,10 @@ box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
 .kalos-gen-tile-expanded .dex-species-panel {
 display: block;
 background-color: transparent;
+/* Same fixed-height + internal scroll treatment as the desktop accordion
+   panel above, sized down for the narrower mobile viewport this tile
+   layout only ever renders in. */
+max-height: 75vh;
 }
 /* Dot indicators below the carousel, one per generation - kept in sync
    with the centered tile via updateKalosDots() and hidden outright while
@@ -5623,54 +5778,6 @@ color: #ffd166;
 font-weight: 700;
 text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }}
-.dex-summary {
-display: flex;
-align-items: center;
-gap: 18px;
-flex-wrap: wrap;
-background: var(--bg-panel);
-border: 2.5px solid var(--line);
-border-radius: var(--radius);
-padding: 16px 20px;
-margin-bottom: 20px;
-box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
-}
-.dex-summary .num {
-font-family: var(--hud);
-font-size: 32px;
-font-weight: 800;
-color: var(--red);
-line-height: 1;
-}
-.dex-summary .lbl {
-font-size: 11px;
-color: var(--ink-dim);
-text-transform: uppercase;
-letter-spacing: 1px;
-font-weight: 700;
-margin-top: 4px;
-}
-.dex-summary .bar-track {
-flex: 1;
-min-width: 160px;
-height: 14px;
-border-radius: 999px;
-background: #fff;
-border: 2px solid var(--line);
-overflow: hidden;
-}
-.dex-summary .bar-fill {
-height: 100%;
-background: linear-gradient(90deg, var(--green), var(--yellow));
-border-radius: 999px;
-transition: width 0.3s ease;
-}
-.dex-summary .dex-hint {
-width: 100%;
-font-size: 11.5px;
-color: var(--ink-dim);
-font-weight: 600;
-}
 .dex-grid {
 display: flex;
 flex-direction: column;
@@ -5738,25 +5845,41 @@ width: 100%;
 height: 100%;
 background: conic-gradient(from 90deg, var(--blue) 50%, var(--yellow) 50%);
 }
-.dex-gen-badge.complete::after {
-content: "✓";
-position: absolute;
-bottom: -2px;
-right: -2px;
-z-index: 3;
-width: 20px;
-height: 20px;
-border-radius: 50%;
-background: var(--green);
-color: #fff;
-border: 2px solid var(--bg-panel);
+/* Circular "dex complete" progress ring wrapped around the region-ball
+   badge - fills clockwise from 12 o'clock as more of that generation gets
+   caught (see genBadgeRingOffset/buildDexGenBadgeHtml in script.js). The
+   ring sizes itself off the badge's own box (it's just a flex wrapper), so
+   the same markup/CSS works for both the 56px desktop badge and the 40px
+   mobile Kalos tile badge below. */
+.dex-gen-badge-ring {
+position: relative;
 display: flex;
 align-items: center;
 justify-content: center;
-font-family: var(--hud);
-font-weight: 800;
-font-size: 11px;
-line-height: 1;
+flex-shrink: 0;
+}
+.dex-gen-badge-ring-svg {
+position: absolute;
+inset: -9px;
+width: calc(100% + 18px);
+height: calc(100% + 18px);
+transform: rotate(-90deg);
+pointer-events: none;
+}
+.dex-gen-badge-ring-svg .ring-track {
+fill: none;
+stroke: rgba(43, 35, 32, 0.15);
+stroke-width: 7;
+}
+.dex-gen-badge-ring-svg .ring-fill {
+fill: none;
+stroke: #256b28;
+stroke-width: 7;
+stroke-linecap: round;
+transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
+}
+.dex-gen-badge-ring.is-complete .ring-fill {
+stroke: #c9971f;
 }
 .dex-card-title {
 flex: 1;
@@ -5802,6 +5925,12 @@ background: linear-gradient(90deg, var(--green), var(--yellow));
 border-radius: 999px;
 transition: width 0.3s ease;
 }
+/* Shiny Living Dex: swap the plain green/gold fill for the same rainbow
+   palette already used on caught chips in shiny mode (see
+   .dex-grid.shiny-mode .dex-chip.caught above). */
+.dex-grid.shiny-mode .dex-card-progress .bar-fill {
+background: linear-gradient(90deg, #ff6ec7, #ffd166, #6ee7b7, #60a5fa, #c084fc);
+}
 .dex-species-panel {
 display: none;
 border-top: 2.5px dashed var(--line);
@@ -5810,6 +5939,13 @@ background: var(--bg-panel-raised);
 background-size: cover;
 background-position: center;
 background-repeat: no-repeat;
+/* Capped instead of growing to fit every chip in the gen (some gens run
+   150+ species) - the grid inside scrolls instead of the whole page
+   growing to an enormous height. flipAnimate's before/after
+   getBoundingClientRect() measurement still works fine against this
+   capped final height. */
+max-height: 75vh;
+overflow-y: auto;
 }
 .dex-card.expanded .dex-species-panel {
 display: block;
@@ -5874,99 +6010,195 @@ background-image: url("images/dex-banners/gen8-galar.jpg");
 .dex-card[data-gen="9"] .dex-card-banner {
 background-image: url("images/dex-banners/gen9-paldea.jpg");
 }
+/* CSS-15: species cells - sprite-forward square "box" card instead of a
+   horizontal name pill, tinted by primary type via the --type-rgb custom
+   property set inline per-chip (see buildDexChipsHtml in script.js), and
+   silhouetted (filter: brightness(0)) until caught so catching one is a
+   visible reveal rather than a background/border color swap. One shared
+   shape at every breakpoint - only the grid's column count changes on
+   mobile (see the @media block below). */
 .dex-chip {
 display: flex;
+flex-direction: column;
 align-items: center;
-gap: 8px;
-font-size: 13.5px;
-font-weight: 700;
-background: #fff;
-border: 1.5px solid var(--line);
-border-radius: 999px;
-padding: 8px 8px 8px 6px;
-color: var(--ink-dim);
+justify-content: flex-end;
+text-align: center;
+gap: 3px;
+aspect-ratio: 1 / 1;
+padding: 6px 4px 10px;
+position: relative;
+overflow: visible;
 min-width: 0;
+border-radius: 16px;
+border: 1.5px solid rgba(var(--type-rgb, 168, 168, 120), 0.35);
+background: rgba(var(--type-rgb, 168, 168, 120), 0.1);
+color: var(--ink-dim);
+transition:
+opacity 0.2s ease,
+filter 0.2s ease,
+transform 0.08s ease,
+background 0.2s ease,
+border-color 0.2s ease,
+box-shadow 0.2s ease;
 }
 .dex-chip-sprite {
-width: 36px;
-height: 36px;
-flex-shrink: 0;
+flex: 1 1 auto;
+width: 100%;
+min-height: 0;
 display: flex;
-align-items: center;
+/* flex-start (not center) so the sprite - and the name row right after
+   it - sit near the top of this box instead of centering vertically
+   inside it, which was leaving a big dead gap below them. This container
+   defaults to flex-direction:row, so align-items (not justify-content)
+   is the vertical axis here. */
+align-items: flex-start;
 justify-content: center;
 position: relative;
 z-index: 1;
 }
 .dex-chip-sprite img {
-max-width: 100%;
-max-height: 100%;
+max-width: 82%;
+max-height: 82%;
 width: auto;
 height: auto;
 object-fit: contain;
-transform: scale(2.1) translateY(-6px);
+transform: scale(1.75);
 image-rendering: pixelated;
 image-rendering: crisp-edges;
+/* Uncaught = flat dark silhouette; catching it clears the filter below
+   for a "reveal" instead of the sprite just always being fully visible. */
+filter: brightness(0) opacity(0.42);
+transition: filter 0.3s ease;
+}
+/* CSS-15b: Basic/Stage-1 species are drawn with a lot more transparent
+   padding around them in their sprite canvas than fully-evolved forms are
+   (a Caterpie sprite vs. a Butterfree one, say), so the flat 1.75 zoom
+   above leaves early-evolution chips looking noticeably smaller than their
+   evolved neighbors even though nothing else about the chip differs.
+   .dex-chip-stage-boost is added in script.js (applyEvoStageBoosts) after
+   a PokeAPI evolution-stage lookup flags a species as stage 0 or 1, and
+   just pushes the scale further than the shared default above. Final
+   evolutions (stage 2+, or species with no PokeAPI evolution data) are
+   left at the normal scale on purpose. */
+.dex-chip.dex-chip-stage-boost .dex-chip-sprite img {
+transform: scale(2.2);
+/* Default transform-origin (center) grows the enlarged sprite equally
+   up and down, so the extra size from the boost above was bleeding
+   downward into the name text below it. Anchoring the origin below
+   center (rather than all the way at the bottom) makes the boost grow
+   more upward than downward without overshooting and floating the
+   sprite too high in the chip. */
+transform-origin: 50% 65%;
 }
 .dex-chip-sprite .fallback-letter {
 font-family: var(--hud);
 font-weight: 800;
-font-size: 12px;
+font-size: 15px;
 color: var(--ink-dim);
+opacity: 0.4;
+transition: opacity 0.3s ease;
 }
 .dex-chip .n {
-width: 26px;
-text-align: right;
+position: absolute;
+top: 6px;
+left: 8px;
 color: var(--ink-dim);
-font-size: 11px;
-flex-shrink: 0;
+font-size: 9.5px;
+font-weight: 800;
+opacity: 0.6;
+/* Below the sprite (z-index:1) on purpose - a big boosted sprite is
+   allowed to paint over the corner number instead of the number always
+   winning. */
+z-index: 0;
 }
 .dex-chip-name {
 display: inline-flex;
 align-items: center;
-gap: 5px;
+justify-content: center;
+gap: 4px;
 flex-wrap: wrap;
 min-width: 0;
+width: 100%;
+position: relative;
+z-index: 1;
 }
 .dex-chip-name-text {
 overflow: hidden;
 text-overflow: ellipsis;
-white-space: nowrap;
+white-space: normal;
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
 min-width: 0;
+font-size: 11.5px;
+line-height: 1.2;
 }
-.dex-chip-tag {
-display: inline-block;
-font-family: var(--hud);
-font-size: 8.5px;
-font-weight: 800;
-letter-spacing: 0.4px;
-color: #fff;
-padding: 2px 6px;
-border-radius: 999px;
-line-height: 1.4;
-text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+/* Regional-variant cell background motifs. Replaces the old name-row
+   "ALOLAN"-style tag pill (removed - see buildDexChipsHtml in script.js):
+   the variant is now signaled by a faint per-region pattern tinted with
+   the same region colors the tag pill used to use (yellow-dark/blue/
+   green-dark/red - see --yellow-dark etc near the top of this file),
+   layered under the sprite/name via ::before so the sprite goes back to
+   full size instead of being squeezed to make room for a pill.
+   data-variant is set in buildDexChipsHtml regardless of tag presence
+   ("Original" for base forms), so :not([data-variant="Original"]) is
+   what actually gates this. */
+.dex-chip[data-variant]:not([data-variant="Original"])::before {
+content: "";
+position: absolute;
+inset: 0;
+border-radius: inherit;
+z-index: 0;
+pointer-events: none;
 }
-.dex-chip-tag-alolan {
-background: var(--yellow-dark);
+/* Alolan - scalloped wave */
+.dex-chip[data-variant="Alolan"]::before {
+opacity: 0.28;
+background-image:
+radial-gradient(ellipse 70% 32% at 25% 22%, var(--yellow-dark) 0 55%, transparent 58%),
+radial-gradient(ellipse 70% 32% at 75% 72%, var(--yellow-dark) 0 55%, transparent 58%);
+background-size: 34px 34px;
 }
-.dex-chip-tag-galarian {
-background: var(--blue);
+/* Galarian - mist + drizzle */
+.dex-chip[data-variant="Galarian"]::before {
+opacity: 0.24;
+background-image:
+repeating-linear-gradient(180deg, var(--blue) 0 2px, transparent 2px 16px),
+repeating-linear-gradient(68deg, var(--blue) 0 1px, transparent 1px 24px);
 }
-.dex-chip-tag-hisuian {
-background: var(--green-dark);
+/* Hisuian - seigaiha (Japanese wave scales) */
+.dex-chip[data-variant="Hisuian"]::before {
+opacity: 0.3;
+background-image:
+radial-gradient(circle at 0 100%, transparent 0, transparent 40%, var(--green-dark) 41%, var(--green-dark) 46%, transparent 47%),
+radial-gradient(circle at 100% 100%, transparent 0, transparent 40%, var(--green-dark) 41%, var(--green-dark) 46%, transparent 47%);
+background-size: 20px 20px;
 }
-.dex-chip-tag-paldean {
-background: var(--red);
+/* Paldean - diagonal diamond tile mosaic */
+.dex-chip[data-variant="Paldean"]::before {
+opacity: 0.26;
+background-image: conic-gradient(from 45deg, var(--red) 90deg, transparent 90deg 180deg, var(--red) 180deg 270deg, transparent 270deg);
+background-size: 22px 22px;
 }
 .dex-chip.caught {
-background: rgba(76, 175, 80, 0.16);
-border-color: var(--green);
+background: rgba(var(--type-rgb, 76, 175, 80), 0.2);
+border-color: rgba(var(--type-rgb, 76, 175, 80), 0.85);
+box-shadow: 0 0 0 2px rgba(var(--type-rgb, 76, 175, 80), 0.22);
 color: var(--ink);
-box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.18);
 }
 .dex-chip.caught .n {
-color: var(--green-dark);
+color: var(--ink);
+opacity: 0.85;
 }
-.dex-grid.shiny-mode .dex-chip.caught {
+.dex-chip.caught .dex-chip-sprite img {
+filter: none;
+}
+.dex-chip.caught .fallback-letter {
+color: var(--ink);
+opacity: 1;
+}
+.dex-grid.shiny-mode .dex-chip.caught,
+.kalos-gen-grid.shiny-mode .dex-chip.caught {
 background-image:
 linear-gradient(
 90deg,
@@ -5983,17 +6215,22 @@ border: 1.5px solid transparent;
 color: var(--ink);
 box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.18);
 }
-.dex-grid.shiny-mode .dex-chip.caught .n {
+.dex-grid.shiny-mode .dex-chip.caught .n,
+.kalos-gen-grid.shiny-mode .dex-chip.caught .n {
 color: var(--ink-dim);
+}
+/* Numbers and names were using --ink-dim (a low-contrast dim tone) in most
+   states (uncaught chips, and even shiny-mode caught chips above), which
+   was hard to read against the type-tinted chip backgrounds. Pinning both
+   to solid black in every state - uncaught, caught, and shiny - instead. */
+.dex-chip .n,
+.dex-chip-name-text {
+color: #000 !important;
+opacity: 1 !important;
 }
 .dex-chip.type-dimmed {
 opacity: 0.18;
 filter: grayscale(0.5);
-transition:
-opacity 0.2s ease,
-filter 0.2s ease;
-}
-.dex-chip {
 transition:
 opacity 0.2s ease,
 filter 0.2s ease;
@@ -6029,34 +6266,4 @@ gap: 12px;
 width: 44px;
 height: 44px;
 }
-/* CSS-14: At 3-per-row, a horizontal sprite+number+name chip only leav — full rationale in NOTES.md */
-.dex-chip {
-flex-direction: column;
-text-align: center;
-padding: 10px 6px 20px;
-gap: 4px;
-aspect-ratio: 1 / 1;
-justify-content: center;
-position: relative;
-overflow: visible;
 }
-.dex-chip .n {
-width: auto;
-}
-.dex-chip-name {
-justify-content: center;
-}
-.dex-chip-name-text {
-white-space: normal;
-overflow: visible;
-text-overflow: clip;
-font-size: 12px;
-line-height: 1.2;
-}
-.dex-chip-tag {
-position: absolute;
-left: 50%;
-bottom: 6px;
-transform: translateX(-50%);
-white-space: nowrap;
-}}
