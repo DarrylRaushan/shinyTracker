@@ -5402,13 +5402,17 @@ var kalosGenScrollSettleTimer = null;
 function scheduleKalosGenScrollSettle() {
 if (!kalosOpenGen) return;
 if (kalosGenScrollSettleTimer) clearTimeout(kalosGenScrollSettleTimer);
-kalosGenScrollSettleTimer = setTimeout(settleKalosGenScroll, 120);
+kalosGenScrollSettleTimer = setTimeout(settleKalosGenScroll, 90);
 }
 // Once the person stops scrolling, finds whichever open-gen pane is now
-// nearest the grid's center and, via Motion, nudges the scroll position
-// the rest of the way onto it - correcting for any browsers whose native
-// scroll-snap doesn't land pixel-exact - before committing the gen
-// switch (if the settled pane isn't the one that was already open).
+// nearest the grid's center and commits the gen switch if it isn't the
+// one that was already open. Native scroll-snap (scroll-snap-type:
+// mandatory + scroll-snap-stop: always on the panes) already does the
+// actual sliding and landing on its own as part of the same momentum
+// scroll the finger started - this only steps in with a quick Motion
+// nudge on the rare miss (a very fast flick that didn't fully reach the
+// snap point), rather than re-animating every single swipe on top of a
+// slide that already finished, which is what made things feel doubled up.
 function settleKalosGenScroll() {
 var grid = document.getElementById('kalos-gen-grid');
 if (!grid || !kalosOpenGen) return;
@@ -5427,16 +5431,18 @@ if (dist < closestDist) { closestDist = dist; closest = t; }
 if (!closest) return;
 var target = closest.offsetLeft - (grid.clientWidth - closest.clientWidth) / 2;
 var landedOnNeighbor = closest.dataset.gen !== String(kalosOpenGen);
-if (window.Motion && window.Motion.animate && Math.abs(grid.scrollLeft - target) > 1) {
+// Snap noise/rounding is normally just a couple of px - only step in
+// once it's clearly off (a real missed snap), not on every settle.
+var MISS_THRESHOLD = Math.max(6, grid.clientWidth * 0.02);
+if (window.Motion && window.Motion.animate && Math.abs(grid.scrollLeft - target) > MISS_THRESHOLD) {
 window.Motion.animate(grid.scrollLeft, target, {
-duration: 0.25,
-ease: [0.65, 0, 0.35, 1],
+duration: 0.18,
+ease: 'easeOut',
 onUpdate: function(v) { grid.scrollLeft = v; }
 }).finished.then(function() {
 if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
 });
 } else {
-grid.scrollLeft = target;
 if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
 }
 }
