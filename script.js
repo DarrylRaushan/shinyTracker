@@ -5416,20 +5416,20 @@ renderKalosMobileDex(kalosCurrentCaughtMap());
 // touch-action: none also switches off the panel's native scroll
 // momentum/inertia.
 var kalosGenScrollSettleTimer = null;
+var kalosGenVelocityX = 0; // px/ms left behind by a manual horizontal drag's last move, consumed once by the very next settle
 function scheduleKalosGenScrollSettle() {
 if (!kalosOpenGen) return;
 if (kalosGenScrollSettleTimer) clearTimeout(kalosGenScrollSettleTimer);
 kalosGenScrollSettleTimer = setTimeout(settleKalosGenScroll, 90);
 }
-// Once the person stops scrolling, finds whichever open-gen pane is now
-// nearest the grid's center and commits the gen switch if it isn't the
-// one that was already open. Native scroll-snap (scroll-snap-type:
-// mandatory + scroll-snap-stop: always on the panes) already does the
-// actual sliding and landing on its own as part of the same momentum
-// scroll the finger started - this only steps in with a quick Motion
-// nudge on the rare miss (a very fast flick that didn't fully reach the
-// snap point), rather than re-animating every single swipe on top of a
-// slide that already finished, which is what made things feel doubled up.
+// Once the person stops scrolling, finds whichever open-gen pane should
+// end up centered and animates the rest of the way there with Motion,
+// then commits the gen switch (if any) once that slide has visibly
+// landed. Always plays the slide - even a release that's already very
+// close to its resting spot gets a quick eased finish - rather than
+// only stepping in on a "missed" snap, which is what made fast swipes
+// look like they just clipped straight to the next gen instead of
+// sliding into it.
 function settleKalosGenScroll() {
 var grid = document.getElementById('kalos-gen-grid');
 if (!grid || !kalosOpenGen) return;
@@ -5437,30 +5437,50 @@ var panes = Array.prototype.filter.call(grid.children, function(t) {
 return !t.hidden;
 });
 if (panes.length < 2) return;
+var closest = null;
+// A fast flick commits to the neighbor in that direction even if the
+// finger only travelled a short distance - same "short flick still
+// counts" idea as the Active Hunts/Shiny Log tab swipe (COMMIT_VELOCITY
+// there). Without this, a quick flick that didn't get far would just
+// fall back to "nearest by position" below and slide backward to where
+// it started, which reads as ignoring the flick entirely.
+var COMMIT_VELOCITY = 0.5; // px/ms
+if (Math.abs(kalosGenVelocityX) > COMMIT_VELOCITY) {
+var openIdx = -1;
+panes.forEach(function(t, i) { if (t.dataset.gen === String(kalosOpenGen)) openIdx = i; });
+// Negative velocityX = finger moving left = scrollLeft increasing =
+// advancing to the neighbor further along in DOM order (next gen).
+if (kalosGenVelocityX < 0) closest = panes[openIdx + 1] || null;
+else closest = panes[openIdx - 1] || null;
+}
+kalosGenVelocityX = 0; // consumed - don't let it leak into an unrelated later settle
+if (!closest) {
+// No strong flick (or nothing that way to flick to) - fall back to
+// whichever pane is nearest the grid's center right now.
 var gridRect = grid.getBoundingClientRect();
 var center = gridRect.left + gridRect.width / 2;
-var closest = null, closestDist = Infinity;
+var closestDist = Infinity;
 panes.forEach(function(t) {
 var r = t.getBoundingClientRect();
 var dist = Math.abs((r.left + r.width / 2) - center);
 if (dist < closestDist) { closestDist = dist; closest = t; }
 });
+}
 if (!closest) return;
 var target = closest.offsetLeft - (grid.clientWidth - closest.clientWidth) / 2;
 var landedOnNeighbor = closest.dataset.gen !== String(kalosOpenGen);
-// Snap noise/rounding is normally just a couple of px - only step in
-// once it's clearly off (a real missed snap), not on every settle.
-var MISS_THRESHOLD = Math.max(6, grid.clientWidth * 0.02);
-if (window.Motion && window.Motion.animate && Math.abs(grid.scrollLeft - target) > MISS_THRESHOLD) {
+function commit() {
+if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
+}
+if (window.Motion && window.Motion.animate && Math.abs(grid.scrollLeft - target) > 1) {
 window.Motion.animate(grid.scrollLeft, target, {
-duration: 0.18,
-ease: 'easeOut',
+duration: 0.32,
+ease: [0.65, 0, 0.35, 1],
 onUpdate: function(v) { grid.scrollLeft = v; }
-}).finished.then(function() {
-if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
-});
+}).finished.then(commit);
 } else {
-if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
+grid.scrollLeft = target;
+commit();
 }
 }
 function initKalosGenSwipe() {
@@ -5471,7 +5491,7 @@ grid.addEventListener('scroll', scheduleKalosGenScrollSettle, { passive: true })
 var DIRECTION_THRESHOLD = 8; // px moved before we decide horizontal vs vertical
 var MOMENTUM_MULTIPLIER = 120; // projects release velocity (px/ms) into a fling distance
 var startX = 0, startY = 0, lastX = 0, lastY = 0, lastT = 0;
-var velocityY = 0; // px/ms, smoothed over the last couple of samples
+var velocityX = 0, velocityY = 0; // px/ms, smoothed over the last couple of samples
 var startScrollLeft = 0, startScrollTop = 0;
 var panel = null; // the .dex-species-panel this gesture started on, if any
 var decided = false; // have we classified this gesture yet?
@@ -5486,6 +5506,7 @@ var t = e.touches[0];
 startX = lastX = t.clientX;
 startY = lastY = t.clientY;
 lastT = e.timeStamp;
+velocityX = 0;
 velocityY = 0;
 startScrollLeft = grid.scrollLeft;
 startScrollTop = panel.scrollTop;
@@ -5505,17 +5526,18 @@ decided = true;
 axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
 }
 e.preventDefault(); // touch-action: none on the panel means nothing native to fight here
+var dt = e.timeStamp - lastT;
 if (axis === 'x') {
 grid.scrollLeft = startScrollLeft - dx;
+if (dt > 0) velocityX = (t.clientX - lastX) / dt;
 } else {
 var maxScrollTop = Math.max(0, panel.scrollHeight - panel.clientHeight);
 panel.scrollTop = Math.max(0, Math.min(maxScrollTop, startScrollTop - dy));
-var dt = e.timeStamp - lastT;
 if (dt > 0) velocityY = (t.clientY - lastY) / dt;
-lastY = t.clientY;
-lastT = e.timeStamp;
 }
 lastX = t.clientX;
+lastY = t.clientY;
+lastT = e.timeStamp;
 }
 
 // Simple deceleration for the chip list's vertical fling, since
@@ -5538,6 +5560,7 @@ onUpdate: function(v) { p.scrollTop = v; }
 
 function onEnd() {
 if (decided && axis === 'x') {
+kalosGenVelocityX = velocityX;
 if (kalosGenScrollSettleTimer) clearTimeout(kalosGenScrollSettleTimer);
 settleKalosGenScroll();
 } else if (decided && axis === 'y' && panel) {
