@@ -5257,9 +5257,8 @@ if (dots) dots.hidden = false;
 flipAnimate(tile, first);
 }
 // Shared by both the desktop #dex-grid and mobile #kalos-gen-grid click
-// handlers below (and by their touch-tap handlers, see
-// DEX_CHIP_TAP_THRESHOLD): flips one species chip's caught state, saves,
-// and updates just that chip + the counters in place.
+// handlers below: flips one species chip's caught state, saves, and
+// updates just that chip + the counters in place.
 function toggleDexChip(chip, allowResort) {
 var name = chip.dataset.name;
 var store = (dexMode === 'shiny') ? state.livingDexShiny : state.livingDex;
@@ -5278,68 +5277,37 @@ if (nowCaught) animateCatchReveal(chip);
 updateDexCounters();
 if (allowResort && dexSortMode === 'uncaught') resortDexGrid();
 }
-// Distance (px) a touch may drift and still count as a tap rather than a
-// scroll/swipe - used by the touchend handlers below.
-var DEX_CHIP_TAP_THRESHOLD = 10;
+// Cause-agnostic fix for "tapping a sprite yanks the whole page back to
+// the top" on iOS Safari. Trying to identify and block the exact
+// trigger (focus-into-view on the tabindex="0" chip, a re-render, etc.)
+// hasn't reliably worked, and blocking it at the touch level (previously
+// tried here) risked swallowing normal scrolling along with it. This
+// takes the opposite approach: it doesn't try to prevent whatever causes
+// the jump, it just records the scroll position right before the tap is
+// handled and snaps it back if anything moved it afterward. It checks
+// across two animation frames because iOS sometimes applies its scroll
+// adjustment a beat after the tap has already been processed, so a
+// single immediate check can miss it.
+function restoreScrollAfter(fn) {
+var y = window.scrollY;
+fn();
+function correct() {
+if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y);
+}
+requestAnimationFrame(function() {
+correct();
+requestAnimationFrame(correct);
+});
+}
 (function() {
 var kalosGrid = document.getElementById('kalos-gen-grid');
 if (kalosGrid) {
-// Species chips are role="button" tabindex="0" (see buildDexChipsHtml)
-// so they're natively focusable. On iOS Safari, focusing an element
-// that sits inside a transform-translated ancestor (this grid lives
-// inside the Kalos carousel track, which is positioned via CSS
-// transform for its slide/scroll animation) confuses Safari's
-// focus-into-view logic - it computes the chip's pre-transform layout
-// position, decides it's off-screen, and scrolls the whole document
-// back to the top to "reveal" it.
-//
-// The fix has to happen on touchend, not touchstart/mousedown: iOS
-// focuses the tapped element as part of the touch gesture itself,
-// before any synthetic mousedown ever fires, so a mousedown-time
-// preventDefault is too late to stop it. Calling preventDefault()
-// on touchstart instead would stop the jump, but it also cancels
-// the browser's own scroll/swipe gesture recognition for that
-// touch - which is what let a tap on a chip drag the whole page
-// around instead of just tapping. So: track the touch's start
-// position, and only on touchend, if it barely moved (a real tap,
-// not a scroll or swipe), preventDefault (blocking the focus jump
-// and the synthetic click) and run the toggle ourselves. A touch
-// that moved is left completely alone, so normal scrolling is
-// untouched.
-var kalosTouchChip = null,
-kalosTouchX = 0,
-kalosTouchY = 0,
-kalosTouchMoved = false;
-kalosGrid.addEventListener('touchstart', function(e) {
-kalosTouchChip = e.target.closest('[data-action="toggle-species"]');
-kalosTouchMoved = false;
-if (kalosTouchChip && e.touches && e.touches.length) {
-kalosTouchX = e.touches[0].clientX;
-kalosTouchY = e.touches[0].clientY;
-}
-}, { passive: true });
-kalosGrid.addEventListener('touchmove', function(e) {
-if (!kalosTouchChip || kalosTouchMoved || !e.touches || !e.touches.length) return;
-var dx = e.touches[0].clientX - kalosTouchX;
-var dy = e.touches[0].clientY - kalosTouchY;
-if (Math.sqrt(dx * dx + dy * dy) > DEX_CHIP_TAP_THRESHOLD) kalosTouchMoved = true;
-}, { passive: true });
-kalosGrid.addEventListener('touchend', function(e) {
-var chip = kalosTouchChip;
-var wasTap = chip && !kalosTouchMoved;
-kalosTouchChip = null;
-if (wasTap) {
-e.preventDefault();
-toggleDexChip(chip, false);
-}
-}, { passive: false });
 kalosGrid.addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
-// Handles mouse/trackpad clicks (desktop, iPad with a pointer).
-// Touch taps are already handled above via touchend, which
-// preventDefault()s the tap so this click never fires for them.
+restoreScrollAfter(function() {
 toggleDexChip(chip, false);
+});
 return;
 }
 // Tapping the banner (the photo/header area of the opened gen, not
@@ -5480,47 +5448,13 @@ toggleKalosOpen();
 // mobile Kalos grid above - #dex-grid also lives inside a
 // transform-translated ancestor (.dex-track, used to slide between the
 // Hunts/Log/Living Dex tabs), so its role="button" tabindex="0" species
-// chips are just as vulnerable to Safari's focus-into-view jump. See the
-// long comment above the Kalos grid's touchstart/touchmove/touchend
-// handlers for why this has to be done on touchend (tap-only, via a
-// movement threshold) rather than on mousedown or touchstart.
-(function() {
-var dexGridEl = document.getElementById('dex-grid');
-var dexTouchChip = null,
-dexTouchX = 0,
-dexTouchY = 0,
-dexTouchMoved = false;
-dexGridEl.addEventListener('touchstart', function(e) {
-dexTouchChip = e.target.closest('[data-action="toggle-species"]');
-dexTouchMoved = false;
-if (dexTouchChip && e.touches && e.touches.length) {
-dexTouchX = e.touches[0].clientX;
-dexTouchY = e.touches[0].clientY;
-}
-}, { passive: true });
-dexGridEl.addEventListener('touchmove', function(e) {
-if (!dexTouchChip || dexTouchMoved || !e.touches || !e.touches.length) return;
-var dx = e.touches[0].clientX - dexTouchX;
-var dy = e.touches[0].clientY - dexTouchY;
-if (Math.sqrt(dx * dx + dy * dy) > DEX_CHIP_TAP_THRESHOLD) dexTouchMoved = true;
-}, { passive: true });
-dexGridEl.addEventListener('touchend', function(e) {
-var chip = dexTouchChip;
-var wasTap = chip && !dexTouchMoved;
-dexTouchChip = null;
-if (wasTap) {
-e.preventDefault();
-toggleDexChip(chip, true);
-}
-}, { passive: false });
-})();
+// chips are just as vulnerable to it. See restoreScrollAfter above.
 document.getElementById('dex-grid').addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
-// Handles mouse/trackpad clicks. Touch taps are already handled
-// above via touchend, which preventDefault()s the tap so this
-// click event never fires for them.
+restoreScrollAfter(function() {
 toggleDexChip(chip, true);
+});
 return;
 }
 var head = e.target.closest('[data-action="toggle-dex"]');
