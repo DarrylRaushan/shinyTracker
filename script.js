@@ -5288,30 +5288,59 @@ updateDexCounters();
 if (allowResort && dexSortMode === 'uncaught') resortDexGrid();
 }
 // Cause-agnostic fix for "tapping a sprite yanks the whole page back to
-// the top" on iOS Safari. Trying to identify and block the exact
-// trigger (focus-into-view on the tabindex="0" chip, a re-render, etc.)
-// hasn't reliably worked, and blocking it at the touch level (previously
-// tried here) risked swallowing normal scrolling along with it. This
-// takes the opposite approach: it doesn't try to prevent whatever causes
-// the jump, it just records the scroll position right before the tap is
-// handled and snaps it back if anything moved it afterward. It checks
-// across two animation frames because iOS sometimes applies its scroll
-// adjustment a beat after the tap has already been processed, so a
-// single immediate check can miss it.
+// the top" on iOS Safari, in two layers:
+//
+// 1) Species chips are role="button" tabindex="0" divs (see
+// buildDexChipsHtml) so they're natively focusable, and tapping one
+// focuses it. iOS Safari's auto-scroll-into-view for a newly focused
+// element is what's yanking the page - so the most direct fix is to
+// immediately blur the chip the instant it's focused, before that
+// scroll has a chance to actually happen. focusin (unlike focus)
+// bubbles, so this is delegated from the grid rather than attached to
+// every chip.
+//
+// 2) As a safety net in case the blur doesn't win the race (or iOS
+// still applies its own scroll animation over several frames rather
+// than instantly), restoreScrollAfter below also records the scroll
+// position and keeps forcing it back for half a second after the tap,
+// rather than checking just once or twice.
 function restoreScrollAfter(fn) {
 var y = window.scrollY;
 fn();
+var deadline = Date.now() + 500;
 function correct() {
 if (Math.abs(window.scrollY - y) > 2) window.scrollTo(0, y);
+if (Date.now() < deadline) requestAnimationFrame(correct);
 }
-requestAnimationFrame(function() {
-correct();
 requestAnimationFrame(correct);
+}
+function preventChipFocusScroll(grid) {
+grid.addEventListener('focusin', function(e) {
+// Only blur focus that came from a tap/click, not from Tab-ing in
+// with a keyboard - otherwise keyboard users could never keep focus
+// on a chip long enough to hit Enter/Space and toggle it.
+if (dexUsingKeyboard) return;
+var chip = e.target.closest('[data-action="toggle-species"]');
+if (chip) chip.blur();
 });
 }
+// Heuristic for the keyboard-vs-pointer check above: any Tab press means
+// the person is navigating by keyboard right now; any touch/mouse down
+// means they're back to pointing/tapping.
+var dexUsingKeyboard = false;
+document.addEventListener('keydown', function(e) {
+if (e.key === 'Tab') dexUsingKeyboard = true;
+}, true);
+document.addEventListener('mousedown', function() {
+dexUsingKeyboard = false;
+}, true);
+document.addEventListener('touchstart', function() {
+dexUsingKeyboard = false;
+}, true);
 (function() {
 var kalosGrid = document.getElementById('kalos-gen-grid');
 if (kalosGrid) {
+preventChipFocusScroll(kalosGrid);
 kalosGrid.addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
@@ -5458,7 +5487,9 @@ toggleKalosOpen();
 // mobile Kalos grid above - #dex-grid also lives inside a
 // transform-translated ancestor (.dex-track, used to slide between the
 // Hunts/Log/Living Dex tabs), so its role="button" tabindex="0" species
-// chips are just as vulnerable to it. See restoreScrollAfter above.
+// chips are just as vulnerable to it. See preventChipFocusScroll/
+// restoreScrollAfter above.
+preventChipFocusScroll(document.getElementById('dex-grid'));
 document.getElementById('dex-grid').addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
