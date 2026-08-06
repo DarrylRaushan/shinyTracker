@@ -5706,6 +5706,13 @@ background-color: transparent;
    panel above, sized down for the narrower mobile viewport this tile
    layout only ever renders in. */
 max-height: 65vh;
+/* The base .dex-species-panel rule above restricts touch panning to
+   vertical-only (pan-y), which also blocked the horizontal gen-swipe
+   carousel gesture anywhere over the species chips - only the banner
+   above this panel could be swiped. Here, both directions are genuinely
+   in play (vertical to scroll the chip list, horizontal to swipe gens),
+   so let the browser arbitrate between them instead of locking to one. */
+touch-action: pan-x pan-y;
 }
 /* Dot indicators below the carousel, one per generation - kept in sync
    with the centered tile via updateKalosDots() and hidden outright while
