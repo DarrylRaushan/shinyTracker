@@ -5392,21 +5392,29 @@ renderKalosMobileDex(kalosCurrentCaughtMap());
 // ---------- swipe between open gen tiles ----------
 // While a gen tile is expanded, the grid holds it plus its immediate
 // prev/next neighbors (buildKalosNeighborPanes) as full-bleed scroll-snap
-// panes. Landing/snapping between them (settleKalosGenScroll below) is
-// still native scroll-snap doing the actual work. But *starting* a swipe
-// can no longer be left to the browser to arbitrate on its own: the
-// species panel filling each pane is a real vertically-scrollable
-// container (see style.css), and it sits closer to the touch than this
-// grid does, so the browser kept claiming any drag with even a slight
-// vertical component as "scroll the panel" and only handed off to the
-// grid's horizontal scroll on an almost perfectly horizontal drag.
-// initKalosGenSwipe() below decides the axis itself instead - the same
-// direction-lock-then-drag pattern the Active Hunts/Shiny Log tab swipe
-// uses (see the dexClamshell IIFE above) - and once it decides "this is a
-// horizontal gen-swipe", it drives grid.scrollLeft directly and blocks
-// the panel's native vertical scroll from also engaging for that same
-// gesture. A drag that decides "vertical" is left alone untouched, so the
-// species panel's own scrolling still works exactly as it always did.
+// panes. Touches on the banner/header above the species panel are left
+// completely alone - plain native horizontal scrolling, same mechanism
+// as the collapsed peek carousel (initKalosCarousel), works fine there
+// since nothing else in that area wants the touch.
+//
+// The species panel itself is different: it's a genuinely two-axis area
+// now (vertical to scroll the chip list, horizontal to swipe gens), and
+// two earlier attempts at this both broke because *something native* was
+// still allowed to move its scroll position at the same time our own
+// code was also trying to: first the panel's own vertical auto-scroll
+// competing with our horizontal drag, then (once we locked the panel to
+// pan-y) the banner's native scroll racing our hand-driven scrollLeft
+// whenever a gesture crossed from one into the other.
+//
+// So the panel's touch-action is now `none` (see style.css) - the
+// browser does nothing on its own for touches starting there, full stop.
+// initKalosGenSwipe() below is the only thing moving anything for those
+// touches: it reads the first bit of movement to decide horizontal vs.
+// vertical, then drives either grid.scrollLeft (gen swipe) or the
+// panel's own scrollTop (chip list) by hand for the rest of that
+// gesture, with a little momentum on release for the vertical case since
+// touch-action: none also switches off the panel's native scroll
+// momentum/inertia.
 var kalosGenScrollSettleTimer = null;
 function scheduleKalosGenScrollSettle() {
 if (!kalosOpenGen) return;
@@ -5461,44 +5469,83 @@ if (!grid) return;
 grid.addEventListener('scroll', scheduleKalosGenScrollSettle, { passive: true });
 
 var DIRECTION_THRESHOLD = 8; // px moved before we decide horizontal vs vertical
-var startX = 0, startY = 0, startScrollLeft = 0;
+var MOMENTUM_MULTIPLIER = 120; // projects release velocity (px/ms) into a fling distance
+var startX = 0, startY = 0, lastX = 0, lastY = 0, lastT = 0;
+var velocityY = 0; // px/ms, smoothed over the last couple of samples
+var startScrollLeft = 0, startScrollTop = 0;
+var panel = null; // the .dex-species-panel this gesture started on, if any
 var decided = false; // have we classified this gesture yet?
-var dragging = false; // classified as horizontal, we're driving grid.scrollLeft
+var axis = null; // 'x' (gen swipe) or 'y' (chip list scroll) once decided
 
 function onStart(e) {
-if (!kalosOpenGen) return; // collapsed peek carousel - its own native scroll handles this
+if (!kalosOpenGen) return;
 if (e.touches.length !== 1) return;
-startX = e.touches[0].clientX;
-startY = e.touches[0].clientY;
+panel = e.target.closest('.dex-species-panel');
+if (!panel) return; // touch started on the banner/header - leave it to native scrolling
+var t = e.touches[0];
+startX = lastX = t.clientX;
+startY = lastY = t.clientY;
+lastT = e.timeStamp;
+velocityY = 0;
 startScrollLeft = grid.scrollLeft;
+startScrollTop = panel.scrollTop;
 decided = false;
-dragging = false;
+axis = null;
 }
 
 function onMove(e) {
-if (!kalosOpenGen) return;
+if (!panel) return;
 if (e.touches.length !== 1) return;
-var dx = e.touches[0].clientX - startX;
-var dy = e.touches[0].clientY - startY;
+var t = e.touches[0];
+var dx = t.clientX - startX;
+var dy = t.clientY - startY;
 if (!decided) {
 if (Math.abs(dx) < DIRECTION_THRESHOLD && Math.abs(dy) < DIRECTION_THRESHOLD) return;
 decided = true;
-dragging = Math.abs(dx) > Math.abs(dy);
+axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
 }
-if (!dragging) return; // vertical gesture - species panel's own scroll handles it natively
-// Stop the species panel's vertical scroll/rubber-band from also
-// engaging for the rest of this same gesture now that we've claimed it.
-if (e.cancelable) e.preventDefault();
+e.preventDefault(); // touch-action: none on the panel means nothing native to fight here
+if (axis === 'x') {
 grid.scrollLeft = startScrollLeft - dx;
+} else {
+var maxScrollTop = Math.max(0, panel.scrollHeight - panel.clientHeight);
+panel.scrollTop = Math.max(0, Math.min(maxScrollTop, startScrollTop - dy));
+var dt = e.timeStamp - lastT;
+if (dt > 0) velocityY = (t.clientY - lastY) / dt;
+lastY = t.clientY;
+lastT = e.timeStamp;
+}
+lastX = t.clientX;
+}
+
+// Simple deceleration for the chip list's vertical fling, since
+// touch-action: none also switched off the panel's native scroll
+// momentum - without this, releasing mid-flick would just stop dead
+// instead of coasting the way native scrolling (and every other
+// scrollable area in the app) does.
+function flingPanel(p, velocity) {
+if (!window.Motion || !window.Motion.animate) return;
+var maxScrollTop = Math.max(0, p.scrollHeight - p.clientHeight);
+var target = p.scrollTop - velocity * MOMENTUM_MULTIPLIER;
+target = Math.max(0, Math.min(maxScrollTop, target));
+if (Math.abs(target - p.scrollTop) < 4) return;
+window.Motion.animate(p.scrollTop, target, {
+duration: 0.5,
+ease: 'easeOut',
+onUpdate: function(v) { p.scrollTop = v; }
+});
 }
 
 function onEnd() {
-if (dragging) {
+if (decided && axis === 'x') {
 if (kalosGenScrollSettleTimer) clearTimeout(kalosGenScrollSettleTimer);
 settleKalosGenScroll();
+} else if (decided && axis === 'y' && panel) {
+flingPanel(panel, velocityY);
 }
+panel = null;
 decided = false;
-dragging = false;
+axis = null;
 }
 
 grid.addEventListener('touchstart', onStart, { passive: true });
