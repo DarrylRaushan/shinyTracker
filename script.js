@@ -5093,6 +5093,32 @@ Array.prototype.forEach.call(dotsWrap.querySelectorAll('.kalos-gen-dot'), functi
 dot.classList.toggle('active', i === index);
 });
 }
+// Hand-rolled requestAnimationFrame tween, used as a fallback for scrollLeft/
+// scrollTop sliding animations whenever the Motion library (loaded from a CDN
+// <script type="module"> in index.html) hasn't loaded - e.g. a slow or
+// blocked network. Without this, every "if (window.Motion...) animate, else
+// snap instantly" branch below falls straight to the instant snap, which is
+// what was making gen-to-gen switching in the Living Dex look like a hard cut
+// instead of a slide. Mirrors the CSS-transition fallback flipAnimate()
+// already has below; scrollLeft/scrollTop can't be eased with a CSS
+// transition, so this hand-rolls the same cubic ease-in-out over rAF instead.
+function rafTweenValue(from, to, durationSec, onUpdate, onDone) {
+var start = null;
+function easeInOutCubic(t) {
+return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+function step(ts) {
+if (start === null) start = ts;
+var t = Math.min(1, (ts - start) / (durationSec * 1000));
+onUpdate(from + (to - from) * easeInOutCubic(t));
+if (t < 1) {
+requestAnimationFrame(step);
+} else if (onDone) {
+onDone();
+}
+}
+requestAnimationFrame(step);
+}
 // Scrolls the carousel so the tile at `index` sits centered. Smooth moves
 // (dot taps, tapping a peeking neighbor) are driven by Motion so they
 // share the same easing as the rest of the app's motion; non-smooth moves
@@ -5103,14 +5129,16 @@ if (!grid) return;
 var tile = grid.children[index];
 if (!tile) return;
 var target = tile.offsetLeft - (grid.clientWidth - tile.clientWidth) / 2;
-if (smooth && window.Motion && window.Motion.animate) {
+if (!smooth) {
+grid.scrollLeft = target;
+} else if (window.Motion && window.Motion.animate) {
 window.Motion.animate(grid.scrollLeft, target, {
 duration: 0.4,
 ease: [0.65, 0, 0.35, 1],
 onUpdate: function(v) { grid.scrollLeft = v; }
 });
 } else {
-grid.scrollLeft = target;
+rafTweenValue(grid.scrollLeft, target, 0.4, function(v) { grid.scrollLeft = v; });
 }
 }
 var kalosCarouselSyncQueued = false;
@@ -5472,15 +5500,17 @@ var landedOnNeighbor = closest.dataset.gen !== String(kalosOpenGen);
 function commit() {
 if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
 }
-if (window.Motion && window.Motion.animate && Math.abs(grid.scrollLeft - target) > 1) {
+if (Math.abs(grid.scrollLeft - target) <= 1) {
+grid.scrollLeft = target;
+commit();
+} else if (window.Motion && window.Motion.animate) {
 window.Motion.animate(grid.scrollLeft, target, {
 duration: 0.32,
 ease: [0.65, 0, 0.35, 1],
 onUpdate: function(v) { grid.scrollLeft = v; }
 }).finished.then(commit);
 } else {
-grid.scrollLeft = target;
-commit();
+rafTweenValue(grid.scrollLeft, target, 0.32, function(v) { grid.scrollLeft = v; }, commit);
 }
 }
 function initKalosGenSwipe() {
@@ -5546,16 +5576,19 @@ lastT = e.timeStamp;
 // instead of coasting the way native scrolling (and every other
 // scrollable area in the app) does.
 function flingPanel(p, velocity) {
-if (!window.Motion || !window.Motion.animate) return;
 var maxScrollTop = Math.max(0, p.scrollHeight - p.clientHeight);
 var target = p.scrollTop - velocity * MOMENTUM_MULTIPLIER;
 target = Math.max(0, Math.min(maxScrollTop, target));
 if (Math.abs(target - p.scrollTop) < 4) return;
+if (window.Motion && window.Motion.animate) {
 window.Motion.animate(p.scrollTop, target, {
 duration: 0.5,
 ease: 'easeOut',
 onUpdate: function(v) { p.scrollTop = v; }
 });
+} else {
+rafTweenValue(p.scrollTop, target, 0.5, function(v) { p.scrollTop = v; });
+}
 }
 
 function onEnd() {
