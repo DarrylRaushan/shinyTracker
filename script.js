@@ -1,3 +1,13 @@
+// Key used for this app's local-storage snapshot of `state` (see load()/
+// save() below). This was previously referenced everywhere but never
+// actually declared - load()/save() wrapped their use of it in try/catch,
+// so that silently no-op'd instead of throwing (local storage never
+// really persisted anything; the app was quietly relying on Firestore
+// alone). The Firestore listener's own use of it wasn't wrapped in a
+// try/catch though, so it threw on every snapshot and stopped the sync
+// from ever applying - which is what broke "Firestore loading info"
+// entirely.
+var STORE_KEY = 'shinyTrackerState';
 var state = load();
 function load() {
 var s = null;
