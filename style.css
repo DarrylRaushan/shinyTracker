@@ -5706,20 +5706,21 @@ background-color: transparent;
    panel above, sized down for the narrower mobile viewport this tile
    layout only ever renders in. */
 max-height: 65vh;
-/* The base .dex-species-panel rule above restricts touch panning to
-   vertical-only (pan-y), which is kept here too - on purpose. Letting the
-   browser natively handle both axes on this element (pan-x pan-y) sounds
-   right since both are genuinely in play, but this panel is itself a real
-   vertically-scrollable container (overflow-y: auto on the base rule)
-   sitting *closer* to the touch than the gen-swipe track above it, so the
-   browser's native gesture recognizer kept claiming any drag with even a
-   slight vertical component as "scroll this panel", and only let the
-   track's horizontal swipe through when a drag was almost perfectly
-   horizontal. Locking this element back to pan-y and handling the
-   horizontal gen-swipe ourselves in JS (see initKalosGenSwipe in
-   script.js) gives us an explicit, deliberate direction decision instead
-   of leaving two nested pannable elements to fight over the same touch. */
-touch-action: pan-y;
+/* touch-action: none - not pan-y, not pan-x pan-y. Both scroll axes on
+   this panel (vertical chip-list scroll AND horizontal gen-swipe) are
+   driven entirely by hand in JS now (see initKalosGenSwipe in script.js),
+   which is the only way both can genuinely start from anywhere on the
+   chip list: any value here that lets the *browser* handle an axis
+   natively (pan-y, or pan-x pan-y) means the browser can start moving
+   this panel's own scroll position on its own, at the same time our JS
+   might also be moving it by hand - two things driving the same scroll
+   position is exactly what made earlier attempts inconsistent. With
+   touch-action: none, the browser does nothing here on its own, so
+   there's only ever one thing driving the scroll for a touch that starts
+   on this panel. Areas outside the panel (the banner/header) are left
+   completely alone (still default touch-action) and keep working exactly
+   like the collapsed tiles' carousel - plain native scrolling. */
+touch-action: none;
 }
 /* Dot indicators below the carousel, one per generation - kept in sync
    with the centered tile via updateKalosDots() and hidden outright while
