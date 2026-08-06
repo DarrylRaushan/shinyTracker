@@ -5543,9 +5543,27 @@ overflow-y: hidden;
 scroll-snap-type: x mandatory;
 -webkit-overflow-scrolling: touch;
 scrollbar-width: none;
+/* Positioning context for .kalos-gen-tile-preview below - the swipe
+   gesture in script.js (initKalosGenSwipe) needs the neighboring gen's
+   tile to sit exactly on top of the open one while it slides in. */
+position: relative;
 }
 .kalos-gen-grid::-webkit-scrollbar {
 display: none;
+}
+/* The neighboring gen's tile, built on the fly the moment an open-gen
+   swipe (see initKalosGenSwipe in script.js) is recognized as
+   horizontal. Sits stacked exactly on top of the real expanded tile
+   (which stays flow-positioned and slides via its own transform) so the
+   two can cross-fade/slide past each other 1:1 with the drag. Removed
+   again once the gesture ends, whether committed or cancelled. */
+.kalos-gen-tile-preview {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+z-index: 2;
 }
 /* While a tile is expanded, the grid holds exactly one visible child at
    full width - scrolling/snapping would be meaningless (and the side
