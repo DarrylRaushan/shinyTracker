@@ -4968,20 +4968,13 @@ if (caught[normName(sp[1])]) n++;
 return n;
 }
 // Index of a gen (by number) within GEN_DATA's fixed 1-9 order - used to
-// find the next/previous gen for the open-tile swipe gesture below.
+// find which tiles flank the open one (renderKalosMobileDex) and to keep
+// kalosCarouselIndex in sync with whichever gen is currently open.
 function kalosGenIndexOf(genNum) {
 for (var i = 0; i < GEN_DATA.length; i++) {
 if (String(GEN_DATA[i].gen) === String(genNum)) return i;
 }
 return -1;
-}
-// Returns the neighboring gen's GEN_DATA entry relative to `genNum` - dir
-// +1 for the next gen (higher number), -1 for the previous (lower). null
-// if genNum is already at that end (e.g. no gen before Kanto).
-function kalosNeighborGen(genNum, dir) {
-var idx = kalosGenIndexOf(genNum);
-if (idx === -1) return null;
-return GEN_DATA[idx + dir] || null;
 }
 function buildKalosTileCollapsedHtml(g, genCaught) {
 var pct = Math.round((genCaught / g.species.length) * 100);
@@ -5025,32 +5018,39 @@ if (!tileGrid) return;
 // panel back to its top every time a chip tap re-rendered through here
 // (e.g. catching a species). Save the scroll position before the wipe
 // and restore it on the freshly-built panel below.
-var openPanelBefore = tileGrid.querySelector('.kalos-gen-tile-expanded .dex-species-panel');
+var openPanelBefore = tileGrid.querySelector('.kalos-gen-tile-expanded[data-gen="' + kalosOpenGen + '"] .dex-species-panel');
 var savedPanelScrollTop = openPanelBefore ? openPanelBefore.scrollTop : null;
 tileGrid.innerHTML = '';
 // Mirrors the .shiny-mode class the desktop #dex-grid gets (see
 // renderLivingDex) so the same rainbow "caught" styling that grid uses
 // also applies to species chips inside an expanded gen tile here.
 tileGrid.classList.toggle('shiny-mode', dexMode === 'shiny');
-GEN_DATA.forEach(function(g) {
+// While a gen is open, its immediate prev/next neighbors (by GEN_DATA
+// order) are built as expanded panes too, not just collapsed+hidden -
+// together with the open gen they form the 3-pane scroll-snap carousel
+// swiped between in initKalosGenSwipe(). Every other tile stays a small
+// hidden square, same as before.
+var openIdx = kalosOpenGen ? kalosGenIndexOf(kalosOpenGen) : -1;
+GEN_DATA.forEach(function(g, i) {
 var genCaught = kalosGenCaughtCount(g, caught);
-var isOpen = kalosOpenGen && String(g.gen) === String(kalosOpenGen);
+var isPane = openIdx !== -1 && (i === openIdx || i === openIdx - 1 || i === openIdx + 1);
 var tile = document.createElement('div');
-tile.className = isOpen ? 'kalos-gen-tile kalos-gen-tile-expanded dex-card' : 'kalos-gen-tile';
 tile.dataset.gen = g.gen;
-if (isOpen) {
+if (isPane) {
+tile.className = 'kalos-gen-tile kalos-gen-tile-expanded dex-card';
 tile.innerHTML = buildKalosTileExpandedHtml(g, caught, genCaught);
 applyEvoStageBoosts(tile);
 } else {
+tile.className = 'kalos-gen-tile';
 tile.setAttribute('role', 'button');
 tile.setAttribute('tabindex', '0');
 tile.innerHTML = buildKalosTileCollapsedHtml(g, genCaught);
-if (kalosOpenGen) tile.hidden = true;
+if (openIdx !== -1) tile.hidden = true;
 }
 tileGrid.appendChild(tile);
 });
 if (savedPanelScrollTop !== null) {
-var openPanelAfter = tileGrid.querySelector('.kalos-gen-tile-expanded .dex-species-panel');
+var openPanelAfter = tileGrid.querySelector('.kalos-gen-tile-expanded[data-gen="' + kalosOpenGen + '"] .dex-species-panel');
 if (openPanelAfter) openPanelAfter.scrollTop = savedPanelScrollTop;
 }
 tileGrid.classList.toggle('kalos-gen-grid-open', !!kalosOpenGen);
@@ -5058,6 +5058,13 @@ buildKalosDots();
 if (kalosOpenGen) {
 var dots = document.getElementById('kalos-gen-dots');
 if (dots) dots.hidden = true;
+// innerHTML = '' above reset scrollLeft to 0 - line the open pane
+// straight back up with the grid's left edge (full-bleed panes, so
+// this is all it takes to center it with its neighbors just out of
+// frame) with no animation, since this is a data refresh, not a
+// navigation.
+var openTile = tileGrid.querySelector('.kalos-gen-tile-expanded[data-gen="' + kalosOpenGen + '"]');
+if (openTile) tileGrid.scrollLeft = openTile.offsetLeft;
 } else {
 // innerHTML = '' above just reset scrollLeft to 0 - snap the rebuilt
 // track back to whichever tile was centered before this render (no
@@ -5255,6 +5262,37 @@ chip.style.transform = '';
 });
 });
 }
+// Expands the tiles immediately before/after `tile` (already adjacent in
+// GEN_DATA order, so they're already the right neighbors) into their own
+// full detail panes flanking it, and hides every other tile - turning the
+// grid into the 3-pane scroll-snap window that initKalosGenSwipe() below
+// scrolls between. A gen with nothing on one side (Kanto has no gen
+// before it, Gen 9 none after) just doesn't get a pane there, so
+// scrolling that direction has nowhere to go.
+function buildKalosNeighborPanes(tile, grid, caught) {
+var prev = tile.previousElementSibling, next = tile.nextElementSibling;
+Array.prototype.forEach.call(grid.children, function(t) {
+t.hidden = (t !== tile && t !== prev && t !== next);
+});
+[prev, next].forEach(function(sib) {
+if (!sib || sib.hidden) return;
+var g = GEN_DATA.filter(function(x) {
+return String(x.gen) === sib.dataset.gen;
+})[0];
+if (!g) return;
+sib.className = 'kalos-gen-tile kalos-gen-tile-expanded dex-card';
+sib.removeAttribute('role');
+sib.removeAttribute('tabindex');
+sib.style.transform = '';
+sib.style.opacity = '';
+sib.innerHTML = buildKalosTileExpandedHtml(g, caught, kalosGenCaughtCount(g, caught));
+applyEvoStageBoosts(sib);
+});
+// Full-bleed panes (flex: 0 0 100%) sit end-to-end, so lining the open
+// gen's left edge up with the grid's is all it takes to center it with
+// its neighbors just out of frame - no animation, this is state setup.
+grid.scrollLeft = tile.offsetLeft;
+}
 // All the other squares disappear the instant one is tapped, and that
 // tile grows into the banner right where it was sitting in the grid.
 function expandKalosTile(tile) {
@@ -5266,9 +5304,6 @@ if (!g) return;
 var first = tile.getBoundingClientRect();
 var grid = tile.parentNode;
 kalosCarouselIndex = Array.prototype.indexOf.call(grid.children, tile);
-Array.prototype.forEach.call(grid.children, function(t) {
-if (t !== tile) t.hidden = true;
-});
 kalosOpenGen = gen;
 grid.classList.add('kalos-gen-grid-open');
 var dots = document.getElementById('kalos-gen-dots');
@@ -5284,6 +5319,7 @@ tile.removeAttribute('tabindex');
 tile.style.transform = '';
 tile.style.opacity = '';
 tile.innerHTML = buildKalosTileExpandedHtml(g, caught, kalosGenCaughtCount(g, caught));
+buildKalosNeighborPanes(tile, grid, caught);
 hideChipsForStagger(tile);
 applyEvoStageBoosts(tile);
 flipAnimate(tile, first, function() { staggerChipsIn(tile); });
@@ -5296,7 +5332,7 @@ if (!grid) {
 kalosOpenGen = null;
 return;
 }
-var tile = grid.querySelector('.kalos-gen-tile-expanded');
+var tile = grid.querySelector('.kalos-gen-tile-expanded[data-gen="' + kalosOpenGen + '"]');
 if (!tile) {
 kalosOpenGen = null;
 return;
@@ -5305,9 +5341,23 @@ var g = GEN_DATA.filter(function(x) {
 return String(x.gen) === String(kalosOpenGen);
 })[0];
 var first = tile.getBoundingClientRect();
-kalosOpenGen = null;
-if (g) {
 var caught = kalosCurrentCaughtMap();
+kalosOpenGen = null;
+// Revert the flanking prev/next panes (see buildKalosNeighborPanes)
+// back to their small collapsed squares too - they were only ever
+// borrowed from the grid for the swipe, not actually "open".
+Array.prototype.forEach.call(grid.querySelectorAll('.kalos-gen-tile-expanded'), function(t) {
+if (t === tile) return;
+var gg = GEN_DATA.filter(function(x) {
+return String(x.gen) === t.dataset.gen;
+})[0];
+if (!gg) return;
+t.className = 'kalos-gen-tile';
+t.setAttribute('role', 'button');
+t.setAttribute('tabindex', '0');
+t.innerHTML = buildKalosTileCollapsedHtml(gg, kalosGenCaughtCount(gg, caught));
+});
+if (g) {
 var genCaught = kalosGenCaughtCount(g, caught);
 tile.className = 'kalos-gen-tile';
 tile.setAttribute('role', 'button');
@@ -5327,147 +5377,73 @@ var dots = document.getElementById('kalos-gen-dots');
 if (dots) dots.hidden = false;
 flipAnimate(tile, first);
 }
-// Commits an in-progress open-gen swipe: switches kalosOpenGen to the
-// neighboring gen and does a normal re-render. Called only after the
-// slide animation below has already finished (the temporary preview tile
-// has visually settled into place), so this just hands off from that
-// hand-rolled drag/slide to the tile grid's normal managed state - no
-// grow/shrink FLIP here, since the tile is already sitting full-size and
-// centered.
+// Commits a swipe between open gen panes: switches kalosOpenGen to
+// whichever gen the person scrolled onto and does a normal re-render,
+// which rebuilds the 3-pane window centered on the new gen (see
+// renderKalosMobileDex/buildKalosNeighborPanes). Called only once a
+// scroll has actually settled on a neighbor pane, so this just hands off
+// from that pane's brief life as a swiped-to neighbor to the grid's
+// normal managed state.
 function finalizeKalosGenSwitch(genNum) {
 kalosOpenGen = String(genNum);
 kalosCarouselIndex = kalosGenIndexOf(kalosOpenGen);
 renderKalosMobileDex(kalosCurrentCaughtMap());
 }
 // ---------- swipe between open gen tiles ----------
-// While a gen tile is expanded, dragging left/right on it jumps straight
-// to the neighboring gen's own expanded view - swipe right for the next
-// gen, swipe left for the previous one - instead of having to collapse
-// back to the carousel and tap a different tile. Mirrors the direction-
-// detection/resistance approach of the Hunts<->Log swipe further up this
-// file (only takes over once a drag clearly reveals itself as horizontal,
-// so scrolling the species list up/down is never intercepted), but drives
-// its slide-in and spring-back with Motion instead of a CSS transition.
+// While a gen tile is expanded, the grid holds it plus its immediate
+// prev/next neighbors (buildKalosNeighborPanes) as full-bleed scroll-snap
+// panes - swiping is just native horizontal scrolling between them, the
+// exact same carousel mechanism the collapsed gen grid above uses (drag
+// left to advance to the next gen, right for the previous one), instead
+// of a hand-rolled drag simulation. Vertical drags are untouched, since
+// nothing here intercepts touch events - the species panel's own
+// vertical scroll keeps working exactly as it always did.
+var kalosGenScrollSettleTimer = null;
+function scheduleKalosGenScrollSettle() {
+if (!kalosOpenGen) return;
+if (kalosGenScrollSettleTimer) clearTimeout(kalosGenScrollSettleTimer);
+kalosGenScrollSettleTimer = setTimeout(settleKalosGenScroll, 120);
+}
+// Once the person stops scrolling, finds whichever open-gen pane is now
+// nearest the grid's center and, via Motion, nudges the scroll position
+// the rest of the way onto it - correcting for any browsers whose native
+// scroll-snap doesn't land pixel-exact - before committing the gen
+// switch (if the settled pane isn't the one that was already open).
+function settleKalosGenScroll() {
+var grid = document.getElementById('kalos-gen-grid');
+if (!grid || !kalosOpenGen) return;
+var panes = Array.prototype.filter.call(grid.children, function(t) {
+return !t.hidden;
+});
+if (panes.length < 2) return;
+var gridRect = grid.getBoundingClientRect();
+var center = gridRect.left + gridRect.width / 2;
+var closest = null, closestDist = Infinity;
+panes.forEach(function(t) {
+var r = t.getBoundingClientRect();
+var dist = Math.abs((r.left + r.width / 2) - center);
+if (dist < closestDist) { closestDist = dist; closest = t; }
+});
+if (!closest) return;
+var target = closest.offsetLeft - (grid.clientWidth - closest.clientWidth) / 2;
+var landedOnNeighbor = closest.dataset.gen !== String(kalosOpenGen);
+if (window.Motion && window.Motion.animate && Math.abs(grid.scrollLeft - target) > 1) {
+window.Motion.animate(grid.scrollLeft, target, {
+duration: 0.25,
+ease: [0.65, 0, 0.35, 1],
+onUpdate: function(v) { grid.scrollLeft = v; }
+}).finished.then(function() {
+if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
+});
+} else {
+grid.scrollLeft = target;
+if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
+}
+}
 function initKalosGenSwipe() {
 var grid = document.getElementById('kalos-gen-grid');
 if (!grid) return;
-var DIRECTION_THRESHOLD = 8;
-var COMMIT_RATIO = 0.28;
-var COMMIT_VELOCITY = 0.5;
-var RESIST = 0.35;
-var SPRING = { type: 'spring', bounce: 0, duration: 0.35 };
-
-var startX = 0, startY = 0, startTime = 0;
-var decided = false, dragging = false;
-var currentTile = null, neighborTile = null;
-var dir = 0; // +1 = dragging toward the next gen, -1 = toward the previous
-var width = 1;
-
-function cleanup() {
-if (currentTile) {
-currentTile.style.transition = '';
-currentTile.style.transform = '';
-}
-if (neighborTile && neighborTile.parentNode) neighborTile.parentNode.removeChild(neighborTile);
-neighborTile = null;
-currentTile = null;
-decided = false;
-dragging = false;
-dir = 0;
-}
-
-function onStart(e) {
-if (!kalosOpenGen) return;
-if (e.touches.length !== 1) return;
-currentTile = grid.querySelector('.kalos-gen-tile-expanded');
-if (!currentTile) return;
-startX = e.touches[0].clientX;
-startY = e.touches[0].clientY;
-startTime = Date.now();
-decided = false;
-dragging = false;
-dir = 0;
-width = grid.clientWidth || currentTile.offsetWidth || 1;
-}
-
-function onMove(e) {
-if (!currentTile) return;
-if (e.touches.length !== 1) return;
-var dx = e.touches[0].clientX - startX;
-var dy = e.touches[0].clientY - startY;
-if (!decided) {
-if (Math.abs(dx) < DIRECTION_THRESHOLD && Math.abs(dy) < DIRECTION_THRESHOLD) return;
-decided = true;
-dragging = Math.abs(dx) > Math.abs(dy);
-if (!dragging) return; // vertical drag - let the species panel scroll natively
-dir = dx > 0 ? 1 : -1;
-var neighborGen = kalosNeighborGen(kalosOpenGen, dir);
-if (neighborGen) {
-var caught = kalosCurrentCaughtMap();
-neighborTile = document.createElement('div');
-neighborTile.className = 'kalos-gen-tile kalos-gen-tile-expanded dex-card kalos-gen-tile-preview';
-neighborTile.dataset.gen = neighborGen.gen;
-neighborTile.innerHTML = buildKalosTileExpandedHtml(neighborGen, caught, kalosGenCaughtCount(neighborGen, caught));
-grid.appendChild(neighborTile);
-}
-currentTile.style.transition = 'none';
-}
-if (!dragging) return;
-if (e.cancelable) e.preventDefault(); // stop page rubber-banding while we drag
-var canAdvance = !!neighborTile;
-var effectiveDx = canAdvance ? dx : dx * RESIST;
-effectiveDx = Math.max(-width, Math.min(width, effectiveDx));
-currentTile.style.transform = 'translateX(' + effectiveDx + 'px)';
-if (neighborTile) {
-var startOffset = dir === 1 ? -width : width;
-neighborTile.style.transform = 'translateX(' + (effectiveDx + startOffset) + 'px)';
-}
-}
-
-function onEnd(e) {
-if (!currentTile || !decided || !dragging) { cleanup(); return; }
-var touch = e.changedTouches[0];
-var dx = touch.clientX - startX;
-var dt = Math.max(1, Date.now() - startTime);
-var velocity = dx / dt;
-var committed = !!neighborTile && (Math.abs(dx) > width * COMMIT_RATIO || Math.abs(velocity) > COMMIT_VELOCITY);
-var settleTile = currentTile, settleNeighbor = neighborTile, settleDir = dir, settleGen = neighborTile ? neighborTile.dataset.gen : null;
-currentTile.style.transition = '';
-if (committed) {
-if (window.Motion && window.Motion.animate) {
-Promise.all([
-window.Motion.animate(settleTile, { x: settleDir === 1 ? width : -width }, SPRING).finished,
-window.Motion.animate(settleNeighbor, { x: 0 }, SPRING).finished
-]).then(function() {
-finalizeKalosGenSwitch(settleGen);
-cleanup();
-});
-} else {
-finalizeKalosGenSwitch(settleGen);
-cleanup();
-}
-} else {
-if (window.Motion && window.Motion.animate) {
-var anims = [window.Motion.animate(settleTile, { x: 0 }, SPRING).finished];
-if (settleNeighbor) {
-var startOffset = settleDir === 1 ? -width : width;
-anims.push(window.Motion.animate(settleNeighbor, { x: startOffset }, SPRING).finished);
-}
-Promise.all(anims).then(cleanup);
-} else {
-cleanup();
-}
-}
-}
-
-function onCancel() {
-cleanup();
-}
-
-grid.addEventListener('touchstart', onStart, { passive: true });
-grid.addEventListener('touchmove', onMove, { passive: false });
-grid.addEventListener('touchend', onEnd, { passive: true });
-grid.addEventListener('touchcancel', onCancel, { passive: true });
+grid.addEventListener('scroll', scheduleKalosGenScrollSettle, { passive: true });
 }
 // Shared by both the desktop #dex-grid and mobile #kalos-gen-grid click
 // handlers below: flips one species chip's caught state, saves, and
