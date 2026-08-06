@@ -5946,6 +5946,11 @@ background-repeat: no-repeat;
    capped final height. */
 max-height: 75vh;
 overflow-y: auto;
+/* This panel never scrolls horizontally, but without this, a diagonal or
+   sideways drag on iOS still gets treated as a horizontal pan and
+   rubber-bands/snaps back. Restricting touch panning to vertical-only
+   makes any drag here register purely as up/down scroll. */
+touch-action: pan-y;
 }
 .dex-card.expanded .dex-species-panel {
 display: block;
