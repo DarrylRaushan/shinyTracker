@@ -1,7 +1,3 @@
-// Key used for this app's local-storage snapshot of `state` (see load()/
-// save() below). This was previously referenced everywhere but never
-// actually declared - load()/save() wrapped their use of it in try/catch,
-// so that silently no-op'd instead of throwing (local storage never
 // really persisted anything; the app was quietly relying on Firestore
 // alone). The Firestore listener's own use of it wasn't wrapped in a
 // try/catch though, so it threw on every snapshot and stopped the sync
@@ -3036,10 +3032,29 @@ return 'Stage ' + stage;
 // Like fetchEvolvesFrom, but also resolves which stage of its evolution
 // line the species is (Basic / Stage 1 / Stage 2...), and whether that
 // stage is the final one in the chain, by fetching the evolution chain
-// and walking it. One extra request per species (cached in-memory, per
-// session, keyed by slug), and any failure just resolves to null so
-// callers can hide the badge / skip the boost.
-var _evoChainInfoCache = {};
+// and walking it. One extra request per species, cached by slug - and,
+// on a successful resolve, persisted to localStorage (EVO_CACHE_STORE_KEY
+// below) rather than just kept in memory, since this same cache now also
+// backs the mobile Living Dex's evo-stage filter (applyDexEvoStageFilter),
+// which wants the data to stay put across page loads instead of re-fetching
+// every species again each visit. Any failure just resolves to null (and
+// isn't persisted, so a transient network hiccup doesn't permanently block
+// a species) so callers can hide the badge / skip the boost / leave the
+// filter's "checking" state until a retry succeeds.
+var EVO_CACHE_STORE_KEY = 'shinyTrackerEvoChainCache';
+var _evoChainInfoCache = (function() {
+try {
+var raw = localStorage.getItem(EVO_CACHE_STORE_KEY);
+return raw ? JSON.parse(raw) : {};
+} catch (e) {
+return {};
+}
+})();
+function persistEvoChainCache() {
+try {
+localStorage.setItem(EVO_CACHE_STORE_KEY, JSON.stringify(_evoChainInfoCache));
+} catch (e) {}
+}
 function fetchEvoChainInfo(name) {
 var m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(String(name || '').trim());
 var base = m ? m[1] : name;
@@ -3067,10 +3082,61 @@ return findChainInfo(chainData.chain, slug, 0);
 })
 .then(function(info) {
 _evoChainInfoCache[slug] = info;
+if (info) persistEvoChainCache();
 return info;
 })
 .catch(function() {
 return null;
+});
+}
+/* ---------- evo-stage filter (mobile Living Dex toolbar) ----------
+   Buckets a fetchEvoChainInfo() result into one of four mutually-exclusive
+   groups for the Base/Middle/Final/Single-stage filter chips:
+   - single: no family at all (stage 0, and also the final node - Ditto,
+     legendaries, etc.) - kept separate from "final" since conceptually
+     these aren't the final evolution *of* anything.
+   - base:   stage 0 with more evolutions ahead.
+   - final:  the last node of a multi-stage chain (stage > 0, isFinal).
+   - middle: everything else (stage > 0, not final). */
+function evoStageBucket(info) {
+if (!info) return null;
+if (info.stage === 0) return info.isFinal ? 'single' : 'base';
+return info.isFinal ? 'final' : 'middle';
+}
+// All true by default (unfiltered), same convention as dexVariantFilter.
+var dexEvoStageFilter = {
+base: true,
+middle: true,
+final: true,
+single: true
+};
+// Hides chips whose evo-stage bucket isn't currently selected. Species
+// whose bucket isn't cached yet get a transient "checking" look (see
+// .evo-stage-checking in style.css) while fetchEvoChainInfo resolves, then
+// this re-runs for just that lookup rather than re-scanning everything.
+// Scans every .dex-chip in the document (desktop #dex-grid and whichever
+// mobile #kalos-gen-grid tile is currently expanded both use this markup),
+// same as applyDexTypeFilter/applyDexVariantFilter below.
+function applyDexEvoStageFilter() {
+var allOn = Object.keys(dexEvoStageFilter).every(function(k) {
+return dexEvoStageFilter[k];
+});
+document.querySelectorAll('.dex-chip[data-name]').forEach(function(chip) {
+if (allOn) {
+chip.classList.remove('evo-stage-hidden', 'evo-stage-checking');
+return;
+}
+var m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(chip.dataset.name || '');
+var slug = pokemonSlug(m ? m[1] : chip.dataset.name);
+if (slug && Object.prototype.hasOwnProperty.call(_evoChainInfoCache, slug)) {
+var bucket = evoStageBucket(_evoChainInfoCache[slug]);
+chip.classList.remove('evo-stage-checking');
+chip.classList.toggle('evo-stage-hidden', !(bucket && dexEvoStageFilter[bucket]));
+} else {
+chip.classList.add('evo-stage-checking');
+chip.classList.remove('evo-stage-hidden');
+fetchEvoChainInfo(chip.dataset.name).then(applyDexEvoStageFilter);
+}
 });
 }
 // Thin wrapper kept for existing callers (TCG catch-card evo-stage badge)
@@ -4282,24 +4348,58 @@ return regionVariantWeight(a[1]) - regionVariantWeight(b[1]);
 }
 return arr;
 }
-// Dims every species chip in the grid whose types don't include the
-// currently-selected filter type, leaving matching chips fully opaque.
+// Fully hides every species chip in the grid whose types don't include the
+// currently-selected filter type, leaving only matching chips in view.
 // Doesn't touch the caught state, sort order, or rebuild any sprite
 // <img> - it only toggles a class, so it's safe to call after any
 // render/re-sort without disturbing sprites or scroll position.
+// Scans every .dex-chip in the document, not just #dex-grid, so this one
+// function drives both the desktop grid and whichever mobile
+// #kalos-gen-grid tile is currently expanded (both use identical chip
+// markup - see buildDexChipsHtml) without duplicating the filter logic
+// for the mobile toolbar. Desktop's chips all exist in the DOM up front
+// (collapsed gens are just CSS-hidden, not removed), so this covered the
+// whole dex before; mobile only ever has the open tile's chips in the DOM
+// at a time, so this naturally scopes itself to whatever's visible there.
 function applyDexTypeFilter() {
-var grid = document.getElementById('dex-grid');
-if (!grid) return;
 var active = !!dexTypeFilter;
-grid.querySelectorAll('.dex-chip').forEach(function(chip) {
+document.querySelectorAll('.dex-chip').forEach(function(chip) {
 if (!active) {
-chip.classList.remove('type-dimmed');
+chip.classList.remove('type-hidden');
 return;
 }
 var info = speciesInfo(chip.dataset.name);
 var matches = !!(info && info.types.indexOf(dexTypeFilter) !== -1);
-chip.classList.toggle('type-dimmed', !matches);
+chip.classList.toggle('type-hidden', !matches);
 });
+}
+// Keeps the type-filter button label/active-state and the currently-
+// selected option in sync across both the desktop (#btn-dex-type-filter)
+// and mobile (#btn-k-type) toolbars, whichever one triggered the change.
+function syncDexTypeUI() {
+var label = 'Filter: ' + (dexTypeFilter || 'All Types') + ' ▾';
+var shortLabel = (dexTypeFilter || 'Type') + ' ▾';
+[
+{ btn: 'btn-dex-type-filter', panel: 'dex-type-panel', label: label },
+{ btn: 'btn-k-type', panel: 'k-type-panel', label: shortLabel }
+].forEach(function(ui) {
+var btn = document.getElementById(ui.btn);
+var panel = document.getElementById(ui.panel);
+if (btn) {
+btn.textContent = ui.label;
+btn.classList.toggle('active', !!dexTypeFilter);
+}
+if (panel) {
+panel.querySelectorAll('.dex-select-option').forEach(function(o) {
+o.classList.toggle('active', o.dataset.value === dexTypeFilter);
+});
+}
+});
+}
+function setDexTypeFilter(value) {
+dexTypeFilter = value;
+syncDexTypeUI();
+applyDexTypeFilter();
 }
 document.getElementById('btn-dex-type-filter').addEventListener('click', function(e) {
 e.stopPropagation();
@@ -4310,14 +4410,8 @@ document.getElementById('dex-type-panel').addEventListener('click', function(e) 
 e.stopPropagation();
 var opt = e.target.closest('.dex-select-option');
 if (!opt) return;
-dexTypeFilter = opt.dataset.value;
-document.querySelectorAll('#dex-type-panel .dex-select-option').forEach(function(o) {
-o.classList.toggle('active', o === opt);
-});
-document.getElementById('btn-dex-type-filter').textContent = 'Filter: ' + (dexTypeFilter || 'All Types') + ' ▾';
-document.getElementById('btn-dex-type-filter').classList.toggle('active', !!dexTypeFilter);
+setDexTypeFilter(opt.dataset.value);
 document.getElementById('dex-type-wrap').classList.remove('open');
-applyDexTypeFilter();
 });
 /* ---------- variant filter (Original / Alolan / Galarian / Hisuian / Paldean) ---------- */
 // Which variant categories are currently visible. All true by default so
@@ -4341,63 +4435,102 @@ Paldean: 'vf-paldean'
 // this is a true filter of which forms the person wants to see, not a soft
 // highlight like the type filter. Doesn't touch caught state, sort order,
 // or sprite <img> nodes, so it's safe to call after any render/re-sort.
+// Scans the whole document (see applyDexTypeFilter above for why).
 function applyDexVariantFilter() {
-var grid = document.getElementById('dex-grid');
-if (!grid) return;
-grid.querySelectorAll('.dex-chip').forEach(function(chip) {
+document.querySelectorAll('.dex-chip').forEach(function(chip) {
 var cat = chip.dataset.variant || 'Original';
 var visible = dexVariantFilter[cat] !== false;
 chip.classList.toggle('variant-hidden', !visible);
 });
-updateVariantFilterButtonState();
+syncVariantCheckboxes();
 }
-// Reflects whether any category is turned off onto the filter button itself
-// (a highlighted border) so it's obvious at a glance that a filter is active.
-function updateVariantFilterButtonState() {
-var btn = document.getElementById('btn-variant-filter');
-if (!btn) return;
+// Reflects the current dexVariantFilter state onto the desktop checkboxes,
+// the mobile toolbar's own pills (#k-variant-panel .dex-select-option,
+// same active-class pattern as every other reskinned pill), and both
+// filter buttons' active state, so whichever panel the person didn't just
+// use still shows the truth.
+function syncVariantCheckboxes() {
 var allOn = VARIANT_FILTER_KEYS.every(function(k) {
 return dexVariantFilter[k] !== false;
 });
-btn.classList.toggle('active', !allOn);
-}
 VARIANT_FILTER_KEYS.forEach(function(key) {
 var cb = document.getElementById(VARIANT_CHECKBOX_IDS[key]);
+if (cb) cb.checked = dexVariantFilter[key] !== false;
+var opt = document.querySelector('#k-variant-panel .dex-select-option[data-value="' + key + '"]');
+if (opt) opt.classList.toggle('active', dexVariantFilter[key] !== false);
+});
+['btn-variant-filter', 'btn-k-variant'].forEach(function(id) {
+var btn = document.getElementById(id);
+if (btn) btn.classList.toggle('active', !allOn);
+});
+}
+function wireVariantCheckboxes(idMap) {
+VARIANT_FILTER_KEYS.forEach(function(key) {
+var cb = document.getElementById(idMap[key]);
 if (!cb) return;
 cb.addEventListener('change', function() {
 dexVariantFilter[key] = cb.checked;
 applyDexVariantFilter();
 });
 });
-document.getElementById('vf-select-all').addEventListener('click', function() {
+}
+function wireVariantSelectAll(btnId, value) {
+var btn = document.getElementById(btnId);
+if (!btn) return;
+btn.addEventListener('click', function() {
 VARIANT_FILTER_KEYS.forEach(function(key) {
-dexVariantFilter[key] = true;
-var cb = document.getElementById(VARIANT_CHECKBOX_IDS[key]);
-if (cb) cb.checked = true;
+dexVariantFilter[key] = value;
 });
 applyDexVariantFilter();
 });
-document.getElementById('vf-select-none').addEventListener('click', function() {
-VARIANT_FILTER_KEYS.forEach(function(key) {
-dexVariantFilter[key] = false;
-var cb = document.getElementById(VARIANT_CHECKBOX_IDS[key]);
-if (cb) cb.checked = false;
-});
-applyDexVariantFilter();
-});
-// Shared across all three Living Dex toolbar dropdowns (variant filter,
-// sort, type filter) so opening one always closes the others - each
-// button's own click handler stops propagation (so it can toggle itself
-// without the document-level listener immediately closing it again),
-// which means the document listener never gets a chance to close a
-// *different* dropdown that was already open. This runs that same
-// "close everything" sweep manually, minus whichever wrap is about to
-// be opened.
+}
+wireVariantCheckboxes(VARIANT_CHECKBOX_IDS);
+wireVariantSelectAll('vf-select-all', true);
+wireVariantSelectAll('vf-select-none', false);
+// Shared across every Living Dex toolbar dropdown - desktop's (variant
+// filter, sort, type filter), the Shiny Log's (search/sort/filter), and
+// the new mobile Living Dex toolbar's (search/sort/type/form/stage) - so
+// opening one always closes the others. Each button's own click handler
+// stops propagation (so it can toggle itself without the document-level
+// listener immediately closing it again), which means the document
+// listener never gets a chance to close a *different* dropdown that was
+// already open. This runs that same "close everything" sweep manually,
+// minus whichever wrap is about to be opened.
 function closeOtherDexDropdowns(exceptId) {
-['variant-filter-wrap', 'dex-sort-wrap', 'dex-type-wrap', 'log-search-wrap', 'log-sort-wrap', 'log-filter-wrap'].forEach(function(id) {
+[
+'variant-filter-wrap', 'dex-sort-wrap', 'dex-type-wrap',
+'log-search-wrap', 'log-sort-wrap', 'log-filter-wrap',
+'k-search-wrap', 'k-sort-wrap', 'k-type-wrap', 'k-variant-wrap', 'k-evo-wrap'
+].forEach(function(id) {
 if (id === exceptId) return;
 var wrap = document.getElementById(id);
 if (wrap) wrap.classList.remove('open');
+});
+if (!exceptId || exceptId.indexOf('k-') !== 0) collapseKalosToolbar();
+}
+// Puts the mobile Living Dex toolbar (#kalos-filter-toolbar) into
+// "reskin-in-place" mode for the given wrap: every other pill slot is
+// hidden and the given wrap's own panel takes over the freed-up space
+// (see the CSS-KALOS-MOBILE reskin rules in style.css). Search is the one
+// wrap that only takes over row 2, hence the separate reskin-search class.
+function expandKalosToolbar(wrapId) {
+var toolbar = document.getElementById('kalos-filter-toolbar');
+if (!toolbar) return;
+toolbar.classList.remove('reskin-full', 'reskin-search');
+toolbar.classList.add(wrapId === 'k-search-wrap' ? 'reskin-search' : 'reskin-full');
+toolbar.querySelectorAll('.dex-select-wrap.expanded').forEach(function(w) {
+w.classList.remove('expanded');
+});
+var wrap = document.getElementById(wrapId);
+if (wrap) wrap.classList.add('expanded');
+}
+// Reverts #kalos-filter-toolbar back to its normal 6-button layout.
+function collapseKalosToolbar() {
+var toolbar = document.getElementById('kalos-filter-toolbar');
+if (!toolbar) return;
+toolbar.classList.remove('reskin-full', 'reskin-search');
+toolbar.querySelectorAll('.dex-select-wrap.expanded').forEach(function(w) {
+w.classList.remove('expanded');
 });
 }
 document.getElementById('btn-variant-filter').addEventListener('click', function(e) {
@@ -4409,6 +4542,204 @@ document.getElementById('variant-filter-panel').addEventListener('click', functi
 e.stopPropagation();
 });
 document.addEventListener('click', function() {
+closeOtherDexDropdowns(null);
+});
+/* ---------- mobile Living Dex filter toolbar ----------
+   Compact icon-button strip under the Living/Shiny toggle (see
+   #kalos-filter-toolbar in index.html), reusing the exact
+   .log-dex-grid-btn/.dex-select-wrap/.dex-select-panel pattern already
+   built for the Shiny Log toolbar. Search/Sort/Type/Form all drive the
+   same dexSearchQuery-equivalent/dexSortMode/dexTypeFilter/dexVariantFilter
+   state as the desktop toolbar above (via the shared apply/sync functions),
+   so the two toolbars can never drift out of sync with each other. Stage
+   is new (see applyDexEvoStageFilter, defined near fetchEvoChainInfo). */
+// Opens a k-* dropdown: toggles its own .open, then hands the toolbar
+// over to expandKalosToolbar/collapseKalosToolbar to do the visual
+// reskin-in-place morph (see the CSS-KALOS-MOBILE reskin rules).
+function toggleKalosDropdown(wrapId) {
+closeOtherDexDropdowns(wrapId);
+var wrap = document.getElementById(wrapId);
+var willOpen = !wrap.classList.contains('open');
+wrap.classList.toggle('open', willOpen);
+if (willOpen) {
+expandKalosToolbar(wrapId);
+} else {
+collapseKalosToolbar();
+}
+return willOpen;
+}
+document.getElementById('btn-k-search').addEventListener('click', function(e) {
+e.stopPropagation();
+var opened = toggleKalosDropdown('k-search-wrap');
+var input = document.getElementById('k-dex-search');
+if (input && opened) {
+setTimeout(function() { input.focus(); }, 0);
+}
+});
+document.getElementById('k-search-panel').addEventListener('click', function(e) {
+e.stopPropagation();
+});
+var kDexSearchInput = document.getElementById('k-dex-search');
+attachPokemonAutocomplete(kDexSearchInput);
+kDexSearchInput.addEventListener('change', function() {
+var val = this.value.trim();
+if (!val) return;
+jumpToDexSpeciesMobile(val);
+this.value = '';
+document.getElementById('k-search-wrap').classList.remove('open');
+collapseKalosToolbar();
+});
+document.getElementById('btn-k-sort').addEventListener('click', function(e) {
+e.stopPropagation();
+toggleKalosDropdown('k-sort-wrap');
+});
+document.getElementById('k-sort-panel').addEventListener('click', function(e) {
+e.stopPropagation();
+var opt = e.target.closest('.dex-select-option');
+if (!opt) return;
+setDexSortMode(opt.dataset.value);
+document.getElementById('k-sort-wrap').classList.remove('open');
+collapseKalosToolbar();
+});
+document.getElementById('btn-k-type').addEventListener('click', function(e) {
+e.stopPropagation();
+toggleKalosDropdown('k-type-wrap');
+});
+document.getElementById('k-type-panel').addEventListener('click', function(e) {
+e.stopPropagation();
+var opt = e.target.closest('.dex-select-option');
+if (!opt) return;
+setDexTypeFilter(opt.dataset.value);
+document.getElementById('k-type-wrap').classList.remove('open');
+collapseKalosToolbar();
+});
+document.getElementById('btn-k-variant').addEventListener('click', function(e) {
+e.stopPropagation();
+toggleKalosDropdown('k-variant-wrap');
+});
+document.getElementById('k-variant-panel').addEventListener('click', function(e) {
+e.stopPropagation();
+var opt = e.target.closest('.dex-select-option');
+if (!opt) return;
+var key = opt.dataset.value;
+dexVariantFilter[key] = dexVariantFilter[key] === false ? true : false;
+applyDexVariantFilter();
+});
+// Form is multi-select (several checkboxes can be on at once) and now
+// scrolls horizontally once reskinned in place, so it doesn't close on
+// every tap - the fixed Done pill (outside the scroll strip) is the way
+// out, alongside tapping anywhere off the toolbar.
+document.getElementById('k-variant-done').addEventListener('click', function(e) {
+e.stopPropagation();
+document.getElementById('k-variant-wrap').classList.remove('open');
+collapseKalosToolbar();
+});
+// Evo-stage panel: multi-select, so (unlike Sort/Type) a tap only flips
+// that one chip's own on/off state and the panel stays open - narrowing to
+// more than one bucket at once (e.g. Base + Single-stage) is a normal
+// thing to want here. Its own Done pill (in the grid alongside the four
+// stage chips) is the explicit way to close it, since no single tap here
+// means "done choosing" the way it does for Sort/Type.
+document.getElementById('btn-k-evo').addEventListener('click', function(e) {
+e.stopPropagation();
+toggleKalosDropdown('k-evo-wrap');
+});
+document.getElementById('k-evo-panel').addEventListener('click', function(e) {
+e.stopPropagation();
+var opt = e.target.closest('.dex-select-option');
+if (!opt) return;
+var key = opt.dataset.value;
+// At least one bucket must stay selected - flipping the last active one
+// off would silently hide every chip with no way to tell why, so that
+// tap is a no-op instead.
+var onCount = Object.keys(dexEvoStageFilter).filter(function(k) {
+return dexEvoStageFilter[k];
+}).length;
+if (dexEvoStageFilter[key] && onCount <= 1) return;
+dexEvoStageFilter[key] = !dexEvoStageFilter[key];
+opt.classList.toggle('active', dexEvoStageFilter[key]);
+syncDexEvoStageButtonState();
+applyDexEvoStageFilter();
+});
+document.getElementById('k-evo-done').addEventListener('click', function(e) {
+e.stopPropagation();
+document.getElementById('k-evo-wrap').classList.remove('open');
+collapseKalosToolbar();
+});
+function syncDexEvoStageButtonState() {
+var btn = document.getElementById('btn-k-evo');
+if (!btn) return;
+var allOn = Object.keys(dexEvoStageFilter).every(function(k) {
+return dexEvoStageFilter[k];
+});
+btn.classList.toggle('active', !allOn);
+}
+// Sliding highlight pill (#kalos-toolbar-highlight, see index.html) that
+// glides under whichever toolbar button currently has its dropdown open,
+// iOS-segmented-control style. Only one of Search/Sort/Type/Form/Stage is
+// ever open at a time (closeOtherDexDropdowns enforces that), so "the
+// open one" is a well-defined single target to slide to - driven off a
+// MutationObserver on the toolbar's own open/closed classes rather than
+// threading an extra call through every button handler, so it can never
+// drift out of sync with whichever code path happened to toggle a wrap.
+(function initKalosToolbarHighlight() {
+var toolbar = document.getElementById('kalos-filter-toolbar');
+var highlight = document.getElementById('kalos-toolbar-highlight');
+if (!toolbar || !highlight) return;
+var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function update() {
+// While the toolbar is reskinned in place (see expandKalosToolbar), the
+// open button is hidden (or, for Search, not the thing being pointed at
+// any more) - the sliding highlight has nothing meaningful to sit under,
+// so it just stays hidden until the toolbar is back to its normal shape.
+if (toolbar.classList.contains('reskin-full') || toolbar.classList.contains('reskin-search')) {
+highlight.style.opacity = '0';
+return;
+}
+var openBtn = toolbar.querySelector('.dex-select-wrap.open > .log-dex-grid-btn');
+if (!openBtn) {
+highlight.style.opacity = '0';
+return;
+}
+var toolbarRect = toolbar.getBoundingClientRect();
+var btnRect = openBtn.getBoundingClientRect();
+var target = {
+left: (btnRect.left - toolbarRect.left) + 'px',
+top: (btnRect.top - toolbarRect.top) + 'px',
+width: btnRect.width + 'px',
+height: btnRect.height + 'px'
+};
+highlight.style.opacity = '1';
+if (window.Motion && window.Motion.animate && !reduceMotion) {
+window.Motion.animate(highlight, target, { duration: 0.25, easing: [0.34, 1.56, 0.64, 1] });
+} else {
+Object.assign(highlight.style, target);
+}
+}
+new MutationObserver(update).observe(toolbar, { attributes: true, attributeFilter: ['class'], subtree: true });
+window.addEventListener('resize', function() {
+if (toolbar.querySelector('.dex-select-wrap.open')) update();
+});
+})();
+// Resets every Living Dex filter (search highlight aside - that clears
+// itself the next time a gen is opened/collapsed) back to its default,
+// same pattern as the Shiny Log's #btn-log-reset-filters.
+document.getElementById('btn-k-reset-filters').addEventListener('click', function(e) {
+e.stopPropagation();
+setDexSortMode('dex');
+setDexTypeFilter('');
+VARIANT_FILTER_KEYS.forEach(function(key) {
+dexVariantFilter[key] = true;
+});
+applyDexVariantFilter();
+Object.keys(dexEvoStageFilter).forEach(function(key) {
+dexEvoStageFilter[key] = true;
+});
+document.querySelectorAll('#k-evo-panel .dex-select-option').forEach(function(o) {
+o.classList.add('active');
+});
+syncDexEvoStageButtonState();
+applyDexEvoStageFilter();
 closeOtherDexDropdowns(null);
 });
 // Re-orders the chips already sitting in the DOM to match dexSortMode,
@@ -4513,6 +4844,39 @@ target.classList.remove('dex-chip-highlighted');
 // chip works even if it was already highlighted
 void target.offsetWidth;
 target.classList.add('dex-chip-highlighted');
+}
+}
+// Mobile counterpart of jumpToDexSpecies: switches the Kalos carousel to
+// whichever gen the species belongs to (same state change as swiping
+// there - see finalizeKalosGenSwitch) and highlights the matching chip.
+// renderKalosMobileDex already centers the newly-open gen's pane
+// (tileGrid.scrollLeft = openTile.offsetLeft) as part of its normal
+// kalosOpenGen branch, so no extra carousel-scroll call is needed here -
+// just re-running the render with kalosOpenGen set to the target gen.
+function jumpToDexSpeciesMobile(name) {
+var loc = findDexLocation(name);
+if (!loc) return;
+document.querySelectorAll('.dex-chip-highlighted').forEach(function(chip) {
+chip.classList.remove('dex-chip-highlighted');
+});
+kalosOpenGen = String(loc.gen);
+kalosCarouselIndex = kalosGenIndexOf(kalosOpenGen);
+renderKalosMobileDex(kalosCurrentCaughtMap());
+var grid = document.getElementById('kalos-gen-grid');
+var target = null;
+var norm = normName(name);
+if (grid) {
+grid.querySelectorAll('.dex-chip').forEach(function(chip) {
+if (chip.dataset.name === norm) target = chip;
+});
+}
+if (target) {
+target.classList.remove('dex-chip-highlighted');
+void target.offsetWidth;
+target.classList.add('dex-chip-highlighted');
+if (typeof target.scrollIntoView === 'function') {
+target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 }
 }
 // Expands one gen square into its full banner right where it's sitting in
@@ -4655,6 +5019,62 @@ dex: 'Dex Number',
 alpha: 'A–Z',
 uncaught: 'Uncaught First'
 };
+var DEX_SORT_SHORT_LABELS = {
+dex: 'Dex #',
+alpha: 'A–Z',
+uncaught: 'Uncaught'
+};
+// Re-orders chips already in the DOM to match dexSortMode, for whichever
+// generation(s) are currently expanded in the mobile Kalos carousel (the
+// open tile plus its swipe-neighbor panes, if any) - same in-place-move
+// technique as resortDexGrid (below), so any already-loading sprite <img>
+// nodes are relocated rather than rebuilt/re-fetched.
+function resortKalosGrid() {
+var caught = kalosCurrentCaughtMap();
+document.querySelectorAll('#kalos-gen-grid .kalos-gen-tile-expanded').forEach(function(tile) {
+var gen = GEN_DATA.filter(function(g) {
+return String(g.gen) === tile.dataset.gen;
+})[0];
+if (!gen) return;
+var panel = tile.querySelector('.dex-species-grid');
+if (!panel) return;
+var chipByName = {};
+panel.querySelectorAll('.dex-chip').forEach(function(chip) {
+chipByName[chip.dataset.name] = chip;
+});
+sortDexSpecies(gen.species, caught, dexSortMode).forEach(function(sp) {
+var chip = chipByName[normName(sp[1])];
+if (chip) panel.appendChild(chip);
+});
+});
+}
+// Keeps the sort button label/active-state and selected option in sync
+// across both the desktop (#btn-dex-sort) and mobile (#btn-k-sort)
+// toolbars, whichever one triggered the change.
+function syncDexSortUI() {
+[
+{ btn: 'btn-dex-sort', panel: 'dex-sort-panel', label: 'Sort: ' + DEX_SORT_LABELS[dexSortMode] + ' ▾' },
+{ btn: 'btn-k-sort', panel: 'k-sort-panel', label: DEX_SORT_SHORT_LABELS[dexSortMode] + ' ▾' }
+].forEach(function(ui) {
+var btn = document.getElementById(ui.btn);
+var panel = document.getElementById(ui.panel);
+if (btn) {
+btn.textContent = ui.label;
+btn.classList.toggle('active', dexSortMode !== 'dex');
+}
+if (panel) {
+panel.querySelectorAll('.dex-select-option').forEach(function(o) {
+o.classList.toggle('active', o.dataset.value === dexSortMode);
+});
+}
+});
+}
+function setDexSortMode(mode) {
+dexSortMode = mode;
+syncDexSortUI();
+resortDexGrid();
+resortKalosGrid();
+}
 document.getElementById('btn-dex-sort').addEventListener('click', function(e) {
 e.stopPropagation();
 closeOtherDexDropdowns('dex-sort-wrap');
@@ -4664,14 +5084,8 @@ document.getElementById('dex-sort-panel').addEventListener('click', function(e) 
 e.stopPropagation();
 var opt = e.target.closest('.dex-select-option');
 if (!opt) return;
-dexSortMode = opt.dataset.value;
-document.querySelectorAll('#dex-sort-panel .dex-select-option').forEach(function(o) {
-o.classList.toggle('active', o === opt);
-});
-document.getElementById('btn-dex-sort').textContent = 'Sort: ' + DEX_SORT_LABELS[dexSortMode] + ' ▾';
-document.getElementById('btn-dex-sort').classList.toggle('active', dexSortMode !== 'dex');
+setDexSortMode(opt.dataset.value);
 document.getElementById('dex-sort-wrap').classList.remove('open');
-resortDexGrid();
 });
 var dexSearchInput = document.getElementById('dex-search');
 attachPokemonAutocomplete(dexSearchInput);
@@ -4810,7 +5224,7 @@ function buildDexSplitHalfHtml(mode, label, progress, isActive) {
 var pct = progress.total > 0 ? Math.round((progress.caught / progress.total) * 100) : 0;
 return (
 '<button type="button" class="dex-split-half dex-split-' + mode + (isActive ? ' active' : '') + '" data-mode="' + mode + '" aria-pressed="' + (isActive ? 'true' : 'false') + '" aria-label="' + label + ' Dex: ' + pct + '% caught, ' + progress.caught + ' of ' + progress.total + '">' +
-'<span class="dex-split-icon" aria-hidden="true">' + DEX_SPLIT_ICONS[mode] + '</span>' +
+'<span class="dex-split-icon-wrap" aria-hidden="true" style="--pct:' + pct + '"><span class="dex-split-ring"></span><span class="dex-split-icon">' + DEX_SPLIT_ICONS[mode] + '</span></span>' +
 '<span class="dex-split-pct"><span class="dex-split-pct-num">' + pct + '</span>%</span>' +
 '<span class="dex-split-frac">' + progress.caught + ' / ' + progress.total + '</span>' +
 '<span class="dex-split-bar" aria-hidden="true"><span class="dex-split-bar-fill" style="width:' + pct + '%"></span></span>' +
@@ -5075,6 +5489,13 @@ syncKalosCarousel();
 var dots2 = document.getElementById('kalos-gen-dots');
 if (dots2) dots2.hidden = false;
 }
+// Freshly-built chips above start unfiltered - re-apply whichever of the
+// mobile toolbar's Type/Form/Stage filters are currently active so a
+// filter set before a catch, a gen swipe, or a jump-to-species doesn't
+// get silently dropped by this rebuild.
+applyDexTypeFilter();
+applyDexVariantFilter();
+applyDexEvoStageFilter();
 }
 // ---------- mobile Kalos dex: peek/coverflow carousel ----------
 // Builds the dot row underneath the carousel, one dot per generation.
@@ -5351,6 +5772,13 @@ buildKalosNeighborPanes(tile, grid, caught);
 hideChipsForStagger(tile);
 applyEvoStageBoosts(tile);
 flipAnimate(tile, first, function() { staggerChipsIn(tile); });
+// Same reason as the end of renderKalosMobileDex: this path builds fresh
+// chips directly (tile + its neighbor panes) without going through that
+// function, so any active Type/Form/Stage filter needs re-applying here
+// too or it'd silently drop the moment someone taps a tile open.
+applyDexTypeFilter();
+applyDexVariantFilter();
+applyDexEvoStageFilter();
 }
 // Collapses the currently-expanded tile back down into its own square and
 // brings the other squares back.
