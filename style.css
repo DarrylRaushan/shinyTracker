@@ -1,5 +1,5 @@
 :root {
---bg: #fff3cf;
+--bg: #30adff;
 --bg-panel: #ffffff;
 --bg-panel-raised: #fff2b8;
 --line: #2b2320;
@@ -47,7 +47,7 @@ overflow: hidden;
 height: 100%;
 }
 body.bg-hunts {
-background-image: url("images/bg-dex.png");
+background-image: url("images/bg-hunts.png");
 background-size: cover;
 background-position: center;
 background-repeat: no-repeat;
@@ -63,7 +63,7 @@ background-attachment: fixed;
 background-color: #30adff;
 }
 body.bg-dex {
-background-image: url("images/bg-hunts.png");
+background-image: url("images/bg-dex.png");
 background-size: cover;
 background-position: center;
 background-repeat: no-repeat;
@@ -4377,6 +4377,31 @@ color: var(--blue);
 .dex-split-half.dex-split-shiny.active .dex-split-icon {
 color: var(--yellow-dark);
 }
+/* Icon + circular ring wrapper. The ring itself (conic-gradient read off
+   the --pct custom property set inline per half by buildDexSplitHalfHtml
+   in script.js, masked hollow so only a thin ring shows) exists in the
+   markup for both toggles but stays invisible by default - it's only
+   switched on for the Kalos/mobile toggle below, keeping the desktop
+   toggle's original look untouched. */
+.dex-split-icon-wrap {
+position: relative;
+display: flex;
+align-items: center;
+justify-content: center;
+width: 17px;
+height: 17px;
+}
+.dex-split-ring {
+position: absolute;
+inset: -4px;
+border-radius: 50%;
+opacity: 0;
+pointer-events: none;
+transition: opacity 0.2s ease;
+background: conic-gradient(var(--ring-color, var(--ink-dim)) calc(var(--pct) * 1%), rgba(43, 35, 32, 0.12) 0);
+-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+}
 .dex-split-pct {
 font-family: var(--hud);
 font-size: 11.5px;
@@ -4467,6 +4492,19 @@ box-shadow: inset 0 0 0 1.5px rgba(165, 118, 10, 0.4);
 }
 .dex-chip.variant-hidden {
 display: none;
+}
+/* Evo-stage filter (mobile) - see applyDexEvoStageFilter in script.js.
+   True hide, same treatment as variant-hidden, since narrowing to a
+   stage is a real filter rather than a soft highlight. .evo-stage-checking
+   is a brief in-between state for a chip whose {stage,isFinal} hasn't come
+   back from fetchEvoChainInfo yet - left visible but dimmed rather than
+   yanked in and out as the fetch resolves. */
+.dex-chip.evo-stage-hidden {
+display: none;
+}
+.dex-chip.evo-stage-checking {
+opacity: 0.45;
+transition: opacity 0.2s ease;
 }
 /* ---------- Living Dex: Pokémon Center PC scene ---------- */
 .pc-scene {
@@ -5523,9 +5561,397 @@ opacity: 0.7;
 .kalos-screen .pc-screen-glare {
 display: block;
 }
+/* Shared card for the Living/Shiny toggle + new filter toolbar (see
+   index.html - #kalos-toggle-filter-card wraps #kalos-mode-toggle and
+   #kalos-filter-toolbar). Draws the one rounded/bordered/shadowed shell
+   both pieces sit inside, so percentages-on-top / filters-below reads as
+   one connected block instead of two stacked pills. */
+.kalos-toggle-filter-card {
+background: rgba(255, 255, 255, 0.62);
+-webkit-backdrop-filter: blur(18px) saturate(160%);
+backdrop-filter: blur(18px) saturate(160%);
+border: 1px solid rgba(43, 35, 32, 0.1);
+border-radius: 20px;
+box-shadow:
+0 1px 2px rgba(30, 30, 40, 0.04),
+0 10px 28px -6px rgba(30, 30, 40, 0.14),
+inset 0 1px 0 rgba(255, 255, 255, 0.6);
+padding: 10px 10px 8px;
+margin-bottom: 10px;
+}
+/* .kalos-mode-toggle still gets its base look from .dex-split-toggle
+   (border/shadow/background/padding) for its life on desktop-adjacent
+   contexts, but nested in the shared card above that chrome would double
+   up with the card's own - stripped here so only the outer card draws it. */
+.kalos-toggle-filter-card .kalos-mode-toggle {
+border: none;
+box-shadow: none;
+background: transparent;
+padding: 0;
+margin-bottom: 8px;
+}
+/* Reuses .log-dex-toolbar/.log-dex-grid-btn wholesale (see the Shiny Log
+   toolbar rules above) for the same compact icon-button-opens-a-panel
+   strip, just re-themed to sit flush in the card instead of its own
+   separately-bordered slot. */
+.kalos-filter-toolbar {
+margin: 0;
+grid-auto-rows: 24px;
+gap: 3px;
+padding: 3px;
+position: relative;
+border: none;
+box-shadow: none;
+}
+/* Sliding highlight pill (#kalos-toolbar-highlight in index.html) - JS
+   (initKalosToolbarHighlight in script.js) positions this in px to match
+   whichever button's dropdown is open and animates it there via Motion.
+   Sits under the buttons (z-index 0) so their own text/icon stay on top;
+   .log-dex-grid-btn is lifted to z-index 1 below for exactly that. */
+.kalos-toolbar-highlight {
+position: absolute;
+left: 0;
+top: 0;
+width: 0;
+height: 0;
+border-radius: 999px;
+background: rgba(91, 107, 209, 0.14);
+box-shadow: inset 0 0 0 1.5px rgba(91, 107, 209, 0.4);
+opacity: 0;
+pointer-events: none;
+z-index: 0;
+}
+.kalos-filter-toolbar .log-dex-grid-btn {
+position: relative;
+z-index: 1;
+}
+.kalos-filter-toolbar .log-dex-grid-btn {
+padding: 1px 2px;
+font-size: 9px;
+border-radius: 999px;
+background: rgba(43, 35, 32, 0.05);
+border: 1px solid rgba(43, 35, 32, 0.09);
+box-shadow: none;
+color: var(--ink-dim);
+transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease;
+}
+.kalos-filter-toolbar .log-dex-grid-btn:hover {
+background: rgba(43, 35, 32, 0.08);
+filter: none;
+}
+.kalos-filter-toolbar .log-dex-grid-btn:active {
+transform: scale(0.93);
+box-shadow: none;
+}
+.kalos-filter-toolbar .log-dex-grid-btn.active {
+transform: none;
+background: rgba(91, 107, 209, 0.14);
+color: #5b6bd1;
+box-shadow: inset 0 0 0 1.5px rgba(91, 107, 209, 0.4);
+}
+.kalos-filter-toolbar .dex-select-panel {
+font-size: 12px;
+background: rgba(255, 255, 255, 0.75);
+-webkit-backdrop-filter: blur(16px) saturate(160%);
+backdrop-filter: blur(16px) saturate(160%);
+border: 1px solid rgba(43, 35, 32, 0.1);
+box-shadow: 0 1px 2px rgba(30, 30, 40, 0.05), 0 10px 24px -8px rgba(30, 30, 40, 0.22);
+}
+.kalos-filter-toolbar .dex-select-option {
+border-radius: 999px;
+transition: background 0.15s ease, transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.kalos-filter-toolbar .dex-select-option:active {
+transform: scale(0.96);
+}
+.kalos-filter-toolbar .dex-select-option.active {
+background: #5b6bd1;
+color: #fff;
+}
+/* Panels under the rightmost column of the 3-col toolbar grid (Type,
+   Reset - though Reset has no panel) would otherwise overflow past the
+   card's right edge on narrow screens, since .dex-select-panel anchors to
+   its own button's left edge. Anchoring those to the right edge instead
+   keeps every panel inside the card/viewport regardless of screen width. */
+.kalos-filter-toolbar .dex-select-wrap:nth-child(3n) .dex-select-panel {
+left: auto;
+right: 0;
+}
+.k-search-panel {
+min-width: 220px;
+padding: 8px;
+}
+.k-search-panel .log-key-input {
+width: 100%;
+}
+/* Evo-stage panel: multi-select toggle chips (Base/Middle/Final/
+   Single-stage all independently on/off), unlike Sort/Type's single-value
+   swap - laid out in a single slim row, wide enough that even the long
+   "Single-stage" label never wraps. */
+.k-evo-panel {
+grid-template-columns: repeat(4, 1fr);
+gap: 4px;
+min-width: 340px;
+left: 50%;
+transform: translateX(-50%);
+}
+.dex-select-wrap.open .k-evo-panel {
+display: grid;
+}
+.k-evo-panel .dex-select-option {
+padding: 4px 4px;
+font-size: 11px;
+justify-content: center;
+text-align: center;
+white-space: nowrap;
+}
+/* --- Toolbar "reskin-in-place" mode -----------------------------------
+   Tapping Sort/Type/Form/Stage (or Search) no longer drops a floating
+   panel below the toolbar - instead the toolbar's own 6 pill slots morph
+   into that button's options, still laid out as pills in the same grid,
+   then snap back to the normal 6-button toolbar once a choice is made
+   (or the person taps anywhere off the toolbar - the existing
+   closeOtherDexDropdowns/document-click wiring in script.js already
+   collapses it). Driven by two classes toggled in script.js
+   (expandKalosToolbar/collapseKalosToolbar):
+   - #kalos-filter-toolbar gets .reskin-full (Sort/Type/Form/Stage - the
+     expanded wrap takes over every slot) or .reskin-search (Search - only
+     row 2 is replaced, row 1's Search/Sort/Type pills stay put).
+   - the wrap being expanded gets .expanded.
+   display:contents on the expanded wrap lets its button/panel become
+   direct grid items of the toolbar itself, so the panel can be placed
+   independently of the wrap's original single-cell slot. */
+.kalos-filter-toolbar.reskin-full .dex-select-wrap {
+display: none;
+}
+.kalos-filter-toolbar.reskin-full #btn-k-reset-filters {
+display: none;
+}
+.kalos-filter-toolbar.reskin-full .dex-select-wrap.expanded {
+display: contents;
+}
+.kalos-filter-toolbar.reskin-full .dex-select-wrap.expanded .log-dex-grid-btn {
+display: none;
+}
+.kalos-filter-toolbar.reskin-full .dex-select-wrap.expanded .dex-select-panel {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+grid-auto-rows: 24px;
+grid-column: 1 / -1;
+grid-row: 1 / -1;
+gap: 3px;
+position: static;
+width: 100%;
+min-width: 0;
+max-height: none;
+margin: 0;
+padding: 0;
+border: none;
+box-shadow: none;
+background: transparent;
+overflow: visible;
+left: auto;
+right: auto;
+transform: none;
+}
+/* Same pill chrome as the toolbar's own .log-dex-grid-btn buttons (see
+   above) - translucent bg, thin border, tiny caption text - so the
+   options reads as the exact same pills just wearing different labels,
+   not a different-looking control. */
+.kalos-filter-toolbar.reskin-full .dex-select-wrap.expanded .dex-select-panel .dex-select-option {
+justify-content: center;
+text-align: center;
+gap: 4px;
+padding: 1px 2px;
+font-size: 9px;
+font-weight: 800;
+border-radius: 999px;
+background: rgba(43, 35, 32, 0.05);
+border: 1px solid rgba(43, 35, 32, 0.09);
+color: var(--ink-dim);
+box-shadow: none;
+transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease;
+}
+.kalos-filter-toolbar.reskin-full .dex-select-wrap.expanded .dex-select-panel .dex-select-option:active {
+transform: scale(0.93);
+}
+.kalos-filter-toolbar.reskin-full .dex-select-wrap.expanded .dex-select-panel .dex-select-option.active {
+background: rgba(91, 107, 209, 0.14);
+border-color: transparent;
+color: #5b6bd1;
+box-shadow: inset 0 0 0 1.5px rgba(91, 107, 209, 0.4);
+}
+/* Type has ~19 options - too many to fit the 6-slot grid, so it keeps the
+   familiar 3-column pill grid but fills it 3 options at a time down each
+   column (grid-auto-flow: column) and lets it overflow sideways, giving a
+   3x3 page of pills with more pages reachable by horizontal scroll. */
+.kalos-filter-toolbar.reskin-full #k-type-wrap.expanded #k-type-panel {
+display: grid;
+grid-auto-flow: column;
+grid-template-rows: repeat(3, 24px);
+grid-template-columns: none;
+grid-row: 1 / -1;
+gap: 3px;
+overflow-x: auto;
+-webkit-overflow-scrolling: touch;
+scroll-snap-type: x mandatory;
+}
+.kalos-filter-toolbar.reskin-full #k-type-wrap.expanded #k-type-panel .dex-select-option {
+flex: none;
+width: 60px;
+white-space: nowrap;
+scroll-snap-align: start;
+}
+/* Form now uses the exact same default pill (.dex-select-option) grid as
+   Stage - 5 options + Done fits the 6-slot 3x2 grid on its own, so no
+   custom checkbox/scroll/All-None treatment is needed here any more. */
+.kalos-filter-toolbar.reskin-full #k-variant-wrap.expanded #k-variant-panel {
+grid-template-columns: repeat(3, 1fr);
+}
+/* Stage fits the 6-slot grid on its own (4 options + Done), so it keeps
+   the grid layout rather than scrolling. */
+.kalos-filter-toolbar.reskin-full #k-evo-wrap.expanded #k-evo-panel {
+grid-template-columns: repeat(3, 1fr);
+}
+.kalos-filter-toolbar.reskin-full #k-evo-wrap.expanded #k-evo-panel .k-reskin-done {
+grid-column: span 2;
+}
+.k-reskin-done {
+display: none;
+appearance: none;
+-webkit-appearance: none;
+border: 1px solid rgba(43, 35, 32, 0.09);
+border-radius: 999px;
+background: #5b6bd1;
+color: #fff;
+font-family: var(--hud);
+font-weight: 800;
+font-size: 9px;
+cursor: pointer;
+}
+.kalos-filter-toolbar.reskin-full .expanded .k-reskin-done {
+display: flex;
+align-items: center;
+justify-content: center;
+flex: 0 0 auto;
+}
+/* Search is the one exception to "hide everything else" - row 1's
+   Search/Sort/Type pills stay visible (Search shown active) and only
+   row 2 (Form/Stage/Reset) is replaced, by the search input spanning its
+   full width, so opening the keyboard doesn't also hide the pills sitting
+   right above it. */
+.kalos-filter-toolbar.reskin-search #k-variant-wrap,
+.kalos-filter-toolbar.reskin-search #k-evo-wrap,
+.kalos-filter-toolbar.reskin-search #btn-k-reset-filters {
+display: none;
+}
+.kalos-filter-toolbar.reskin-search #k-search-wrap.expanded {
+display: contents;
+}
+.kalos-filter-toolbar.reskin-search #k-search-wrap.expanded .log-dex-grid-btn {
+display: flex;
+}
+.kalos-filter-toolbar.reskin-search #k-search-panel {
+display: block;
+position: static;
+grid-column: 1 / -1;
+grid-row: 2;
+width: 100%;
+min-width: 0;
+margin: 0;
+padding: 0;
+border: none;
+box-shadow: none;
+background: transparent;
+}
+.kalos-filter-toolbar.reskin-search #k-search-panel .log-key-input {
+width: 100%;
+height: 24px;
+}
+
 .kalos-mode-toggle {
 margin-bottom: 10px;
 }
+/* --- iPadOS-style restyle, scoped to the Kalos/mobile toggle only ---
+   Desktop's #dex-mode-toggle keeps the original punchier plastic-console
+   look above; this softens the same markup into a flatter glass control:
+   muted indigo/amber accents instead of saturated blue/gold, borderless
+   tinted-pill active states instead of inset rings, a lighter system
+   font for the percentage, and capsule bars with a soft glow riding the
+   leading edge of the fill. */
+.kalos-mode-toggle .dex-split-half {
+border-radius: 14px;
+transition: background 0.2s ease, opacity 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.kalos-mode-toggle .dex-split-half:active {
+transform: scale(0.97);
+}
+.kalos-mode-toggle .dex-split-half.dex-split-living.active {
+background: rgba(91, 107, 209, 0.12);
+box-shadow: none;
+}
+.kalos-mode-toggle .dex-split-half.dex-split-shiny.active {
+background: rgba(196, 142, 33, 0.12);
+box-shadow: none;
+}
+.kalos-mode-toggle .dex-split-half.dex-split-living.active .dex-split-icon {
+color: #5b6bd1;
+}
+.kalos-mode-toggle .dex-split-half.dex-split-shiny.active .dex-split-icon {
+color: #c48e21;
+}
+.kalos-mode-toggle .dex-split-living.active .dex-split-pct {
+color: #5b6bd1;
+}
+.kalos-mode-toggle .dex-split-shiny.active .dex-split-pct {
+color: #c48e21;
+}
+.kalos-mode-toggle .dex-split-pct {
+font-family: var(--body);
+font-weight: 700;
+letter-spacing: -0.3px;
+}
+.kalos-mode-toggle .dex-split-half.active .dex-split-pct {
+font-size: 17px;
+font-weight: 800;
+}
+.kalos-mode-toggle .dex-split-bar {
+background: rgba(43, 35, 32, 0.06);
+border: none;
+height: 5px;
+}
+.kalos-mode-toggle .dex-split-bar-fill {
+position: relative;
+overflow: visible;
+}
+.kalos-mode-toggle .dex-split-living .dex-split-bar-fill {
+background: linear-gradient(90deg, #8892e6, #5b6bd1);
+}
+.kalos-mode-toggle .dex-split-shiny .dex-split-bar-fill {
+background: linear-gradient(90deg, #ddb35a, #c48e21);
+}
+.kalos-mode-toggle .dex-split-bar-fill::after {
+content: '';
+position: absolute;
+top: 50%;
+right: 0;
+width: 6px;
+height: 6px;
+border-radius: 50%;
+transform: translate(50%, -50%);
+}
+.kalos-mode-toggle .dex-split-living .dex-split-bar-fill::after {
+background: #5b6bd1;
+box-shadow: 0 0 5px 1.5px rgba(91, 107, 209, 0.75);
+}
+.kalos-mode-toggle .dex-split-shiny .dex-split-bar-fill::after {
+background: #c48e21;
+box-shadow: 0 0 5px 1.5px rgba(196, 142, 33, 0.75);
+}
+@media (prefers-reduced-motion: reduce) {
+.kalos-mode-toggle .dex-split-half {
+transition: none;
+}}
 /* CSS-KALOS-CAROUSEL: peek/coverflow carousel (see initKalosCarousel in
    script.js). Horizontal scroll-snap track with side padding so the
    centered tile's neighbors peek in at both edges; each tile's
@@ -6266,12 +6692,8 @@ color: var(--ink-dim);
 color: #000 !important;
 opacity: 1 !important;
 }
-.dex-chip.type-dimmed {
-opacity: 0.18;
-filter: grayscale(0.5);
-transition:
-opacity 0.2s ease,
-filter 0.2s ease;
+.dex-chip.type-hidden {
+display: none;
 }
 .dex-chip.interactive {
 cursor: pointer;
