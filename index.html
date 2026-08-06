@@ -315,7 +315,101 @@
             <div class="kalos-screen-wrap" id="kalos-screen-wrap">
               <div class="kalos-screen">
                 <div class="kalos-screen-content">
-                  <div class="dex-split-toggle kalos-mode-toggle" id="kalos-mode-toggle"></div>
+                  <!-- Toggle + filter strip share one rounded card (see
+                       .kalos-toggle-filter-card in style.css) so percentages
+                       and filters read as a single connected block instead
+                       of two stacked pills. The toggle itself is unchanged
+                       (still built by buildDexSplitToggleHtml in script.js);
+                       only its own border/shadow are stripped when nested
+                       here, since the card now draws that chrome once for
+                       both pieces. The toolbar below reuses the exact
+                       .log-dex-toolbar/.log-dex-grid-btn/.dex-select-wrap/
+                       .dex-select-panel/.dex-select-option pieces already
+                       built for the Shiny Log toolbar and the desktop dex
+                       toolbar - same compact icon-button-opens-a-panel
+                       pattern, same underlying dexSortMode/dexTypeFilter/
+                       dexVariantFilter state as desktop (see script.js),
+                       plus a new evo-stage filter (Base/Middle/Final/
+                       Single-stage, backed by fetchEvoChainInfo + a
+                       localStorage-persisted cache - see CSS-KALOS-MOBILE
+                       marker below and the "evo-stage filter" section of
+                       script.js). -->
+                  <div class="kalos-toggle-filter-card" id="kalos-toggle-filter-card">
+                    <div class="dex-split-toggle kalos-mode-toggle" id="kalos-mode-toggle"></div>
+                    <div class="kalos-filter-toolbar log-dex-toolbar" id="kalos-filter-toolbar">
+                      <div class="kalos-toolbar-highlight" id="kalos-toolbar-highlight" aria-hidden="true"></div>
+                      <div class="dex-select-wrap" id="k-search-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-k-search" title="Search" aria-label="Search">⌕</button>
+                        <div class="dex-select-panel k-search-panel" id="k-search-panel">
+                          <input type="text" id="k-dex-search" class="log-key-input" placeholder="␣ jump to a species...">
+                        </div>
+                      </div>
+                      <div class="dex-select-wrap" id="k-sort-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-k-sort" title="Sort">Dex # ▾</button>
+                        <div class="dex-select-panel" id="k-sort-panel">
+                          <div class="dex-select-option active" data-value="dex">Dex Number</div>
+                          <div class="dex-select-option" data-value="alpha">A--Z</div>
+                          <div class="dex-select-option" data-value="uncaught">Uncaught First</div>
+                        </div>
+                      </div>
+                      <div class="dex-select-wrap" id="k-type-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-k-type" title="Type">Type ▾</button>
+                        <div class="dex-select-panel" id="k-type-panel">
+                          <div class="dex-select-option active" data-value="">All Types</div>
+                          <div class="dex-select-option" data-value="Normal"><span class="type-swatch" style="background:#A8A878"></span>Normal</div>
+                          <div class="dex-select-option" data-value="Fire"><span class="type-swatch" style="background:#F08030"></span>Fire</div>
+                          <div class="dex-select-option" data-value="Water"><span class="type-swatch" style="background:#6890F0"></span>Water</div>
+                          <div class="dex-select-option" data-value="Electric"><span class="type-swatch" style="background:#F8D030"></span>Electric</div>
+                          <div class="dex-select-option" data-value="Grass"><span class="type-swatch" style="background:#78C850"></span>Grass</div>
+                          <div class="dex-select-option" data-value="Ice"><span class="type-swatch" style="background:#98D8D8"></span>Ice</div>
+                          <div class="dex-select-option" data-value="Fighting"><span class="type-swatch" style="background:#C03028"></span>Fighting</div>
+                          <div class="dex-select-option" data-value="Poison"><span class="type-swatch" style="background:#A040A0"></span>Poison</div>
+                          <div class="dex-select-option" data-value="Ground"><span class="type-swatch" style="background:#E0C068"></span>Ground</div>
+                          <div class="dex-select-option" data-value="Flying"><span class="type-swatch" style="background:#A890F0"></span>Flying</div>
+                          <div class="dex-select-option" data-value="Psychic"><span class="type-swatch" style="background:#F85888"></span>Psychic</div>
+                          <div class="dex-select-option" data-value="Bug"><span class="type-swatch" style="background:#A8B820"></span>Bug</div>
+                          <div class="dex-select-option" data-value="Rock"><span class="type-swatch" style="background:#B8A038"></span>Rock</div>
+                          <div class="dex-select-option" data-value="Ghost"><span class="type-swatch" style="background:#705898"></span>Ghost</div>
+                          <div class="dex-select-option" data-value="Dragon"><span class="type-swatch" style="background:#7038F8"></span>Dragon</div>
+                          <div class="dex-select-option" data-value="Dark"><span class="type-swatch" style="background:#705848"></span>Dark</div>
+                          <div class="dex-select-option" data-value="Steel"><span class="type-swatch" style="background:#B8B8D0"></span>Steel</div>
+                          <div class="dex-select-option" data-value="Fairy"><span class="type-swatch" style="background:#EE99AC"></span>Fairy</div>
+                        </div>
+                      </div>
+                      <div class="dex-select-wrap" id="k-variant-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-k-variant" title="Form">Form ▾</button>
+                        <div class="dex-select-panel" id="k-variant-panel">
+                          <div class="dex-select-option active" data-value="Original">Original</div>
+                          <div class="dex-select-option active" data-value="Alolan">Alolan</div>
+                          <div class="dex-select-option active" data-value="Galarian">Galarian</div>
+                          <div class="dex-select-option active" data-value="Hisuian">Hisuian</div>
+                          <div class="dex-select-option active" data-value="Paldean">Paldean</div>
+                          <button type="button" class="k-reskin-done" id="k-variant-done" title="Done" aria-label="Close form filter">Done</button>
+                        </div>
+                      </div>
+                      <!-- Evo-stage filter: new, no desktop counterpart yet.
+                           Multi-select (unlike Sort/Type, which swap a
+                           single active value) - each option toggles on its
+                           own and the panel stays open, since narrowing to
+                           e.g. "Base + Single-stage" at once is a normal
+                           thing to want. Backed by dexEvoStageFilter +
+                           applyDexEvoStageFilter() in script.js, which reads
+                           {stage, isFinal} per species from
+                           fetchEvoChainInfo's cache (fetching + caching to
+                           localStorage on first use per species). -->
+                      <div class="dex-select-wrap" id="k-evo-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-k-evo" title="Evolution Stage">Stage ▾</button>
+                        <div class="dex-select-panel k-evo-panel" id="k-evo-panel">
+                          <div class="dex-select-option active" data-value="base">Base</div>
+                          <div class="dex-select-option active" data-value="middle">Middle</div>
+                          <div class="dex-select-option active" data-value="final">Final</div>
+                          <div class="dex-select-option active" data-value="single">Single-stage</div>
+                          <button type="button" class="k-reskin-done" id="k-evo-done" title="Done" aria-label="Close stage filter">Done</button>
+                        </div>
+                      </div>
+                      <button type="button" class="log-dex-grid-btn" id="btn-k-reset-filters" title="Reset Filters" aria-label="Reset all filters">⟲</button>
+                    </div>
+                  </div>
                   <!-- Each .kalos-gen-tile is built entirely in script.js
                        (renderKalosMobileDex). Tapping a collapsed tile grows
                        it, in its own grid slot, into the same
