@@ -4970,6 +4970,15 @@ return (
 function renderKalosMobileDex(caught) {
 var tileGrid = document.getElementById('kalos-gen-grid');
 if (!tileGrid) return;
+// The open tile's species list (.dex-species-panel) scrolls internally,
+// separately from the page. Rebuilding below (tileGrid.innerHTML = '')
+// throws that panel away and creates a brand new one for the same gen,
+// which resets its scrollTop to 0 - that's what was yanking the open
+// panel back to its top every time a chip tap re-rendered through here
+// (e.g. catching a species). Save the scroll position before the wipe
+// and restore it on the freshly-built panel below.
+var openPanelBefore = tileGrid.querySelector('.kalos-gen-tile-expanded .dex-species-panel');
+var savedPanelScrollTop = openPanelBefore ? openPanelBefore.scrollTop : null;
 tileGrid.innerHTML = '';
 // Mirrors the .shiny-mode class the desktop #dex-grid gets (see
 // renderLivingDex) so the same rainbow "caught" styling that grid uses
@@ -4992,6 +5001,10 @@ if (kalosOpenGen) tile.hidden = true;
 }
 tileGrid.appendChild(tile);
 });
+if (savedPanelScrollTop !== null) {
+var openPanelAfter = tileGrid.querySelector('.kalos-gen-tile-expanded .dex-species-panel');
+if (openPanelAfter) openPanelAfter.scrollTop = savedPanelScrollTop;
+}
 tileGrid.classList.toggle('kalos-gen-grid-open', !!kalosOpenGen);
 buildKalosDots();
 if (kalosOpenGen) {
