@@ -4928,6 +4928,38 @@ updateLivingDexPillBadge();
 // and (if a gen is currently drilled into) refreshes that gen's detail
 // panel too, so both stay accurate after every caught-toggle or mode
 // switch without needing their own separate render pass to stay in sync.
+// Lightweight counter-only refresh for the mobile Kalos dex, used after a
+// single chip toggle (see updateDexCounters below) instead of a full
+// renderKalosMobileDex() rebuild. Updates each tile's caught count,
+// progress ring, and (for the currently-open tile) its header count, all
+// via direct DOM writes - it never touches a sprite <img>, a chip, or
+// any other element besides these count/ring nodes. Rebuilding the whole
+// tile grid on every tap was recreating every sprite image in the open
+// panel, which is what made the whole grid visibly flicker each time a
+// single species was caught.
+function updateKalosDexCounts(caught) {
+var tileGrid = document.getElementById('kalos-gen-grid');
+if (!tileGrid) return;
+tileGrid.querySelectorAll('.kalos-gen-tile').forEach(function(tile) {
+var gen = GEN_DATA.filter(function(g) {
+return String(g.gen) === tile.dataset.gen;
+})[0];
+if (!gen) return;
+var genCaught = kalosGenCaughtCount(gen, caught);
+var pct = Math.round((genCaught / gen.species.length) * 100);
+if (tile.classList.contains('kalos-gen-tile-expanded')) {
+var countEl = tile.querySelector('.kalos-gen-detail-title .dex-card-count');
+if (countEl) countEl.textContent = genCaught + ' / ' + gen.species.length;
+} else {
+var tileCountEl = tile.querySelector('.kalos-gen-tile-count');
+if (tileCountEl) tileCountEl.textContent = genCaught + ' / ' + gen.species.length;
+var ringFillEl = tile.querySelector('.dex-gen-badge-ring .ring-fill');
+if (ringFillEl) ringFillEl.style.strokeDashoffset = genBadgeRingOffset(pct);
+var ringEl = tile.querySelector('.dex-gen-badge-ring');
+if (ringEl) ringEl.classList.toggle('is-complete', pct === 100);
+}
+});
+}
 function kalosGenCaughtCount(g, caught) {
 var n = 0;
 g.species.forEach(function(sp) {
@@ -5571,7 +5603,7 @@ toggle.innerHTML = buildDexSplitToggleHtml(livingProgress, shinyProgress, dexMod
 var kalosToggle = document.getElementById('kalos-mode-toggle');
 if (kalosToggle) kalosToggle.innerHTML = toggle.innerHTML;
 animateDexSplitToggleTo(livingProgress, shinyProgress);
-renderKalosMobileDex(caught);
+updateKalosDexCounts(caught);
 }
 function renderAll() {
 renderHunts();
