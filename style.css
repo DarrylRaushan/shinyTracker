@@ -5707,12 +5707,19 @@ background-color: transparent;
    layout only ever renders in. */
 max-height: 65vh;
 /* The base .dex-species-panel rule above restricts touch panning to
-   vertical-only (pan-y), which also blocked the horizontal gen-swipe
-   carousel gesture anywhere over the species chips - only the banner
-   above this panel could be swiped. Here, both directions are genuinely
-   in play (vertical to scroll the chip list, horizontal to swipe gens),
-   so let the browser arbitrate between them instead of locking to one. */
-touch-action: pan-x pan-y;
+   vertical-only (pan-y), which is kept here too - on purpose. Letting the
+   browser natively handle both axes on this element (pan-x pan-y) sounds
+   right since both are genuinely in play, but this panel is itself a real
+   vertically-scrollable container (overflow-y: auto on the base rule)
+   sitting *closer* to the touch than the gen-swipe track above it, so the
+   browser's native gesture recognizer kept claiming any drag with even a
+   slight vertical component as "scroll this panel", and only let the
+   track's horizontal swipe through when a drag was almost perfectly
+   horizontal. Locking this element back to pan-y and handling the
+   horizontal gen-swipe ourselves in JS (see initKalosGenSwipe in
+   script.js) gives us an explicit, deliberate direction decision instead
+   of leaving two nested pannable elements to fight over the same touch. */
+touch-action: pan-y;
 }
 /* Dot indicators below the carousel, one per generation - kept in sync
    with the centered tile via updateKalosDots() and hidden outright while
