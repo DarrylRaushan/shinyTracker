@@ -5392,12 +5392,21 @@ renderKalosMobileDex(kalosCurrentCaughtMap());
 // ---------- swipe between open gen tiles ----------
 // While a gen tile is expanded, the grid holds it plus its immediate
 // prev/next neighbors (buildKalosNeighborPanes) as full-bleed scroll-snap
-// panes - swiping is just native horizontal scrolling between them, the
-// exact same carousel mechanism the collapsed gen grid above uses (drag
-// left to advance to the next gen, right for the previous one), instead
-// of a hand-rolled drag simulation. Vertical drags are untouched, since
-// nothing here intercepts touch events - the species panel's own
-// vertical scroll keeps working exactly as it always did.
+// panes. Landing/snapping between them (settleKalosGenScroll below) is
+// still native scroll-snap doing the actual work. But *starting* a swipe
+// can no longer be left to the browser to arbitrate on its own: the
+// species panel filling each pane is a real vertically-scrollable
+// container (see style.css), and it sits closer to the touch than this
+// grid does, so the browser kept claiming any drag with even a slight
+// vertical component as "scroll the panel" and only handed off to the
+// grid's horizontal scroll on an almost perfectly horizontal drag.
+// initKalosGenSwipe() below decides the axis itself instead - the same
+// direction-lock-then-drag pattern the Active Hunts/Shiny Log tab swipe
+// uses (see the dexClamshell IIFE above) - and once it decides "this is a
+// horizontal gen-swipe", it drives grid.scrollLeft directly and blocks
+// the panel's native vertical scroll from also engaging for that same
+// gesture. A drag that decides "vertical" is left alone untouched, so the
+// species panel's own scrolling still works exactly as it always did.
 var kalosGenScrollSettleTimer = null;
 function scheduleKalosGenScrollSettle() {
 if (!kalosOpenGen) return;
@@ -5450,6 +5459,52 @@ function initKalosGenSwipe() {
 var grid = document.getElementById('kalos-gen-grid');
 if (!grid) return;
 grid.addEventListener('scroll', scheduleKalosGenScrollSettle, { passive: true });
+
+var DIRECTION_THRESHOLD = 8; // px moved before we decide horizontal vs vertical
+var startX = 0, startY = 0, startScrollLeft = 0;
+var decided = false; // have we classified this gesture yet?
+var dragging = false; // classified as horizontal, we're driving grid.scrollLeft
+
+function onStart(e) {
+if (!kalosOpenGen) return; // collapsed peek carousel - its own native scroll handles this
+if (e.touches.length !== 1) return;
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
+startScrollLeft = grid.scrollLeft;
+decided = false;
+dragging = false;
+}
+
+function onMove(e) {
+if (!kalosOpenGen) return;
+if (e.touches.length !== 1) return;
+var dx = e.touches[0].clientX - startX;
+var dy = e.touches[0].clientY - startY;
+if (!decided) {
+if (Math.abs(dx) < DIRECTION_THRESHOLD && Math.abs(dy) < DIRECTION_THRESHOLD) return;
+decided = true;
+dragging = Math.abs(dx) > Math.abs(dy);
+}
+if (!dragging) return; // vertical gesture - species panel's own scroll handles it natively
+// Stop the species panel's vertical scroll/rubber-band from also
+// engaging for the rest of this same gesture now that we've claimed it.
+if (e.cancelable) e.preventDefault();
+grid.scrollLeft = startScrollLeft - dx;
+}
+
+function onEnd() {
+if (dragging) {
+if (kalosGenScrollSettleTimer) clearTimeout(kalosGenScrollSettleTimer);
+settleKalosGenScroll();
+}
+decided = false;
+dragging = false;
+}
+
+grid.addEventListener('touchstart', onStart, { passive: true });
+grid.addEventListener('touchmove', onMove, { passive: false });
+grid.addEventListener('touchend', onEnd, { passive: true });
+grid.addEventListener('touchcancel', onEnd, { passive: true });
 }
 // Shared by both the desktop #dex-grid and mobile #kalos-gen-grid click
 // handlers below: flips one species chip's caught state, saves, and
