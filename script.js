@@ -65,6 +65,21 @@ return;
 if (doc.metadata.hasPendingWrites) return;
 var data = doc.data();
 if (!data || !data.payload) return;
+// Once that same local write is actually confirmed by the server,
+// Firestore delivers ANOTHER snapshot for it - this time with
+// hasPendingWrites already false, so the check above no longer catches
+// it, and it's otherwise indistinguishable from a genuine change made
+// on another device. This was the actual cause of "tapping a sprite
+// sends the page back to the top": every toggle saves (pushToCloud,
+// debounced ~600ms), the write lands, this listener fires again for
+// our own just-saved data, and that fell through to state = remote +
+// renderAll() below - rebuilding the entire grid (and, while sprite
+// images were mid-reflow/reload, briefly overflowing the viewport,
+// which is also what let the page get dragged left/right). Skipping
+// when the incoming payload is byte-for-byte what's already saved
+// locally filters out that self-echo while still picking up real
+// changes from another device.
+if (data.payload === localStorage.getItem(STORE_KEY)) return;
 try {
 var remote = JSON.parse(data.payload);
 if (!remote.livingDex) remote.livingDex = {};
