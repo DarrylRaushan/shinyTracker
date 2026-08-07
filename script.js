@@ -3055,6 +3055,19 @@ try {
 localStorage.setItem(EVO_CACHE_STORE_KEY, JSON.stringify(_evoChainInfoCache));
 } catch (e) {}
 }
+// Tracks lookups currently in flight, keyed by slug. applyDexEvoStageFilter
+// re-scans every chip on the page each time any single lookup resolves, so
+// without this, every chip that was still uncached at that moment would
+// fire its own brand-new network request on every one of those re-scans -
+// each of those, once it *also* resolved, triggering yet another full
+// re-scan that fired a fresh round of duplicates for whatever was still
+// pending. That compounding (not any one request on its own) is what was
+// piling up hundreds of overlapping fetches and promise chains in memory
+// and crashing the tab with "Out of Memory" - reusing the same in-flight
+// promise for a slug that's already being looked up turns that into one
+// real network request per species, no matter how many chips ask for it
+// while it's pending.
+var _evoChainInFlight = {};
 function fetchEvoChainInfo(name) {
 var m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(String(name || '').trim());
 var base = m ? m[1] : name;
@@ -3063,7 +3076,10 @@ if (!slug) return Promise.resolve(null);
 if (Object.prototype.hasOwnProperty.call(_evoChainInfoCache, slug)) {
 return Promise.resolve(_evoChainInfoCache[slug]);
 }
-return fetch('https://pokeapi.co/api/v2/pokemon-species/' + slug + '/')
+if (Object.prototype.hasOwnProperty.call(_evoChainInFlight, slug)) {
+return _evoChainInFlight[slug];
+}
+var promise = fetch('https://pokeapi.co/api/v2/pokemon-species/' + slug + '/')
 .then(function(res) {
 if (!res.ok) throw new Error('pokeapi lookup failed');
 return res.json();
@@ -3087,7 +3103,13 @@ return info;
 })
 .catch(function() {
 return null;
+})
+.then(function(info) {
+delete _evoChainInFlight[slug];
+return info;
 });
+_evoChainInFlight[slug] = promise;
+return promise;
 }
 /* ---------- evo-stage filter (mobile Living Dex toolbar) ----------
    Buckets a fetchEvoChainInfo() result into one of four mutually-exclusive
@@ -3117,6 +3139,15 @@ single: true
 // Scans every .dex-chip in the document (desktop #dex-grid and whichever
 // mobile #kalos-gen-grid tile is currently expanded both use this markup),
 // same as applyDexTypeFilter/applyDexVariantFilter below.
+// _evoChainRerenderQueued tracks which slugs already have a "call me again
+// once this resolves" callback registered - every chip on the page can
+// reach this same else-branch for the same still-pending slug on every
+// rescan (e.g. every other species' lookup completing triggers one), and
+// without this guard each of those would stack another
+// .then(applyDexEvoStageFilter) onto the same in-flight promise, so one
+// resolved fetch fired a full extra rescan for every chip that had ever
+// asked - compounding badly across a page of hundreds of chips.
+var _evoChainRerenderQueued = {};
 function applyDexEvoStageFilter() {
 var allOn = Object.keys(dexEvoStageFilter).every(function(k) {
 return dexEvoStageFilter[k];
@@ -3135,7 +3166,13 @@ chip.classList.toggle('evo-stage-hidden', !(bucket && dexEvoStageFilter[bucket])
 } else {
 chip.classList.add('evo-stage-checking');
 chip.classList.remove('evo-stage-hidden');
-fetchEvoChainInfo(chip.dataset.name).then(applyDexEvoStageFilter);
+if (slug && _evoChainRerenderQueued[slug]) return;
+if (slug) _evoChainRerenderQueued[slug] = true;
+fetchEvoChainInfo(chip.dataset.name).then(function(info) {
+if (slug) delete _evoChainRerenderQueued[slug];
+applyDexEvoStageFilter();
+return info;
+});
 }
 });
 }
@@ -3326,6 +3363,7 @@ setBodyBg(tab);
 function applyTabState(tab) {
 syncTabChrome(tab);
 renderAll();
+if (tab === 'livingdex') lockKalosToggleFilterCardHeight();
 }
 function activateTab(tab) {
 applyTabState(tab);
@@ -4444,20 +4482,24 @@ chip.classList.toggle('variant-hidden', !visible);
 });
 syncVariantCheckboxes();
 }
-// Reflects the current dexVariantFilter state onto the desktop checkboxes,
-// the mobile toolbar's own pills (#k-variant-panel .dex-select-option,
-// same active-class pattern as every other reskinned pill), and both
-// filter buttons' active state, so whichever panel the person didn't just
-// use still shows the truth.
+// Reflects the current dexVariantFilter state onto the desktop checkboxes
+// (still genuinely multi-select there), the mobile toolbar's Form pills
+// (#k-variant-panel .dex-select-option - single-select there, so a pill
+// only lights up when it's the *one* category currently on, not just
+// whenever it happens to be included), and both filter buttons' active
+// state, so whichever panel the person didn't just use still shows the
+// truth.
 function syncVariantCheckboxes() {
-var allOn = VARIANT_FILTER_KEYS.every(function(k) {
+var onKeys = VARIANT_FILTER_KEYS.filter(function(k) {
 return dexVariantFilter[k] !== false;
 });
+var allOn = onKeys.length === VARIANT_FILTER_KEYS.length;
+var soleActiveKey = onKeys.length === 1 ? onKeys[0] : null;
 VARIANT_FILTER_KEYS.forEach(function(key) {
 var cb = document.getElementById(VARIANT_CHECKBOX_IDS[key]);
 if (cb) cb.checked = dexVariantFilter[key] !== false;
 var opt = document.querySelector('#k-variant-panel .dex-select-option[data-value="' + key + '"]');
-if (opt) opt.classList.toggle('active', dexVariantFilter[key] !== false);
+if (opt) opt.classList.toggle('active', key === soleActiveKey);
 });
 ['btn-variant-filter', 'btn-k-variant'].forEach(function(id) {
 var btn = document.getElementById(id);
@@ -4508,11 +4550,34 @@ if (wrap) wrap.classList.remove('open');
 });
 if (!exceptId || exceptId.indexOf('k-') !== 0) collapseKalosToolbar();
 }
+// Freezes #kalos-toggle-filter-card at its natural rendered height the
+// first time Living Dex is actually visible (it's display:none behind the
+// Hunts/Shiny Log tabs until then, so measuring any earlier would just
+// read 0). From then on the card can never grow or shrink - not while a
+// filter dropdown is reskinned open, not if the percentage/fraction text
+// changes - because every state already lays out to the same height, this
+// just pins that height explicitly and clips anything that would ever
+// disagree with it, rather than trusting that to stay true.
+var _kalosToggleFilterCardLocked = false;
+function lockKalosToggleFilterCardHeight() {
+if (_kalosToggleFilterCardLocked) return;
+var card = document.getElementById('kalos-toggle-filter-card');
+if (!card) return;
+requestAnimationFrame(function() {
+var h = card.getBoundingClientRect().height;
+if (!h) return; // not actually laid out yet - next tab switch will retry
+card.style.height = h + 'px';
+card.style.overflow = 'hidden';
+_kalosToggleFilterCardLocked = true;
+});
+}
 // Puts the mobile Living Dex toolbar (#kalos-filter-toolbar) into
 // "reskin-in-place" mode for the given wrap: every other pill slot is
 // hidden and the given wrap's own panel takes over the freed-up space
-// (see the CSS-KALOS-MOBILE reskin rules in style.css). Search is the one
-// wrap that only takes over row 2, hence the separate reskin-search class.
+// (see the CSS-KALOS-MOBILE reskin rules in style.css). Search gets its
+// own reskin-search class rather than reusing reskin-full only because its
+// panel is a single <input>, not a .dex-select-option grid - the CSS still
+// takes over the whole toolbar (both rows) the same way.
 function expandKalosToolbar(wrapId) {
 var toolbar = document.getElementById('kalos-filter-toolbar');
 if (!toolbar) return;
@@ -4617,52 +4682,45 @@ document.getElementById('btn-k-variant').addEventListener('click', function(e) {
 e.stopPropagation();
 toggleKalosDropdown('k-variant-wrap');
 });
+// Form is single-select now, same pattern as Sort/Type: a tap sets that
+// one variant category as the sole active filter (everything else turns
+// off) and the panel closes immediately - no Done pill needed any more.
+// Still driven through the same dexVariantFilter object the desktop
+// checkboxes use (see applyDexVariantFilter/syncVariantCheckboxes above),
+// just always leaving exactly one key true from this panel's own taps.
 document.getElementById('k-variant-panel').addEventListener('click', function(e) {
 e.stopPropagation();
 var opt = e.target.closest('.dex-select-option');
 if (!opt) return;
 var key = opt.dataset.value;
-dexVariantFilter[key] = dexVariantFilter[key] === false ? true : false;
-applyDexVariantFilter();
+VARIANT_FILTER_KEYS.forEach(function(k) {
+dexVariantFilter[k] = (k === key);
 });
-// Form is multi-select (several checkboxes can be on at once) and now
-// scrolls horizontally once reskinned in place, so it doesn't close on
-// every tap - the fixed Done pill (outside the scroll strip) is the way
-// out, alongside tapping anywhere off the toolbar.
-document.getElementById('k-variant-done').addEventListener('click', function(e) {
-e.stopPropagation();
+applyDexVariantFilter();
 document.getElementById('k-variant-wrap').classList.remove('open');
 collapseKalosToolbar();
 });
-// Evo-stage panel: multi-select, so (unlike Sort/Type) a tap only flips
-// that one chip's own on/off state and the panel stays open - narrowing to
-// more than one bucket at once (e.g. Base + Single-stage) is a normal
-// thing to want here. Its own Done pill (in the grid alongside the four
-// stage chips) is the explicit way to close it, since no single tap here
-// means "done choosing" the way it does for Sort/Type.
 document.getElementById('btn-k-evo').addEventListener('click', function(e) {
 e.stopPropagation();
 toggleKalosDropdown('k-evo-wrap');
 });
+// Stage is single-select now too: a tap sets that one bucket as the sole
+// active filter and closes the panel, same as Sort/Type/Form - no Done
+// pill, and no "keep at least one on" guard needed since there's always
+// exactly one (or, before any tap, none - meaning unfiltered).
 document.getElementById('k-evo-panel').addEventListener('click', function(e) {
 e.stopPropagation();
 var opt = e.target.closest('.dex-select-option');
 if (!opt) return;
 var key = opt.dataset.value;
-// At least one bucket must stay selected - flipping the last active one
-// off would silently hide every chip with no way to tell why, so that
-// tap is a no-op instead.
-var onCount = Object.keys(dexEvoStageFilter).filter(function(k) {
-return dexEvoStageFilter[k];
-}).length;
-if (dexEvoStageFilter[key] && onCount <= 1) return;
-dexEvoStageFilter[key] = !dexEvoStageFilter[key];
-opt.classList.toggle('active', dexEvoStageFilter[key]);
+Object.keys(dexEvoStageFilter).forEach(function(k) {
+dexEvoStageFilter[k] = (k === key);
+});
+document.querySelectorAll('#k-evo-panel .dex-select-option').forEach(function(o) {
+o.classList.toggle('active', o.dataset.value === key);
+});
 syncDexEvoStageButtonState();
 applyDexEvoStageFilter();
-});
-document.getElementById('k-evo-done').addEventListener('click', function(e) {
-e.stopPropagation();
 document.getElementById('k-evo-wrap').classList.remove('open');
 collapseKalosToolbar();
 });
@@ -4736,7 +4794,7 @@ Object.keys(dexEvoStageFilter).forEach(function(key) {
 dexEvoStageFilter[key] = true;
 });
 document.querySelectorAll('#k-evo-panel .dex-select-option').forEach(function(o) {
-o.classList.add('active');
+o.classList.remove('active');
 });
 syncDexEvoStageButtonState();
 applyDexEvoStageFilter();
@@ -5417,6 +5475,28 @@ return (
 '</div>'
 );
 }
+// Filtering (Type/Form/Stage) only hides individual chips inside the
+// species grid - it should never shrink the panel wrapped around them.
+// Without this, hiding most of a gen's chips let this panel's own height
+// (it's also the element the per-gen map background is painted on)
+// collapse down to whatever content was left, cutting the artwork off
+// partway instead of it always running the panel's full, unfiltered
+// length. Must be called once per fresh (still fully unfiltered) render,
+// right before the Type/Form/Stage filters get (re)applied to that same
+// markup - it captures the true full height at that moment and floors
+// the panel there, so the filters afterward only ever hide chips.
+function pinKalosSpeciesPanelHeights(root) {
+(root || document).querySelectorAll('.kalos-gen-tile-expanded .dex-species-panel').forEach(function(panel) {
+// offsetHeight, not getBoundingClientRect() - the tile this panel lives
+// in is mid-FLIP-grow at this point (see flipAnimate above), sitting
+// under a CSS transform that getBoundingClientRect() would report as
+// part of its size. offsetHeight reads the real layout box and ignores
+// transforms entirely, so it's unaffected by whatever the grow
+// animation is doing visually at the moment this runs.
+panel.style.minHeight = '';
+panel.style.minHeight = panel.offsetHeight + 'px';
+});
+}
 // Rebuilds the gen tile grid. If a gen is currently expanded
 // (kalosOpenGen), that one tile is (re)built in its expanded/banner form
 // in its own slot and every other tile stays hidden, instead of a
@@ -5493,6 +5573,7 @@ if (dots2) dots2.hidden = false;
 // mobile toolbar's Type/Form/Stage filters are currently active so a
 // filter set before a catch, a gen swipe, or a jump-to-species doesn't
 // get silently dropped by this rebuild.
+pinKalosSpeciesPanelHeights(tileGrid);
 applyDexTypeFilter();
 applyDexVariantFilter();
 applyDexEvoStageFilter();
@@ -5776,6 +5857,7 @@ flipAnimate(tile, first, function() { staggerChipsIn(tile); });
 // chips directly (tile + its neighbor panes) without going through that
 // function, so any active Type/Form/Stage filter needs re-applying here
 // too or it'd silently drop the moment someone taps a tile open.
+pinKalosSpeciesPanelHeights(grid);
 applyDexTypeFilter();
 applyDexVariantFilter();
 applyDexEvoStageFilter();
@@ -7309,4 +7391,3 @@ container.appendChild(s);
 }
 })();
 renderAll();
-syncFromCloud();
