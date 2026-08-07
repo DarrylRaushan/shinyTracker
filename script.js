@@ -101,6 +101,12 @@ console.error('Failed to parse cloud data', e);
 console.error('Firestore sync error', e);
 });
 }
+// This was defined but never called - invisible in regular Safari since
+// localStorage persists across visits there, but fatal for the iOS
+// "Add to Home Screen" app, which gets its own empty storage silo
+// completely separate from Safari's on first launch. Without this call,
+// that fresh empty local state had nothing to fall back on.
+syncFromCloud();
 var GAMES = ["Scarlet/Violet", "Legends Arceus", "Sword/Shield", "Let's Go Pikachu/Eevee",
 "Ultra Sun/Ultra Moon", "Sun/Moon", "Omega Ruby/Alpha Sapphire", "X/Y",
 "Black 2/White 2", "Black/White", "HeartGold/SoulSilver", "Platinum",
