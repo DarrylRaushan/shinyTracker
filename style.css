@@ -5567,6 +5567,7 @@ display: block;
    both pieces sit inside, so percentages-on-top / filters-below reads as
    one connected block instead of two stacked pills. */
 .kalos-toggle-filter-card {
+overflow: hidden;
 background: rgba(255, 255, 255, 0.62);
 -webkit-backdrop-filter: blur(18px) saturate(160%);
 backdrop-filter: blur(18px) saturate(160%);
@@ -5781,14 +5782,22 @@ border-color: transparent;
 color: #5b6bd1;
 box-shadow: inset 0 0 0 1.5px rgba(91, 107, 209, 0.4);
 }
-/* Type has ~19 options - too many to fit the 6-slot grid, so it keeps the
-   familiar 3-column pill grid but fills it 3 options at a time down each
-   column (grid-auto-flow: column) and lets it overflow sideways, giving a
-   3x3 page of pills with more pages reachable by horizontal scroll. */
+/* Type has 19 options - too many to fit the 6-slot grid, so instead of
+   growing extra rows it keeps the exact 3-column x 2-row shape of the
+   toolbar's own 6-pill grid (the image-1 reference) as one fixed "page"
+   unit, and lays out further options as more 3x2 pages side by side
+   (grid-auto-flow: column fills a page's 2 rows before starting its next
+   column), with the whole run of pages scrolling horizontally together as
+   a group rather than each pill scrolling/snapping on its own. Each
+   column is sized to a third of the panel's width so 3 columns = exactly
+   one page-width. scroll-snap-align only on every page's first pill
+   (every 6th option) makes a swipe land on a whole page instead of
+   stopping mid-page on some interior pill. */
 .kalos-filter-toolbar.reskin-full #k-type-wrap.expanded #k-type-panel {
 display: grid;
 grid-auto-flow: column;
-grid-template-rows: repeat(3, 24px);
+grid-template-rows: repeat(2, 24px);
+grid-auto-columns: calc((100% - 6px) / 3);
 grid-template-columns: none;
 grid-row: 1 / -1;
 gap: 3px;
@@ -5798,48 +5807,42 @@ scroll-snap-type: x mandatory;
 }
 .kalos-filter-toolbar.reskin-full #k-type-wrap.expanded #k-type-panel .dex-select-option {
 flex: none;
-width: 60px;
+width: auto;
 white-space: nowrap;
-scroll-snap-align: start;
+scroll-snap-align: none;
 }
-/* Form now uses the exact same default pill (.dex-select-option) grid as
-   Stage - 5 options + Done fits the 6-slot 3x2 grid on its own, so no
-   custom checkbox/scroll/All-None treatment is needed here any more. */
+.kalos-filter-toolbar.reskin-full #k-type-wrap.expanded #k-type-panel .dex-select-option:nth-child(6n+1) {
+scroll-snap-align: start;
+scroll-snap-stop: always;
+}
+/* Form and Stage are both single-select now (one tap sets the active
+   option and closes the panel, same as Sort/Type), so neither needs a
+   Done pill any more - they use the same default pill grid, which fits
+   their handful of options (5 and 4 respectively) inside the 6-slot 3x2
+   grid on its own.
+   Each also needs its own explicit grid-template-rows (not just the base
+   rule's grid-auto-rows) - #kalos-filter-toolbar itself never declares a
+   grid-template-rows (only grid-auto-rows), so the base rule's
+   "grid-row: 1 / -1" has no explicit outer row track to resolve "-1"
+   against and collapses the panel's own box to a single row of height.
+   With only 3 or 4 options that's invisible (they fit on one row), but
+   Form's 5 and Stage's 4 need two, so the second row was rendering
+   outside the box's actual painted background/blur - declaring the row
+   template here (same fix Type already uses) gives the box a real,
+   unambiguous 2-row height instead of depending on that outer collapse. */
 .kalos-filter-toolbar.reskin-full #k-variant-wrap.expanded #k-variant-panel {
 grid-template-columns: repeat(3, 1fr);
+grid-template-rows: repeat(2, 24px);
 }
-/* Stage fits the 6-slot grid on its own (4 options + Done), so it keeps
-   the grid layout rather than scrolling. */
 .kalos-filter-toolbar.reskin-full #k-evo-wrap.expanded #k-evo-panel {
 grid-template-columns: repeat(3, 1fr);
+grid-template-rows: repeat(2, 24px);
 }
-.kalos-filter-toolbar.reskin-full #k-evo-wrap.expanded #k-evo-panel .k-reskin-done {
-grid-column: span 2;
-}
-.k-reskin-done {
-display: none;
-appearance: none;
--webkit-appearance: none;
-border: 1px solid rgba(43, 35, 32, 0.09);
-border-radius: 999px;
-background: #5b6bd1;
-color: #fff;
-font-family: var(--hud);
-font-weight: 800;
-font-size: 9px;
-cursor: pointer;
-}
-.kalos-filter-toolbar.reskin-full .expanded .k-reskin-done {
-display: flex;
-align-items: center;
-justify-content: center;
-flex: 0 0 auto;
-}
-/* Search is the one exception to "hide everything else" - row 1's
-   Search/Sort/Type pills stay visible (Search shown active) and only
-   row 2 (Form/Stage/Reset) is replaced, by the search input spanning its
-   full width, so opening the keyboard doesn't also hide the pills sitting
-   right above it. */
+/* Search is now the same as every other reskin: opening it takes over the
+   whole toolbar (not just row 2) as one single, full-width pill, so no
+   other pill (Sort/Type included) sits next to it while typing. */
+.kalos-filter-toolbar.reskin-search #k-sort-wrap,
+.kalos-filter-toolbar.reskin-search #k-type-wrap,
 .kalos-filter-toolbar.reskin-search #k-variant-wrap,
 .kalos-filter-toolbar.reskin-search #k-evo-wrap,
 .kalos-filter-toolbar.reskin-search #btn-k-reset-filters {
@@ -5849,13 +5852,13 @@ display: none;
 display: contents;
 }
 .kalos-filter-toolbar.reskin-search #k-search-wrap.expanded .log-dex-grid-btn {
-display: flex;
+display: none;
 }
 .kalos-filter-toolbar.reskin-search #k-search-panel {
 display: block;
 position: static;
 grid-column: 1 / -1;
-grid-row: 2;
+grid-row: 1 / -1;
 width: 100%;
 min-width: 0;
 margin: 0;
@@ -5864,9 +5867,30 @@ border: none;
 box-shadow: none;
 background: transparent;
 }
+/* Same translucent-pill chrome as every other toolbar control, instead of
+   the log-style cream box .log-key-input normally is - and 16px, not the
+   toolbar's usual 9-12px text, since anything smaller makes iOS Safari
+   zoom the whole page in the moment this input gets focused. There's no
+   CSS way to opt out of that zoom other than crossing the 16px line. */
 .kalos-filter-toolbar.reskin-search #k-search-panel .log-key-input {
 width: 100%;
-height: 24px;
+height: 100%;
+padding: 0 14px;
+border-radius: 999px;
+background: rgba(255, 255, 255, 0.45);
+border: 1px solid rgba(42, 58, 160, 0.22);
+box-shadow: inset 0 1px 3px rgba(0, 70, 90, 0.1);
+color: var(--blue-dark);
+font-size: 16px;
+transition: background 0.15s ease, border-color 0.15s ease;
+}
+.kalos-filter-toolbar.reskin-search #k-search-panel .log-key-input::placeholder {
+color: rgba(42, 58, 160, 0.5);
+}
+.kalos-filter-toolbar.reskin-search #k-search-panel .log-key-input:focus {
+outline: none;
+background: rgba(255, 255, 255, 0.65);
+border-color: var(--blue);
 }
 
 .kalos-mode-toggle {
