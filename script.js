@@ -1,4 +1,3 @@
-// really persisted anything; the app was quietly relying on Firestore
 // alone). The Firestore listener's own use of it wasn't wrapped in a
 // try/catch though, so it threw on every snapshot and stopped the sync
 // from ever applying - which is what broke "Firestore loading info"
@@ -114,7 +113,7 @@ var GAMES = ["Scarlet/Violet", "Legends Arceus", "Sword/Shield", "Let's Go Pikac
 ];
 // Custom per-game icon images for the catch-confirmation card (tcg-stats
 // table "Game" row). Each entry lists the version(s) bundled into that
-// game option, in images/game-symbols/<name>.jpg - gameIconMarkup() below
+// game option, in images/game-symbols/<name>.png - gameIconMarkup() below
 // renders one icon per name side by side. If a file is missing, its own
 // onerror just hides that icon (the other version's icon still shows);
 // if a game has no mapping at all it falls back to the generic cartridge
@@ -130,19 +129,19 @@ var GAME_ICONS = {
 "Scarlet/Violet": ["scarlet", "violet"],
 "Legends Arceus": ["arceus"],
 "Sword/Shield": ["sword", "shield"],
-"Let's Go Pikachu/Eevee": ["letsGoPikachu", "letsGoEevee"],
-"Ultra Sun/Ultra Moon": ["ultraSun", "ultraMoon"],
+"Let's Go Pikachu/Eevee": ["letsgopikachu", "letsgoeevee"],
+"Ultra Sun/Ultra Moon": ["ultrasun", "ultramoon"],
 "Sun/Moon": ["sun", "moon"],
-"Omega Ruby/Alpha Sapphire": ["omegaRuby", "alphaSapphire"],
-"X/Y": ["pokemonX", "pokemonY"],
+"Omega Ruby/Alpha Sapphire": ["omegaruby", "alphasapphire"],
+"X/Y": ["pokemonx", "pokemony"],
 "Black 2/White 2": ["black2", "white2"],
 "Black/White": ["black", "white"],
-"HeartGold/SoulSilver": ["heartGold", "soulSilver"],
+"HeartGold/SoulSilver": ["heartgold", "soulsilver"],
 "Platinum": ["platinum"],
 "Diamond/Pearl": ["diamond", "pearl"],
-"FireRed/LeafGreen": ["fireRed", "leafGreen"],
+"FireRed/LeafGreen": ["firered", "leafgreen"],
 "Ruby/Sapphire/Emerald": ["ruby", "sapphire", "emerald"],
-"Pokémon GO": ["pokemonGo"],
+"Pokémon GO": ["pokemongo"],
 "Other": []
 };
 var METHODS = ["Random Encounter", "Soft Reset", "Masuda Method", "Chain Fishing",
@@ -511,15 +510,29 @@ imgEl.style.display = 'none';
 }
 // Builds the icon markup for the "Game" row of the catch-confirmation
 // card: one small icon per version bundled into this game (from
-// GAME_ICONS, images/game-symbols/<name>.jpg), side by side. Falls back
+// GAME_ICONS, images/game-symbols/<name>.png), side by side. Falls back
 // to the generic cartridge glyph if the game has no mapping at all.
 function gameIconMarkup(game) {
 var files = GAME_ICONS[game];
 if (!files || !files.length) return ICON_GAME;
 var imgs = files.map(function(name) {
-return '<img class="tcg-stats-icon-img tcg-icon-game" src="images/game-symbols/' + name + '.jpg" alt="' + escapeHtml(game) + '" onerror="handleGameIconError(this)">';
+return '<img class="tcg-stats-icon-img tcg-icon-game" src="images/game-symbols/' + name + '.png" alt="' + escapeHtml(game) + '" onerror="handleGameIconError(this)">';
 }).join('');
 return '<span class="tcg-stats-icon-group">' + imgs + '</span>';
+}
+// Box-art style thumbnails for the Game field on the Start Hunt modal
+// (see syncGameSelectVisual() below). Reuses the same GAME_ICONS
+// mapping and images/game-symbols/<name>.png files as gameIconMarkup()
+// above, just rendered bigger (.hunt-radar-game-icon-img in style.css)
+// since this box has more room than the small table row icon. Falls
+// back to the generic cartridge glyph if the game has no mapping, and
+// a broken image just hides itself via handleGameIconError().
+function gameBoxArtMarkup(game) {
+var files = GAME_ICONS[game];
+if (!files || !files.length) return ICON_GAME;
+return files.map(function(name) {
+return '<img class="hunt-radar-game-icon-img" src="images/game-symbols/' + name + '.png" alt="' + escapeHtml(game) + '" onerror="handleGameIconError(this)">';
+}).join('');
 }
 // Single custom-image versions of the Method / Shiny Charm row icons.
 // Only one image each (unlike the Game row, which can bundle 2-3
@@ -5454,13 +5467,72 @@ if (String(GEN_DATA[i].gen) === String(genNum)) return i;
 }
 return -1;
 }
+// Maps a generation number to a cartridge shell style for the mobile
+// Living Dex carousel tiles: gens 1-3 (GBA), 4-5 (DS), 6-7 (3DS), 8-9
+// (Switch).
+function kalosCartStyleForGen(genNum) {
+var n = Number(genNum);
+if (n >= 1 && n <= 3) return 'gba';
+if (n >= 4 && n <= 5) return 'ds';
+if (n >= 6 && n <= 7) return '3ds';
+if (n >= 8 && n <= 9) return 'switch';
+return '';
+}
+// Optional real box-art photo for a generation's cartridge-shell Living
+// Dex tile (gens 1-7 - GBA/DS/3DS styles, see kalosCartStyleForGen
+// above; gens 8-9 use the Switch-shell layout instead and aren't
+// covered by this), layered behind the badge/label instead of the
+// plain gold/sunburst swirl sticker. Filenames are looked up as-is
+// under images/game-symbols/ (include the extension, any image type
+// works). Placeholder filenames below are guesses - rename each to
+// match whatever you actually saved, or set an entry to null/remove
+// it to fall back to the plain swirl sticker for that gen.
+var GEN_BOX_ART = {
+1: "firegreen.jpg", // Kanto
+2: "heartgold.jpg",  // Johto
+3: "emerald.jpg",    // Hoenn
+4: "platinum.jpg",   // Sinnoh
+5: "black.jpg",      // Unova
+6: "x.jpg",   // Kalos
+7: "usum.png"         // Alola
+};
 function buildKalosTileCollapsedHtml(g, genCaught) {
 var pct = Math.round((genCaught / g.species.length) * 100);
+if (kalosCartStyleForGen(g.gen) === 'switch') {
 return (
+'<div class="kalos-gen-tile-sticker">' +
+'<div class="kalos-switch-header">' +
+'<svg class="kalos-switch-header-icon" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">' +
+'<rect x="2" y="3" width="7" height="18" rx="3.5" fill="#fff"/>' +
+'<circle cx="5.5" cy="7.2" r="1" fill="#E60012"/>' +
+'<rect x="15" y="3" width="7" height="18" rx="3.5" fill="#fff"/>' +
+'<circle cx="18.5" cy="8" r="1.3" fill="#E60012"/>' +
+'</svg>' +
+'<span class="kalos-switch-header-text">Nintendo Switch</span>' +
+'</div>' +
+'<div class="kalos-switch-art">' +
+buildDexGenBadgeHtml(g, pct) +
+'<div class="kalos-switch-region">' + escapeHtml(g.region) + '</div>' +
+'<div class="kalos-switch-publisher">Shiny Tracker</div>' +
+'<div class="kalos-switch-rating">' +
+'<span class="kalos-switch-rating-letter">E</span>' +
+'<span class="kalos-switch-rating-sub">Everyone</span>' +
+'</div>' +
+'</div>' +
+'<div class="kalos-switch-footer">GEN-0' + g.gen + '-USA</div>' +
+'</div>'
+);
+}
+var cartStyleForBoxArt = kalosCartStyleForGen(g.gen);
+var boxArt = (cartStyleForBoxArt === 'gba' || cartStyleForBoxArt === 'ds' || cartStyleForBoxArt === '3ds') ? GEN_BOX_ART[g.gen] : null;
+return (
+'<div class="kalos-gen-tile-sticker' + (boxArt ? ' has-boxart' : '') + '">' +
+(boxArt ? '<img class="kalos-gen-tile-boxart" src="images/game-symbols/' + boxArt + '" alt="" onerror="this.remove()">' : '') +
 buildDexGenBadgeHtml(g, pct) +
 '<div class="kalos-gen-tile-label">' +
 '<div class="kalos-gen-tile-region">' + escapeHtml(g.region) + '</div>' +
 '<div class="kalos-gen-tile-count">' + genCaught + ' / ' + g.species.length + '</div>' +
+'</div>' +
 '</div>'
 );
 }
@@ -5542,6 +5614,8 @@ tile.innerHTML = buildKalosTileExpandedHtml(g, caught, genCaught);
 applyEvoStageBoosts(tile);
 } else {
 tile.className = 'kalos-gen-tile';
+var cartStyle = kalosCartStyleForGen(g.gen);
+if (cartStyle) tile.dataset.cart = cartStyle;
 tile.setAttribute('role', 'button');
 tile.setAttribute('tabindex', '0');
 tile.innerHTML = buildKalosTileCollapsedHtml(g, genCaught);
@@ -6653,7 +6727,14 @@ charmChk.checked = !!prefs.shinyCharm;
 function syncSelectVisual(select, visual) {
 visual.textContent = select.value;
 }
-syncSelectVisual(gameSel, gameVisual);
+// Game field gets its own sync: box-art thumbnail(s) from
+// gameBoxArtMarkup() alongside the text, instead of plain text.
+function syncGameSelectVisual(select, visual) {
+visual.innerHTML =
+'<span class="hunt-radar-game-visual-icons">' + gameBoxArtMarkup(select.value) + '</span>' +
+'<span class="hunt-radar-game-visual-text">' + escapeHtml(select.value) + '</span>';
+}
+syncGameSelectVisual(gameSel, gameVisual);
 syncSelectVisual(methodSel, methodVisual);
 attachPokemonAutocomplete(pokemonInput);
 // Live shiny-sprite + dex-number + type-badge preview: fills in as soon
@@ -6785,7 +6866,7 @@ requestAnimationFrame(layoutHuntRadarLines);
 }
 refreshOdds();
 gameSel.addEventListener('change', function() {
-syncSelectVisual(gameSel, gameVisual);
+syncGameSelectVisual(gameSel, gameVisual);
 refreshOdds();
 });
 methodSel.addEventListener('change', function() {
@@ -7394,6 +7475,4 @@ s.style.left = (Math.random() * 100) + '%';
 s.style.top = (TOP_CLEAR_PERCENT + Math.random() * usableRange) + '%';
 s.style.animationDelay = (Math.random() * 4) + 's';
 container.appendChild(s);
-}
-})();
-renderAll();
+}})
