@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -194,7 +196,7 @@
             <div class="pc-key-row pc-key-row-space">
               <div class="pc-key pc-key-search">
                 <div class="field dex-search-field">
-                  <input type="text" id="dex-search" placeholder="␣ jump to a species...">
+                  <input type="text" id="dex-search" placeholder="␣ Search for Pokemon...">
                 </div>
               </div>
             </div>
@@ -341,7 +343,7 @@
                       <div class="dex-select-wrap" id="k-search-wrap">
                         <button type="button" class="log-dex-grid-btn" id="btn-k-search" title="Search" aria-label="Search">⌕</button>
                         <div class="dex-select-panel k-search-panel" id="k-search-panel">
-                          <input type="text" id="k-dex-search" class="log-key-input" placeholder="␣ jump to a species...">
+                          <input type="text" id="k-dex-search" class="log-key-input" placeholder="␣ Search for Pokemon...">
                         </div>
                       </div>
                       <div class="dex-select-wrap" id="k-sort-wrap">
@@ -379,20 +381,17 @@
                       <div class="dex-select-wrap" id="k-variant-wrap">
                         <button type="button" class="log-dex-grid-btn" id="btn-k-variant" title="Form">Form ▾</button>
                         <div class="dex-select-panel" id="k-variant-panel">
-                          <div class="dex-select-option active" data-value="Original">Original</div>
-                          <div class="dex-select-option active" data-value="Alolan">Alolan</div>
-                          <div class="dex-select-option active" data-value="Galarian">Galarian</div>
-                          <div class="dex-select-option active" data-value="Hisuian">Hisuian</div>
-                          <div class="dex-select-option active" data-value="Paldean">Paldean</div>
-                          <button type="button" class="k-reskin-done" id="k-variant-done" title="Done" aria-label="Close form filter">Done</button>
+                          <div class="dex-select-option" data-value="Original">Original</div>
+                          <div class="dex-select-option" data-value="Alolan">Alolan</div>
+                          <div class="dex-select-option" data-value="Galarian">Galarian</div>
+                          <div class="dex-select-option" data-value="Hisuian">Hisuian</div>
+                          <div class="dex-select-option" data-value="Paldean">Paldean</div>
                         </div>
                       </div>
                       <!-- Evo-stage filter: new, no desktop counterpart yet.
-                           Multi-select (unlike Sort/Type, which swap a
-                           single active value) - each option toggles on its
-                           own and the panel stays open, since narrowing to
-                           e.g. "Base + Single-stage" at once is a normal
-                           thing to want. Backed by dexEvoStageFilter +
+                           Single-select (like Sort/Type/Form) - tapping an
+                           option sets it as the sole active bucket and
+                           closes the panel. Backed by dexEvoStageFilter +
                            applyDexEvoStageFilter() in script.js, which reads
                            {stage, isFinal} per species from
                            fetchEvoChainInfo's cache (fetching + caching to
@@ -400,11 +399,10 @@
                       <div class="dex-select-wrap" id="k-evo-wrap">
                         <button type="button" class="log-dex-grid-btn" id="btn-k-evo" title="Evolution Stage">Stage ▾</button>
                         <div class="dex-select-panel k-evo-panel" id="k-evo-panel">
-                          <div class="dex-select-option active" data-value="base">Base</div>
-                          <div class="dex-select-option active" data-value="middle">Middle</div>
-                          <div class="dex-select-option active" data-value="final">Final</div>
-                          <div class="dex-select-option active" data-value="single">Single-stage</div>
-                          <button type="button" class="k-reskin-done" id="k-evo-done" title="Done" aria-label="Close stage filter">Done</button>
+                          <div class="dex-select-option" data-value="base">Base</div>
+                          <div class="dex-select-option" data-value="middle">Middle</div>
+                          <div class="dex-select-option" data-value="final">Final</div>
+                          <div class="dex-select-option" data-value="single">Single-stage</div>
                         </div>
                       </div>
                       <button type="button" class="log-dex-grid-btn" id="btn-k-reset-filters" title="Reset Filters" aria-label="Reset all filters">⟲</button>
