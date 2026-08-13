@@ -6057,6 +6057,42 @@ position: relative;
 .kalos-gen-grid::-webkit-scrollbar {
 display: none;
 }
+/* Depth-carousel enhancement: the collapsed generation picker keeps its
+   existing card artwork, but is now laid out as a perspective rail. JavaScript
+   interpolates every card's depth, tilt, scale, tint, and blur continuously
+   during a drag or tween instead of relying on an abrupt scroll-snap jump. */
+.kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) {
+scroll-snap-type: none;
+scroll-behavior: auto;
+scrollbar-width: none;
+overflow-x: hidden;
+/* Reserve vertical gestures for the page and deliver horizontal gestures to
+   the pointer controller in script.js. This is the key mobile contract:
+   swiping across the cards moves the carousel; swiping up/down still scrolls
+   the surrounding Living Dex naturally. */
+touch-action: pan-y;
+overscroll-behavior-x: contain;
+perspective: 920px;
+transform-style: preserve-3d;
+cursor: grab;
+user-select: none;
+-webkit-user-select: none;
+-webkit-user-drag: none;
+}
+.kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open).is-dragging {
+cursor: grabbing;
+}
+.kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile {
+will-change: transform, opacity, filter;
+transform-style: preserve-3d;
+backface-visibility: hidden;
+-webkit-backface-visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+.kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile {
+will-change: auto;
+}
+}
 /* While a tile is expanded, the grid becomes a 3-pane full-bleed carousel:
    the open gen plus its immediate prev/next neighbors (see
    buildKalosNeighborPanes in script.js), scroll-snapped edge to edge so
@@ -6486,6 +6522,1207 @@ letter-spacing: 0.8px;
 text-transform: uppercase;
 text-align: center;
 padding: 3px 3px;
+}
+
+/* Console-accurate cartridge shells ------------------------------------------------
+   These overrides preserve the carousel's existing tiles and labels, but make
+   every era read as a distinct physical game card rather than a generic panel.
+   Hardware edges use pseudo-elements so no interactive markup is added. */
+.kalos-gen-tile[data-cart] {
+isolation: isolate;
+}
+.kalos-gen-tile[data-cart] .kalos-gen-tile-sticker {
+box-sizing: border-box;
+}
+.kalos-gen-tile[data-cart] .kalos-gen-tile-sticker.has-boxart::after {
+background: linear-gradient(180deg, rgba(6, 8, 12, 0.04) 24%, rgba(4, 6, 10, 0.76) 100%);
+}
+.kalos-gen-tile[data-cart] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-region,
+.kalos-gen-tile[data-cart] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-count {
+color: #fff;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.82);
+}
+
+/* GAME BOY ADVANCE — a wide molded shell, pronounced top shoulder, recessed
+   front label and debossed hardware wordmark. Per-generation tinting makes
+   the three GBA-era cards feel like distinct translucent cartridges. */
+.kalos-gen-tile[data-cart="gba"] {
+--gba-shell-top: #87b7cb;
+--gba-shell-mid: #4c90b4;
+--gba-shell-bottom: #2a638d;
+align-self: center;
+flex: 0 0 86%;
+aspect-ratio: 1.42 / 1;
+height: auto;
+padding: 20px 13px 11px;
+border: 1px solid rgba(10, 44, 68, 0.75);
+border-radius: 7px 7px 13px 13px;
+background:
+linear-gradient(100deg, rgba(255,255,255,0.42) 0 7%, transparent 16% 84%, rgba(0,0,0,0.16) 100%),
+linear-gradient(180deg, var(--gba-shell-top), var(--gba-shell-mid) 42%, var(--gba-shell-bottom));
+box-shadow:
+0 6px 0 rgba(22, 43, 55, 0.42),
+0 10px 16px rgba(14, 32, 43, 0.25),
+inset 0 1px 1px rgba(255,255,255,0.55),
+inset 0 -8px 10px rgba(3, 23, 42, 0.22);
+}
+.kalos-gen-tile[data-cart="gba"][data-gen="1"] {
+--gba-shell-top: #e77062;
+--gba-shell-mid: #c53f36;
+--gba-shell-bottom: #842524;
+}
+.kalos-gen-tile[data-cart="gba"][data-gen="2"] {
+--gba-shell-top: #e4c263;
+--gba-shell-mid: #c29135;
+--gba-shell-bottom: #86601d;
+}
+.kalos-gen-tile[data-cart="gba"][data-gen="3"] {
+--gba-shell-top: #6fb783;
+--gba-shell-mid: #378659;
+--gba-shell-bottom: #1c563d;
+}
+.kalos-gen-tile[data-cart="gba"]::before {
+content: "GAME BOY ADVANCE";
+top: -9px;
+left: 5%;
+right: 5%;
+height: 19px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--mono);
+font-size: clamp(5px, 1.7vw, 7px);
+font-weight: 700;
+letter-spacing: 0.85px;
+color: rgba(12, 44, 62, 0.72);
+text-shadow: 0 1px 0 rgba(255,255,255,0.36);
+background: linear-gradient(180deg, rgba(255,255,255,0.42) 0%, var(--gba-shell-top) 38%, var(--gba-shell-mid) 100%);
+border: 1px solid rgba(13, 46, 67, 0.42);
+border-bottom: none;
+border-radius: 8px 8px 2px 2px;
+box-shadow: inset 0 -3px 5px rgba(12, 46, 67, 0.2), inset 0 1px 1px rgba(255,255,255,0.45);
+z-index: 0;
+}
+.kalos-gen-tile[data-cart="gba"]::after {
+content: "";
+position: absolute;
+left: 14%;
+right: 14%;
+bottom: 5px;
+height: 3px;
+border-radius: 50%;
+background: rgba(9, 40, 57, 0.28);
+box-shadow: 0 1px 0 rgba(255,255,255,0.18);
+z-index: 0;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker {
+width: 92%;
+height: 78%;
+margin-top: 1px;
+padding: 6px;
+border: 2px solid rgba(20, 33, 42, 0.66);
+border-radius: 4px;
+background: linear-gradient(135deg, #f9eed1 0%, #d7b66f 47%, #967343 100%);
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45), 0 1px 2px rgba(0,0,0,0.35);
+}
+
+/* NINTENDO DS — compact black card with a tall label, a stamped wordmark,
+   clipped lower corners and a shallow finger notch. */
+.kalos-gen-tile[data-cart="ds"] {
+align-self: center;
+flex: 0 0 57%;
+aspect-ratio: 0.92 / 1;
+height: auto;
+padding: 15px 7px 11px;
+border: 1px solid #07090c;
+border-radius: 8px 8px 12px 12px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.16), transparent 12% 88%, rgba(0,0,0,0.42)),
+linear-gradient(160deg, #4b535c 0%, #22272d 28%, #101317 100%);
+clip-path: polygon(0 0, 100% 0, 100% 91%, 86% 100%, 14% 100%, 0 91%);
+box-shadow:
+0 5px 0 #090b0d,
+0 10px 14px rgba(0,0,0,0.35),
+inset 1px 1px 0 rgba(255,255,255,0.24),
+inset -2px -2px 5px rgba(0,0,0,0.55);
+}
+.kalos-gen-tile[data-cart="ds"]::before {
+content: "NINTENDO DS";
+top: 4px;
+left: 0;
+right: 0;
+height: 8px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--body);
+font-size: clamp(4.5px, 1.5vw, 6px);
+font-weight: 800;
+letter-spacing: 0.3px;
+color: rgba(234, 237, 239, 0.8);
+text-shadow: 0 1px 0 #000;
+background: transparent;
+z-index: 2;
+}
+.kalos-gen-tile[data-cart="ds"]::after {
+content: "";
+position: absolute;
+left: 50%;
+bottom: 5px;
+width: 28%;
+height: 4px;
+transform: translateX(-50%);
+border-radius: 0 0 5px 5px;
+background: #050608;
+box-shadow: inset 0 1px 1px rgba(255,255,255,0.16);
+z-index: 1;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker {
+width: 86%;
+height: 82%;
+margin-top: 2px;
+padding: 5px;
+border: 1px solid #0a0b0e;
+border-radius: 3px 3px 5px 5px;
+background: linear-gradient(135deg, #f4f1e5, #bcb4a0);
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.56), 0 1px 2px rgba(0,0,0,0.45);
+}
+
+/* NINTENDO 3DS — a pale, slimmer smart-card shell. The red system mark and
+   offset lower keyway distinguish it immediately from the dark DS card. */
+.kalos-gen-tile[data-cart="3ds"] {
+align-self: center;
+flex: 0 0 55%;
+aspect-ratio: 0.9 / 1;
+height: auto;
+padding: 16px 7px 11px;
+border: 1px solid #a8afb1;
+border-radius: 7px 7px 10px 10px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.78), transparent 13% 87%, rgba(89,99,102,0.2)),
+linear-gradient(160deg, #f5f7f5 0%, #dce2df 60%, #bfc8c5 100%);
+clip-path: polygon(0 0, 100% 0, 100% 92%, 84% 100%, 15% 100%, 0 92%);
+box-shadow:
+0 5px 0 #a4acab,
+0 10px 14px rgba(21,29,31,0.25),
+inset 1px 1px 0 rgba(255,255,255,0.9),
+inset -2px -2px 4px rgba(89,99,102,0.18);
+}
+.kalos-gen-tile[data-cart="3ds"]::before {
+content: "NINTENDO 3DS";
+top: 4px;
+left: 0;
+right: 0;
+height: 8px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--body);
+font-size: clamp(4.5px, 1.45vw, 6px);
+font-weight: 900;
+letter-spacing: 0.15px;
+color: #2e3434;
+text-shadow: 0 1px 0 #fff;
+background: transparent;
+z-index: 2;
+}
+.kalos-gen-tile[data-cart="3ds"]::before {
+color: #292f30;
+}
+.kalos-gen-tile[data-cart="3ds"]::after {
+content: "";
+position: absolute;
+left: 12%;
+bottom: 4px;
+width: 22%;
+height: 5px;
+border-radius: 0 0 4px 4px;
+background: #97a09d;
+box-shadow: inset 0 1px 1px rgba(255,255,255,0.45);
+z-index: 1;
+}
+.kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker {
+width: 86%;
+height: 82%;
+margin-top: 2px;
+padding: 5px;
+border: 1px solid #9ca4a3;
+border-radius: 3px 3px 5px 5px;
+background: linear-gradient(135deg, #fbfbf9, #cfcbc2);
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.72), 0 1px 2px rgba(0,0,0,0.23);
+}
+.kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker.has-boxart::after {
+background: linear-gradient(180deg, rgba(0,0,0,0.02) 28%, rgba(0,0,0,0.62) 100%);
+}
+
+/* NINTENDO SWITCH — a small, tall, charcoal card with rounded shoulder
+   corners, inset label, red Switch branding and a subtle bottom keyway. */
+.kalos-gen-tile[data-cart="switch"] {
+align-self: center;
+flex: 0 0 43%;
+aspect-ratio: 0.68 / 1;
+height: auto;
+padding: 5px 4px 6px;
+border: 1px solid #101113;
+border-radius: 5px 5px 9px 9px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.18), transparent 15% 85%, rgba(0,0,0,0.55)),
+linear-gradient(160deg, #51565b 0%, #2b2f34 38%, #141619 100%);
+clip-path: polygon(0 5%, 12% 0, 88% 0, 100% 5%, 100% 100%, 0 100%);
+box-shadow:
+0 5px 0 #121416,
+0 10px 14px rgba(0,0,0,0.36),
+inset 1px 1px 0 rgba(255,255,255,0.22),
+inset -2px -2px 5px rgba(0,0,0,0.55);
+}
+.kalos-gen-tile[data-cart="switch"]::before {
+content: "";
+position: absolute;
+top: 3px;
+left: 12%;
+right: 12%;
+height: 2px;
+border-radius: 50%;
+background: rgba(0,0,0,0.45);
+box-shadow: 0 1px 0 rgba(255,255,255,0.15);
+z-index: 2;
+}
+.kalos-gen-tile[data-cart="switch"]::after {
+content: "";
+left: 50%;
+bottom: 3px;
+width: 30%;
+height: 3px;
+transform: translateX(-50%);
+border-radius: 50%;
+background: #101214;
+box-shadow: inset 0 1px 1px rgba(255,255,255,0.16);
+z-index: 2;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-gen-tile-sticker {
+width: 100%;
+height: 100%;
+border: 1px solid rgba(0,0,0,0.7);
+border-radius: 3px 3px 6px 6px;
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 1px 2px rgba(0,0,0,0.45);
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header {
+gap: 3px;
+padding: 3px 3px;
+background: linear-gradient(90deg, #e60012, #ff3040);
+box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25);
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-icon {
+width: 10px;
+height: 10px;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text {
+font-size: clamp(4px, 1.35vw, 5.5px);
+letter-spacing: 0.16px;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-art {
+padding: 5px 4px 13px;
+background: linear-gradient(180deg, #98ddf2 0%, #f7f8f3 78%);
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-region {
+font-size: clamp(6px, 1.85vw, 8px);
+line-height: 1;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-publisher {
+font-size: clamp(3.8px, 1.05vw, 5px);
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-rating {
+left: 4px;
+bottom: 4px;
+width: 12px;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-footer {
+font-size: clamp(3.8px, 1.15vw, 5px);
+letter-spacing: 0.5px;
+padding: 2px;
+}
+
+/* Reference cartridge pass --------------------------------------------------------
+   This layer follows the physical construction in the supplied cartridge
+   references: dark, wide AGB housing; tall black DS card; pale 3DS card with
+   a framed faceplate; and a compact, rounded Switch game card. */
+.kalos-gen-tile[data-cart] .kalos-cart-product-code {
+position: absolute;
+left: 6px;
+right: 6px;
+bottom: 3px;
+z-index: 4;
+font-family: var(--mono);
+font-size: clamp(3.5px, 1.05vw, 5px);
+font-weight: 700;
+letter-spacing: 0.45px;
+line-height: 1;
+text-align: center;
+white-space: nowrap;
+color: rgba(28, 30, 31, 0.86);
+text-shadow: 0 1px 0 rgba(255,255,255,0.55);
+}
+
+/* Game Boy Advance: wide, near-black molded shell; raised upper bridge;
+   white landscape label on a recessed front face; bottom chevron/keyway. */
+.kalos-gen-tile[data-cart="gba"],
+.kalos-gen-tile[data-cart="gba"][data-gen] {
+--gba-shell-top: #536d72;
+--gba-shell-mid: #354b50;
+--gba-shell-bottom: #25383d;
+flex: 0 0 88%;
+aspect-ratio: 1.52 / 1;
+padding: 24px 12px 13px;
+border: 1px solid #1a2a2e;
+border-radius: 5px 5px 7px 7px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.12), transparent 8% 92%, rgba(0,0,0,0.25)),
+linear-gradient(180deg, var(--gba-shell-top), var(--gba-shell-mid) 25%, var(--gba-shell-bottom));
+box-shadow:
+0 5px 0 #192a2e,
+0 10px 15px rgba(8, 22, 25, 0.33),
+inset 0 1px 0 rgba(255,255,255,0.18),
+inset 0 -5px 7px rgba(0,0,0,0.28);
+clip-path: none;
+}
+.kalos-gen-tile[data-cart="gba"]::before {
+content: "GAME BOY ADVANCE";
+top: -7px;
+left: -2px;
+right: -2px;
+height: 20px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--body);
+font-size: clamp(5px, 1.65vw, 7.5px);
+font-weight: 800;
+letter-spacing: 0.4px;
+color: rgba(16, 35, 39, 0.94);
+text-shadow: 0 1px 0 rgba(255,255,255,0.22);
+background:
+linear-gradient(180deg, #647e83 0%, #4b666b 46%, #32494e 50%, #3d565b 100%);
+border: 1px solid #263a3e;
+border-bottom: none;
+border-radius: 6px 6px 1px 1px;
+box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -3px 4px rgba(6,18,20,0.35);
+z-index: 3;
+}
+.kalos-gen-tile[data-cart="gba"]::after {
+content: "";
+position: absolute;
+left: 50%;
+bottom: 4px;
+width: 24px;
+height: 6px;
+transform: translateX(-50%);
+background: linear-gradient(180deg, #1a292d, #4c6569);
+clip-path: polygon(0 0, 100% 0, 68% 100%, 32% 100%);
+box-shadow: 0 1px 0 rgba(255,255,255,0.16);
+z-index: 2;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker {
+width: 84%;
+height: 74%;
+margin-top: 1px;
+padding: 5px 6px 11px;
+border: 3px solid #111d20;
+border-radius: 4px;
+background: #f8f6ec;
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.54);
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+inset: 3px 3px 12px;
+width: calc(100% - 6px);
+height: calc(100% - 15px);
+object-fit: cover;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart::after {
+inset: 3px 3px 12px;
+background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.54) 100%);
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-cart-product-code {
+bottom: 3px;
+}
+
+/* Nintendo DS: black square housing with a cream top strip, oversized framed
+   artwork label and the shallow, centred lower finger notch. */
+.kalos-gen-tile[data-cart="ds"] {
+flex: 0 0 63%;
+aspect-ratio: 0.94 / 1;
+padding: 15px 7px 9px;
+border: 2px solid #16181a;
+border-radius: 9px 9px 11px 11px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.16), transparent 10% 88%, rgba(0,0,0,0.38)),
+linear-gradient(160deg, #444446 0%, #242527 32%, #171719 100%);
+clip-path: none;
+box-shadow: 0 5px 0 #111214, 0 9px 14px rgba(0,0,0,0.38), inset 1px 1px 0 rgba(255,255,255,0.16), inset -2px -2px 4px rgba(0,0,0,0.5);
+}
+.kalos-gen-tile[data-cart="ds"]::before {
+content: "NINTENDO DS™";
+top: 16px;
+left: 10%;
+right: 10%;
+height: 11px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--body);
+font-size: clamp(5px, 1.7vw, 7.5px);
+font-weight: 900;
+letter-spacing: 0.1px;
+color: #2b2b2b;
+text-shadow: 0 1px 0 rgba(255,255,255,0.75);
+background: rgba(250,248,239,0.94);
+border-radius: 2px 2px 0 0;
+z-index: 4;
+}
+.kalos-gen-tile[data-cart="ds"]::after {
+content: "";
+left: 50%;
+bottom: 3px;
+width: 26%;
+height: 5px;
+transform: translateX(-50%);
+background: #0c0d0e;
+border-radius: 0 0 6px 6px;
+box-shadow: inset 0 1px 1px rgba(255,255,255,0.15);
+z-index: 4;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker {
+width: 84%;
+height: 86%;
+margin-top: 0;
+padding: 13px 4px 13px;
+border: 2px solid #111214;
+border-radius: 3px 3px 5px 5px;
+background: #f6f3e9;
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.9), 0 1px 2px rgba(0,0,0,0.5);
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+inset: 14px 3px 12px;
+width: calc(100% - 6px);
+height: calc(100% - 26px);
+object-fit: cover;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-boxart::after {
+inset: 14px 3px 12px;
+background: linear-gradient(180deg, transparent 42%, rgba(0,0,0,0.6) 100%);
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-cart-product-code {
+bottom: 3px;
+}
+
+/* Nintendo 3DS: pale-grey case, square inlaid faceplate and the small lower
+   left keyway/side shoulder characteristic of Nintendo 3DS cards. */
+.kalos-gen-tile[data-cart="3ds"] {
+flex: 0 0 61%;
+aspect-ratio: 0.98 / 1;
+padding: 14px 7px 9px;
+border: 1px solid #b8c0c1;
+border-radius: 5px 5px 9px 9px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.8), transparent 11% 88%, rgba(102,112,114,0.18)),
+linear-gradient(180deg, #f4f6f4, #dfe5e2 62%, #ccd4d1);
+clip-path: none;
+box-shadow: 0 4px 0 #adb7b6, 0 9px 13px rgba(24,31,32,0.22), inset 1px 1px 0 rgba(255,255,255,0.92), inset -2px -2px 3px rgba(75,87,89,0.18);
+}
+.kalos-gen-tile[data-cart="3ds"]::before {
+content: "NINTENDO 3DS™";
+top: 15px;
+left: 10%;
+right: 10%;
+height: 11px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--body);
+font-size: clamp(4.8px, 1.55vw, 7px);
+font-weight: 900;
+letter-spacing: 0;
+color: #c22131;
+text-shadow: -28px 0 0 #2d3232, 0 1px 0 rgba(255,255,255,0.8);
+background: rgba(255,255,255,0.88);
+border-radius: 2px 2px 0 0;
+z-index: 4;
+}
+.kalos-gen-tile[data-cart="3ds"]::after {
+content: "";
+left: 10%;
+bottom: 3px;
+width: 20%;
+height: 5px;
+transform: none;
+background: #9da7a5;
+border-radius: 0 0 4px 4px;
+box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
+z-index: 4;
+}
+.kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker {
+width: 86%;
+height: 86%;
+margin-top: 0;
+padding: 13px 4px 13px;
+border: 1px solid #b4bcbb;
+border-radius: 3px 3px 5px 5px;
+background: #fbfbf8;
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.92), 0 1px 2px rgba(0,0,0,0.2);
+}
+.kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+inset: 14px 3px 12px;
+width: calc(100% - 6px);
+height: calc(100% - 26px);
+object-fit: cover;
+}
+.kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker.has-boxart::after {
+inset: 14px 3px 12px;
+background: linear-gradient(180deg, transparent 38%, rgba(0,0,0,0.58) 100%);
+}
+.kalos-gen-tile[data-cart="3ds"] .kalos-cart-product-code {
+bottom: 3px;
+}
+
+/* Nintendo Switch: compact rounded dark card, wide white label, red branded
+   top band and black lower product-code strip — directly echoing the reference. */
+.kalos-gen-tile[data-cart="switch"] {
+flex: 0 0 49%;
+aspect-ratio: 0.8 / 1;
+padding: 5px 5px 7px;
+border: 2px solid #2b2d2f;
+border-radius: 13px 13px 11px 11px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.16), transparent 12% 88%, rgba(0,0,0,0.38)),
+linear-gradient(160deg, #4b4e51, #26282a 52%, #1d1f20);
+clip-path: none;
+box-shadow: 0 4px 0 #1a1c1d, 0 9px 12px rgba(0,0,0,0.35), inset 1px 1px 0 rgba(255,255,255,0.16), inset -2px -2px 4px rgba(0,0,0,0.45);
+}
+.kalos-gen-tile[data-cart="switch"]::before {
+content: "";
+top: auto;
+left: 50%;
+bottom: 2px;
+right: auto;
+width: 22px;
+height: 6px;
+transform: translateX(-50%);
+background: #111314;
+clip-path: polygon(0 0, 100% 0, 68% 100%, 32% 100%);
+box-shadow: none;
+z-index: 3;
+}
+.kalos-gen-tile[data-cart="switch"]::after {
+content: none;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-gen-tile-sticker {
+width: 86%;
+height: 88%;
+margin-top: 0;
+border: 2px solid #1a1b1c;
+border-radius: 5px 5px 3px 3px;
+background: #f8f8f6;
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6), 0 1px 2px rgba(0,0,0,0.45);
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header {
+min-height: 21%;
+padding: 3px 3px;
+background: #e60012;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-icon {
+width: 11px;
+height: 11px;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text {
+font-size: clamp(4.4px, 1.45vw, 6px);
+letter-spacing: 0.1px;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-art {
+padding: 4px 3px 13px;
+background: linear-gradient(180deg, #ffffff 0%, #f7f7f5 100%);
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-region {
+font-size: clamp(5.5px, 1.75vw, 7.5px);
+color: #2f3941;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-publisher {
+font-size: clamp(3.6px, 1vw, 4.5px);
+color: #545454;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-rating {
+left: 3px;
+bottom: 3px;
+width: 11px;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-footer {
+min-height: 13%;
+font-size: clamp(3.6px, 1.1vw, 4.6px);
+letter-spacing: 0.26px;
+padding: 2px 1px;
+}
+
+/* GBA proportion correction -------------------------------------------------------
+   The supplied reference is a compact, dark AGB shell. This final pass reduces
+   the oversized faceplate, flattens the body, and makes the raised bridge and
+   centred lower keyway the two clear hardware cues. */
+.kalos-gen-tile[data-cart="gba"],
+.kalos-gen-tile[data-cart="gba"][data-gen] {
+--gba-shell-top: #53666a;
+--gba-shell-mid: #3d5358;
+--gba-shell-bottom: #2d4146;
+flex: 0 0 84%;
+aspect-ratio: 1.62 / 1;
+padding: 19px 10px 12px;
+border: 1px solid #1b2b2f;
+border-radius: 4px 4px 7px 7px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.11) 0, transparent 7% 93%, rgba(0,0,0,0.26) 100%),
+linear-gradient(180deg, #4e6367 0%, #3d5459 24%, #2d4247 100%);
+box-shadow:
+0 5px 0 #18272b,
+0 9px 13px rgba(7,19,22,0.3),
+inset 0 1px 0 rgba(255,255,255,0.16),
+inset 0 -4px 6px rgba(0,0,0,0.26);
+}
+.kalos-gen-tile[data-cart="gba"]::before {
+top: -6px;
+left: -3px;
+right: -3px;
+height: 17px;
+font-size: clamp(4.5px, 1.45vw, 6.5px);
+letter-spacing: 0.28px;
+color: rgba(13,29,33,0.9);
+background: linear-gradient(180deg, #5b7074 0%, #465d62 42%, #2c4247 48%, #3a5055 100%);
+border-color: #263a3e;
+border-radius: 5px 5px 1px 1px;
+box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -2px 3px rgba(6,17,20,0.42);
+}
+.kalos-gen-tile[data-cart="gba"]::after {
+bottom: 3px;
+width: 21px;
+height: 5px;
+background: linear-gradient(180deg, #17272b, #465e62);
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker {
+width: 70%;
+height: 54%;
+margin-top: 0;
+padding: 4px 4px 10px;
+border: 3px solid #101a1d;
+border-radius: 3px;
+background: #f9f7ef;
+box-shadow: inset 0 0 0 1px rgba(255,255,255,0.94), 0 1px 2px rgba(0,0,0,0.58);
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+inset: 3px 3px 11px;
+width: calc(100% - 6px);
+height: calc(100% - 14px);
+object-fit: cover;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart::after {
+inset: 3px 3px 11px;
+background: linear-gradient(180deg, transparent 38%, rgba(0,0,0,0.58) 100%);
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-cart-product-code {
+left: 3px;
+right: 3px;
+bottom: 3px;
+font-size: clamp(3px, 0.9vw, 4px);
+letter-spacing: 0.28px;
+}
+
+/* GBA recessed-label image treatment ---------------------------------------------
+   The cartridge shell is the dark outer border. When a generation supplies box
+   art, that image is now the label itself: it fills the entire inset face rather
+   than behaving like a small image inside a secondary card. */
+.kalos-gen-tile[data-cart="gba"],
+.kalos-gen-tile[data-cart="gba"][data-gen] {
+flex: 0 0 86%;
+aspect-ratio: 1.54 / 1;
+padding: 20px 11px 12px;
+border: 1px solid #1b292c;
+border-radius: 6px 6px 8px 8px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.12) 0, transparent 8% 92%, rgba(0,0,0,0.3) 100%),
+linear-gradient(180deg, #4d6267 0%, #374e53 26%, #283d42 100%);
+box-shadow:
+0 5px 0 #16262a,
+0 10px 15px rgba(5,17,20,0.34),
+inset 0 1px 0 rgba(255,255,255,0.17),
+inset 0 -5px 7px rgba(0,0,0,0.27);
+}
+.kalos-gen-tile[data-cart="gba"]::before {
+top: -5px;
+left: -2px;
+right: -2px;
+height: 18px;
+font-size: clamp(4.6px, 1.5vw, 6.7px);
+color: rgba(11,26,29,0.92);
+background: linear-gradient(180deg, #5d7378 0%, #455e63 45%, #2a4045 49%, #3b5358 100%);
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker {
+width: 77%;
+height: 62%;
+margin-top: 0;
+padding: 3px;
+border: 4px solid #101a1d;
+border-radius: 5px;
+background: #f6f4ec;
+box-shadow:
+inset 0 0 0 1px rgba(255,255,255,0.78),
+inset 0 0 0 2px rgba(4,10,12,0.42),
+0 2px 2px rgba(0,0,0,0.55);
+}
+/* With a chosen game image, the image occupies the complete recessed label
+   surface. The image's own artwork and typography remain unobstructed. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart {
+padding: 3px;
+background: #0b1416;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+inset: 3px;
+width: calc(100% - 6px);
+height: calc(100% - 6px);
+object-fit: cover;
+object-position: center;
+border-radius: 1px;
+z-index: 1;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart::after {
+inset: 3px;
+background: none;
+z-index: 2;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .dex-gen-badge-ring,
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-label,
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-cart-product-code {
+display: none;
+}
+/* The fallback still presents the region progress cleanly if no image has
+   been assigned for a GBA generation. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker:not(.has-boxart) {
+padding: 6px 6px 11px;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-cart-product-code {
+bottom: 3px;
+}
+
+/* GBA full-shell color frame ------------------------------------------------------
+   The cyan remains the Pokédex screen behind the card. The GBA tile itself is
+   now an opaque, thick red/green molded cartridge outline, and its assigned
+   artwork fills the entire recessed cartridge face. */
+.kalos-gen-tile[data-cart="gba"],
+.kalos-gen-tile[data-cart="gba"][data-gen] {
+--gba-frame: #c83d40;
+--gba-frame-light: #ed6a63;
+--gba-frame-dark: #7b1f26;
+--gba-bridge-ink: #42161b;
+flex: 0 0 84%;
+aspect-ratio: 1.5 / 1;
+position: relative;
+padding: 0;
+border: 9px solid var(--gba-frame);
+border-top-width: 16px;
+border-radius: 8px 8px 11px 11px;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.24), transparent 9% 91%, rgba(0,0,0,0.2)),
+linear-gradient(180deg, var(--gba-frame-light), var(--gba-frame) 46%, var(--gba-frame-dark));
+box-shadow:
+0 5px 0 var(--gba-frame-dark),
+0 10px 15px rgba(50,10,14,0.33),
+inset 0 2px 1px rgba(255,255,255,0.35),
+inset 0 -5px 7px rgba(47,8,11,0.28);
+}
+/* Kanto uses the red frame; Johto and Hoenn receive green/emerald GBA shell
+   variants so the thick surrounding cartridge edge remains unmistakable. */
+.kalos-gen-tile[data-cart="gba"][data-gen="2"] {
+--gba-frame: #3d9e61;
+--gba-frame-light: #71ca89;
+--gba-frame-dark: #1f5c3d;
+--gba-bridge-ink: #123520;
+}
+.kalos-gen-tile[data-cart="gba"][data-gen="3"] {
+--gba-frame: #248760;
+--gba-frame-light: #56b889;
+--gba-frame-dark: #14523d;
+--gba-bridge-ink: #0d3024;
+}
+.kalos-gen-tile[data-cart="gba"]::before {
+content: "GAME BOY ADVANCE";
+top: -16px;
+left: -9px;
+right: -9px;
+height: 23px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: var(--body);
+font-size: clamp(4.8px, 1.55vw, 7px);
+font-weight: 900;
+letter-spacing: 0.3px;
+color: var(--gba-bridge-ink);
+text-shadow: 0 1px 0 rgba(255,255,255,0.28);
+background: linear-gradient(180deg, var(--gba-frame-light), var(--gba-frame) 42%, var(--gba-frame-dark) 100%);
+border: 2px solid var(--gba-frame-dark);
+border-bottom: none;
+border-radius: 8px 8px 2px 2px;
+box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -3px 4px rgba(46,6,9,0.28);
+z-index: 5;
+}
+.kalos-gen-tile[data-cart="gba"]::after {
+bottom: 3px;
+width: 24px;
+height: 6px;
+background: var(--gba-frame-dark);
+clip-path: polygon(0 0, 100% 0, 68% 100%, 32% 100%);
+box-shadow: 0 1px 0 rgba(255,255,255,0.22);
+z-index: 5;
+}
+/* The recessed black bezel is positioned directly inside the thick cartridge
+   frame. It expands across the face rather than looking like a small screen. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker,
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart {
+position: absolute;
+inset: 13px 10px 12px;
+width: auto;
+height: auto;
+margin: 0;
+padding: 4px;
+border: 5px solid #122224;
+border-radius: 5px;
+background: #0b1517;
+box-shadow:
+inset 0 0 0 1px rgba(255,255,255,0.18),
+0 2px 2px rgba(0,0,0,0.54);
+}
+/* Once a generation has an image, that image becomes the entire inner label.
+   It reaches all the way to the black bezel with only the narrow recessed rim
+   remaining visible, and no generated text overlays it. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+inset: 4px;
+width: calc(100% - 8px);
+height: calc(100% - 8px);
+object-fit: cover;
+object-position: center;
+border-radius: 1px;
+z-index: 1;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart::after {
+inset: 4px;
+background: none;
+z-index: 2;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .dex-gen-badge-ring,
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-label,
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-cart-product-code {
+display: none;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker:not(.has-boxart) {
+inset: 13px 10px 12px;
+padding: 9px 9px 15px;
+background: #f7f5ed;
+}
+
+/* GBA full opaque cartridge body --------------------------------------------------
+   The circled outer area is the cartridge itself. This rule explicitly wins
+   over the generic transparent-card background so its broad top, side, and
+   bottom walls are solid GBA plastic—not the cyan Pokédex screen behind it. */
+.kalos-gen-tile[data-cart="gba"],
+.kalos-gen-tile[data-cart="gba"][data-gen] {
+--gba-frame: #c9343b;
+--gba-frame-light: #ed6963;
+--gba-frame-dark: #791a22;
+--gba-bridge-ink: #451217;
+flex: 0 0 86%;
+aspect-ratio: 1.48 / 1;
+padding: 0;
+border: 12px solid var(--gba-frame);
+border-top-width: 20px;
+border-radius: 9px 9px 12px 12px;
+background-color: var(--gba-frame) !important;
+background-image:
+linear-gradient(90deg, rgba(255,255,255,0.2) 0%, transparent 10% 90%, rgba(0,0,0,0.2) 100%),
+linear-gradient(180deg, var(--gba-frame-light) 0%, var(--gba-frame) 48%, var(--gba-frame-dark) 100%) !important;
+box-shadow:
+0 5px 0 var(--gba-frame-dark),
+0 10px 15px rgba(58,8,13,0.36),
+inset 0 2px 1px rgba(255,255,255,0.35),
+inset 0 -6px 7px rgba(50,4,8,0.3);
+}
+.kalos-gen-tile[data-cart="gba"][data-gen="2"] {
+--gba-frame: #2f75c3;
+--gba-frame-light: #73b4f2;
+--gba-frame-dark: #183d82;
+--gba-bridge-ink: #0e2550;
+}
+.kalos-gen-tile[data-cart="gba"][data-gen="3"] {
+--gba-frame: #278765;
+--gba-frame-light: #57ba93;
+--gba-frame-dark: #15553f;
+--gba-bridge-ink: #0b3024;
+}
+.kalos-gen-tile[data-cart="gba"]::before {
+top: -20px;
+left: -12px;
+right: -12px;
+height: 25px;
+background: linear-gradient(180deg, var(--gba-frame-light), var(--gba-frame) 44%, var(--gba-frame-dark) 100%);
+border: 2px solid var(--gba-frame-dark);
+border-bottom: none;
+border-radius: 9px 9px 2px 2px;
+font-size: clamp(4.9px, 1.58vw, 7.1px);
+color: var(--gba-bridge-ink);
+box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -3px 4px rgba(48,4,8,0.27);
+}
+.kalos-gen-tile[data-cart="gba"]::after {
+bottom: 3px;
+width: 25px;
+height: 6px;
+background: var(--gba-frame-dark);
+}
+/* Keep the black label bezel visibly inset from the thick full-card shell.
+   The artwork then fills every remaining pixel within that recessed face. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker,
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart {
+inset: 17px 16px 17px;
+padding: 4px;
+border: 5px solid #101d1f;
+border-radius: 6px;
+background: #0b1517;
+box-shadow:
+inset 0 0 0 1px rgba(255,255,255,0.16),
+0 2px 2px rgba(0,0,0,0.56);
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+inset: 4px;
+width: calc(100% - 8px);
+height: calc(100% - 8px);
+object-fit: cover;
+object-position: center;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker:not(.has-boxart) {
+inset: 17px 16px 17px;
+background: #f7f5ed;
+}
+
+/* GBA full-front artwork ----------------------------------------------------------
+   Assigned art now uses the entire front surface inside the thick shell. There
+   is deliberately no black display bezel: the image begins directly at the
+   inner edge of the red/green cartridge body and occupies the formerly empty
+   side walls around the smaller label. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart {
+inset: 0;
+width: auto;
+height: auto;
+padding: 0;
+border: 0;
+border-radius: 1px;
+background: transparent;
+box-shadow: none;
+overflow: hidden;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+inset: 0;
+width: 100%;
+height: 100%;
+object-fit: cover;
+object-position: center;
+border-radius: 1px;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart::after {
+inset: 0;
+background: none;
+}
+
+/* GBA reference silhouette -------------------------------------------------------
+   The GBA shell is a wide card with a raised, softly rounded top shoulder. Its
+   lower edge stays nearly square with gently rounded corners and a small
+   centred keyway, rather than reading as a generic rounded panel. */
+.kalos-gen-tile[data-cart="gba"],
+.kalos-gen-tile[data-cart="gba"][data-gen] {
+flex: 0 0 88%;
+aspect-ratio: 1.62 / 1;
+border-width: 12px;
+border-top-width: 29px;
+border-radius: 8px 8px 10px 10px;
+background-image:
+linear-gradient(90deg, rgba(255,255,255,0.22) 0%, transparent 8% 92%, rgba(0,0,0,0.24) 100%),
+linear-gradient(180deg, var(--gba-frame-light) 0%, var(--gba-frame) 52%, var(--gba-frame-dark) 100%) !important;
+box-shadow:
+0 5px 0 var(--gba-frame-dark),
+0 10px 15px rgba(58,8,13,0.36),
+inset 0 2px 1px rgba(255,255,255,0.35),
+inset 0 -6px 8px rgba(50,4,8,0.3);
+}
+/* The raised shoulder projects beyond the side walls and drops slightly in
+   the middle, echoing the broad curved cap of a physical GBA cartridge. */
+.kalos-gen-tile[data-cart="gba"]::before {
+top: -29px;
+left: -13px;
+right: -13px;
+height: 38px;
+display: flex;
+align-items: center;
+justify-content: center;
+padding-bottom: 5px;
+clip-path: polygon(0 16%, 2% 5%, 7% 0, 93% 0, 98% 5%, 100% 16%, 100% 70%, 88% 70%, 68% 83%, 50% 93%, 32% 83%, 12% 70%, 0 70%);
+background: linear-gradient(180deg, var(--gba-frame-light) 0%, var(--gba-frame) 40%, var(--gba-frame-dark) 100%);
+border: none;
+border-radius: 12px 12px 0 0;
+box-shadow:
+inset 0 2px 1px rgba(255,255,255,0.36),
+inset 0 -4px 5px rgba(48,4,8,0.32),
+0 2px 0 var(--gba-frame-dark);
+font-size: clamp(4.9px, 1.6vw, 7.2px);
+letter-spacing: 0.34px;
+}
+.kalos-gen-tile[data-cart="gba"]::after {
+bottom: 2px;
+width: 31px;
+height: 7px;
+background: var(--gba-frame-dark);
+clip-path: polygon(0 0, 100% 0, 68% 100%, 32% 100%);
+box-shadow: 0 1px 0 rgba(255,255,255,0.22);
+}
+/* The art continues to occupy the complete inner face; the taller top wall
+   only makes room for the physical shoulder without bringing back a bezel. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart {
+border-radius: 0 0 2px 2px;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
+border-radius: 0 0 1px 1px;
+}
+
+/* GBA shoulder overhang ---------------------------------------------------------
+   The physical GBA top cap is wider than the lower cartridge body. Extending
+   this raised lip beyond the 12px outer shell makes its two projecting side
+   ears visible, as in the supplied reference. */
+.kalos-gen-tile[data-cart="gba"]::before {
+left: -25px;
+right: -25px;
+height: 40px;
+top: -30px;
+clip-path: polygon(0 18%, 2% 7%, 7% 0, 93% 0, 98% 7%, 100% 18%, 100% 70%, 90% 70%, 70% 82%, 50% 94%, 30% 82%, 10% 70%, 0 70%);
+box-shadow:
+inset 0 2px 1px rgba(255,255,255,0.36),
+inset 0 -4px 5px rgba(48,4,8,0.32),
+0 2px 0 var(--gba-frame-dark),
+0 3px 5px rgba(48,4,8,0.18);
+}
+
+/* GBA upward shoulder contour ----------------------------------------------------
+   The lower edge of the raised cap now lifts toward the centre, forming the
+   shallow upward recess seen on the physical cartridge instead of a flap that
+   hangs down into the artwork. */
+.kalos-gen-tile[data-cart="gba"]::before {
+clip-path: polygon(0 18%, 2% 7%, 7% 0, 93% 0, 98% 7%, 100% 18%, 100% 82%, 90% 82%, 70% 72%, 50% 62%, 30% 72%, 10% 82%, 0 82%);
+}
+
+/* GBA lower-border keyway --------------------------------------------------------
+   Put the downward arrow/keyway in the centre of the lower plastic wall rather
+   than on top of the full-face artwork. The negative offset moves it through
+   the padding edge and into the 12px outer shell border. */
+.kalos-gen-tile[data-cart="gba"]::after {
+bottom: -10px;
+z-index: 7;
+}
+
+/* GBA region + completion overlay -------------------------------------------------
+   A compact translucent lower band names the region and makes completion
+   immediately scannable without turning the image back into a framed screen. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gba-completion {
+position: absolute;
+left: 4px;
+right: 4px;
+bottom: 4px;
+z-index: 4;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 6px;
+padding: 3px 5px 3px 6px;
+border-radius: 3px;
+background: linear-gradient(90deg, rgba(9,17,21,0.88), rgba(9,17,21,0.68));
+border: 1px solid rgba(255,255,255,0.18);
+box-shadow: 0 1px 2px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.1);
+color: #fff;
+text-shadow: 0 1px 1px rgba(0,0,0,0.7);
+pointer-events: none;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gba-region {
+min-width: 0;
+font-family: var(--hud);
+font-size: clamp(6px, 1.8vw, 8.5px);
+font-weight: 800;
+letter-spacing: 0.35px;
+text-transform: uppercase;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gba-progress {
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+line-height: 1;
+flex-shrink: 0;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gba-progress strong {
+font-family: var(--mono);
+font-size: clamp(7px, 2.25vw, 11px);
+font-weight: 700;
+color: #fff3a8;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gba-progress small {
+margin-top: 1px;
+font-family: var(--mono);
+font-size: clamp(3.8px, 1.05vw, 5px);
+font-weight: 700;
+letter-spacing: 0.12px;
+color: rgba(255,255,255,0.82);
+}
+
+/* GBA screen-top completion placement -------------------------------------------
+   The completion information now lives in the cyan Pokédex screen space above
+   the cartridge rather than covering its artwork. Extra top track padding
+   reserves that display area for every collapsed GBA generation card. */
+.kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) {
+padding-top: 46px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+position: absolute;
+top: -67px;
+bottom: auto;
+left: 50%;
+right: auto;
+width: calc(100% + 24px);
+max-width: none;
+min-width: 0;
+box-sizing: border-box;
+transform: translateX(-50%);
+z-index: 12;
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 6px;
+padding: 3px 6px;
+border-radius: 999px;
+background: linear-gradient(90deg, rgba(15,39,51,0.92), rgba(26,77,93,0.86));
+border: 1px solid rgba(202,250,255,0.65);
+box-shadow: 0 2px 0 rgba(11,33,44,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+color: #fff;
+text-shadow: 0 1px 1px rgba(0,0,0,0.62);
+pointer-events: none;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-region {
+font-size: clamp(6px, 1.75vw, 8px);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+font-size: clamp(7px, 2vw, 10px);
+}
+/* The previous lower artwork band is now unnecessary when the overlay is a
+   direct tile child; suppress its in-sticker styling if stale markup remains. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-sticker .kalos-gba-completion {
+display: none;
 }
 
 /* Expanded state: the tile itself becomes the .dex-card banner, spanning
@@ -7112,4 +8349,1243 @@ gap: 12px;
 width: 44px;
 height: 44px;
 }
+}
+
+/* Polished GBA completion HUD ----------------------------------------------------
+   The screen-top status becomes a small Pokédex instrument: segmented glass,
+   an activity lamp, and a thin completion rail make the information feel like
+   part of the device rather than a generic rounded label. */
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+height: 25px;
+min-width: 132px;
+padding: 3px 8px 6px 9px;
+gap: 9px;
+border: 1px solid rgba(185,247,255,0.82);
+border-radius: 10px 10px 12px 12px;
+background:
+linear-gradient(90deg, rgba(3,14,22,0.96) 0 10%, transparent 10% 11%, rgba(10,47,61,0.94) 11% 72%, rgba(9,31,43,0.95) 72% 100%),
+linear-gradient(180deg, rgba(59,137,157,0.96), rgba(8,30,42,0.98));
+box-shadow:
+0 3px 0 rgba(5,29,40,0.38),
+0 5px 9px rgba(0,33,47,0.28),
+inset 0 1px 0 rgba(235,255,255,0.42),
+inset 0 -1px 0 rgba(0,0,0,0.55);
+letter-spacing: 0.04em;
+overflow: hidden;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion::before {
+content: "";
+width: 4px;
+height: 4px;
+margin-right: 1px;
+border-radius: 50%;
+background: #83f6ff;
+box-shadow: 0 0 0 1px rgba(3,35,47,0.9), 0 0 6px rgba(109,250,255,0.95);
+flex: 0 0 auto;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-region {
+position: relative;
+font-family: var(--hud);
+font-size: clamp(6.3px, 1.85vw, 8.7px);
+font-weight: 900;
+letter-spacing: 0.72px;
+color: #ecfdff;
+text-shadow: 0 1px 0 rgba(0,0,0,0.8);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress {
+position: static;
+min-width: 35px;
+line-height: 0.95;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::before {
+content: "";
+position: absolute;
+left: 9px;
+right: 8px;
+bottom: 3px;
+height: 2px;
+border-radius: 999px;
+background: rgba(190,236,244,0.2);
+box-shadow: inset 0 1px 1px rgba(0,0,0,0.58);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::after {
+content: "";
+position: absolute;
+left: 9px;
+bottom: 3px;
+width: var(--complete-rail);
+height: 2px;
+border-radius: 999px;
+background: linear-gradient(90deg, #63e9ff, #eaff96);
+box-shadow: 0 0 4px rgba(121,246,255,0.82);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+font-family: var(--mono);
+font-size: clamp(7.5px, 2.15vw, 10.5px);
+font-weight: 800;
+letter-spacing: -0.03em;
+color: #f5ffb9;
+text-shadow: 0 1px 0 rgba(0,0,0,0.82);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress small {
+margin-top: 1px;
+font-size: clamp(3.8px, 1.08vw, 5.2px);
+letter-spacing: 0.2px;
+color: #c5f6ff;
+}
+
+/* Taller GBA HUD with assigned region-ball variant --------------------------------
+   Replace the generic activity lamp with the actual Poké Ball variant assigned
+   to the region, then give the status bar more vertical presence and clearer
+   touch-screen hierarchy. */
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+height: 34px;
+padding: 4px 10px 7px 8px;
+gap: 8px;
+border-radius: 12px 12px 14px 14px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion::before {
+display: none;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-ball {
+width: 22px;
+height: 22px;
+display: grid;
+place-items: center;
+flex: 0 0 22px;
+border-radius: 50%;
+background: radial-gradient(circle at 35% 28%, rgba(234,255,255,0.72), rgba(32,120,144,0.2) 42%, rgba(2,18,28,0.7) 78%);
+border: 1px solid rgba(185,247,255,0.68);
+box-shadow: 0 0 0 2px rgba(2,25,37,0.62), 0 0 7px rgba(104,238,255,0.5), inset 0 1px 0 rgba(255,255,255,0.38);
+overflow: hidden;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-ball img {
+width: 100%;
+height: 100%;
+object-fit: contain;
+filter: drop-shadow(0 1px 1px rgba(0,0,0,0.75));
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-ball.is-fallback::after {
+content: "";
+width: 9px;
+height: 9px;
+border: 2px solid #8df6ff;
+border-radius: 50%;
+background: linear-gradient(180deg, #4dd1e9 0 45%, #0b2736 45% 55%, #e8feff 55% 100%);
+box-shadow: 0 0 4px rgba(126,247,255,0.95);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-region {
+font-size: clamp(7px, 2.05vw, 9.6px);
+letter-spacing: 0.82px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress {
+min-width: 43px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+font-size: clamp(8.5px, 2.45vw, 11.8px);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress small {
+margin-top: 2px;
+font-size: clamp(4.2px, 1.2vw, 5.8px);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::before,
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::after {
+bottom: 4px;
+}
+
+/* Enlarged GBA mobile presentation -----------------------------------------------
+   Give the featured cartridge and its matching HUD more screen presence, then
+   lift the pair slightly so the larger silhouette still breathes above the
+   lower carousel controls. */
+.kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) {
+padding-top: 38px;
+}
+.kalos-gen-tile[data-cart="gba"],
+.kalos-gen-tile[data-cart="gba"][data-gen] {
+flex: 0 0 100%;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+top: -72px;
+height: 38px;
+padding-top: 5px;
+padding-bottom: 8px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-ball {
+width: 25px;
+height: 25px;
+flex-basis: 25px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-region {
+font-size: clamp(7.3px, 2.15vw, 10.1px);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+font-size: clamp(9px, 2.6vw, 12.5px);
+}
+
+/* GBA HUD spacing and readability refinement ------------------------------------
+   Create a clearer gap between the cartridge shoulder and the status display,
+   then give the completion figures stronger visual priority on compact screens. */
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+top: -73px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+font-size: clamp(10px, 2.9vw, 14px);
+line-height: 0.9;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress small {
+margin-top: 3px;
+font-size: clamp(4.8px, 1.5vw, 7px);
+line-height: 1;
+}
+
+/* GBA HUD page-palette integration ----------------------------------------------
+   Match the bright cyan Kalos screen, deep blue trim, and Pokédex yellow accent
+   used across the rest of the page so the status bar reads as built-in UI. */
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+background:
+repeating-linear-gradient(180deg, rgba(42,58,160,0.08) 0 1px, transparent 1px 4px),
+linear-gradient(90deg, #d9fcff 0 12%, #a9f4fc 12% 72%, #8ceefb 72% 100%);
+border: 2px solid var(--blue);
+box-shadow:
+0 3px 0 var(--blue-dark),
+0 5px 9px rgba(22,32,92,0.22),
+inset 0 1px 0 rgba(255,255,255,0.9),
+inset 0 -1px 0 rgba(42,58,160,0.18);
+color: var(--blue-dark);
+text-shadow: none;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-ball {
+background: radial-gradient(circle at 35% 28%, #ffffff 0%, #baf6fd 44%, #8ceefb 70%, #5bc2d4 100%);
+border-color: var(--blue);
+box-shadow: 0 0 0 2px rgba(217,252,255,0.8), 0 1px 3px rgba(22,32,92,0.45), inset 0 1px 0 rgba(255,255,255,0.85);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-region {
+color: var(--blue-dark);
+text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+color: var(--yellow-dark);
+text-shadow: 0 1px 0 rgba(255,255,255,0.72);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress small {
+color: var(--blue-dark);
+text-shadow: 0 1px 0 rgba(255,255,255,0.68);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::before {
+background: rgba(42,58,160,0.24);
+box-shadow: inset 0 1px 1px rgba(22,32,92,0.28);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::after {
+background: linear-gradient(90deg, var(--blue), var(--yellow));
+box-shadow: 0 0 4px rgba(42,58,160,0.55);
+}
+
+/* White full-information GBA status panel ----------------------------------------
+   Match the white Pokédex filter-panel reference: the region gets a broad
+   central field, while percentage and caught count gain their own prominent
+   right-side readout. The existing rail spans the panel's lower edge. */
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+top: -83px;
+height: 48px;
+display: grid;
+grid-template-columns: 31px minmax(0, 1fr) minmax(76px, 34%);
+align-items: center;
+column-gap: 9px;
+padding: 4px 9px 8px 8px;
+border: 2px solid #a8dce3;
+border-radius: 13px 13px 15px 15px;
+background:
+repeating-linear-gradient(180deg, rgba(42,58,160,0.055) 0 1px, transparent 1px 4px),
+linear-gradient(180deg, #ffffff 0%, #f6ffff 55%, #e1f6f8 100%);
+box-shadow:
+0 3px 0 #79c4cf,
+0 6px 11px rgba(26,100,116,0.2),
+inset 0 1px 0 #ffffff,
+inset 0 -1px 0 rgba(42,58,160,0.12);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-ball {
+width: 29px;
+height: 29px;
+flex-basis: 29px;
+box-shadow: 0 0 0 2px rgba(217,252,255,0.95), 0 1px 3px rgba(22,32,92,0.42), inset 0 1px 0 rgba(255,255,255,0.95);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-region {
+justify-self: start;
+font-size: clamp(9px, 2.55vw, 12px);
+font-weight: 900;
+letter-spacing: 1.05px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress {
+position: relative;
+min-width: 0;
+height: 31px;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 0 2px 2px 10px;
+border-left: 1px solid rgba(42,58,160,0.24);
+background: linear-gradient(90deg, rgba(216,249,252,0.16), rgba(177,234,241,0.38));
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+font-size: clamp(14px, 4.1vw, 19px);
+font-weight: 900;
+line-height: 0.9;
+letter-spacing: -0.06em;
+color: #5165c2;
+text-shadow: 0 1px 0 #ffffff;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress small {
+margin-top: 3px;
+font-size: clamp(6.3px, 1.78vw, 8.5px);
+font-weight: 800;
+letter-spacing: 0.18px;
+color: var(--blue-dark);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::before {
+left: 9px;
+right: 9px;
+bottom: 4px;
+height: 3px;
+background: #c6e8ed;
+box-shadow: inset 0 1px 1px rgba(22,32,92,0.22);
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::after {
+left: 9px;
+bottom: 4px;
+height: 3px;
+width: var(--complete-rail);
+background: linear-gradient(90deg, #7083de, #a28cf3);
+box-shadow: 0 0 3px rgba(98,113,207,0.45);
+}
+
+/* Compact white GBA status panel -------------------------------------------------
+   Restore the prior compact height and lower offset so the bar no longer clips
+   into the screen edge, while keeping the white Pokédex finish and the slightly
+   enlarged completion figures. */
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+top: -73px;
+height: 38px;
+grid-template-columns: 25px minmax(0, 1fr) minmax(68px, 32%);
+column-gap: 7px;
+padding: 3px 8px 5px 7px;
+border-radius: 12px 12px 14px 14px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-ball {
+width: 24px;
+height: 24px;
+flex-basis: 24px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-region {
+font-size: clamp(8px, 2.25vw, 10px);
+letter-spacing: 0.85px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress {
+height: 25px;
+padding: 0 2px 2px 7px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+font-size: clamp(10px, 3.1vw, 14px);
+line-height: 0.9;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress small {
+margin-top: 2px;
+font-size: clamp(4.8px, 1.5vw, 7px);
+line-height: 1;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::before,
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::after {
+bottom: 3px;
+height: 2px;
+}
+
+/* GBA completion readout without rail -------------------------------------------
+   The percentage and caught count now use the complete right-side status field;
+   removing the redundant rail gives those two values room to become the clear
+   focal point of the white panel. */
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+grid-template-columns: 24px minmax(0, 1fr) minmax(86px, 39%);
+column-gap: 7px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress {
+height: 28px;
+padding: 0 2px 0 8px;
+justify-content: center;
+background: linear-gradient(90deg, rgba(216,249,252,0.12), rgba(177,234,241,0.48));
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress strong {
+font-size: clamp(11px, 3.5vw, 15px);
+line-height: 0.92;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress small {
+margin-top: 3px;
+font-size: clamp(5.6px, 1.7vw, 8px);
+line-height: 1;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::before,
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress::after {
+display: none;
+}
+
+/* Physical Nintendo DS cartridge reference — Generations 4–5 -------------------
+   The supplied Diamond cartridge has a near-square, deep-black body with a
+   raised outer lip, softly rounded lower corners, an inset label and a small
+   right-hand retention step. These final selectors affect only the two DS
+   generations; all GBA, 3DS and Switch shells keep their existing styling. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	flex: 0 0 64%;
+	aspect-ratio: 0.95 / 1;
+	padding: 12px 6px 8px;
+	border: 3px solid #151516;
+	border-radius: 12px 12px 15px 15px;
+	background:
+		linear-gradient(90deg, rgba(255,255,255,0.13) 0%, transparent 8% 91%, rgba(0,0,0,0.48) 100%),
+		linear-gradient(155deg, #414143 0%, #28292b 26%, #171719 72%, #111112 100%);
+	box-shadow:
+		0 5px 0 #0b0c0d,
+		0 10px 15px rgba(0,0,0,0.4),
+		inset 1px 1px 0 rgba(255,255,255,0.15),
+		inset -2px -3px 4px rgba(0,0,0,0.58);
+}
+.kalos-gen-tile[data-cart="ds"][data-gen="4"]::before,
+.kalos-gen-tile[data-cart="ds"][data-gen="5"]::before {
+	display: none;
+}
+.kalos-gen-tile[data-cart="ds"][data-gen="4"]::after,
+.kalos-gen-tile[data-cart="ds"][data-gen="5"]::after {
+	left: auto;
+	right: -4px;
+	bottom: 12px;
+	width: 5px;
+	height: 19px;
+	transform: none;
+	background: linear-gradient(90deg, #0d0e0f, #343537);
+	border: 1px solid #0a0b0c;
+	border-left: 0;
+	border-radius: 0 3px 3px 0;
+	box-shadow: none;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	width: 86%;
+	height: 85%;
+	margin-top: 0;
+	padding: 0;
+	border: 2px solid #08090a;
+	border-radius: 7px 7px 9px 9px;
+	background: #0a0b0c;
+	box-shadow:
+		inset 0 0 0 1px rgba(255,255,255,0.15),
+		0 1px 2px rgba(0,0,0,0.7);
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-boxart {
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center 48%;
+	transform: scale(1.48);
+	transform-origin: center center;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo::after,
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .dex-gen-badge,
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-label,
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-cart-product-code {
+	display: none;
+}
+
+/* DS refinement — thin black shell, centered photo face, GBA-style status bar */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	padding: 8px 4px 6px;
+	border: 1px solid #050607;
+	border-radius: 10px 10px 13px 13px;
+	background:
+		linear-gradient(90deg, rgba(255,255,255,0.1) 0%, transparent 9% 90%, rgba(0,0,0,0.46) 100%),
+		linear-gradient(155deg, #38393b 0%, #202123 35%, #111214 100%);
+	box-shadow:
+		0 4px 0 #08090a,
+		0 8px 12px rgba(0,0,0,0.34),
+		inset 1px 1px 0 rgba(255,255,255,0.12),
+		inset -1px -2px 3px rgba(0,0,0,0.56);
+}
+.kalos-gen-tile[data-cart="ds"][data-gen="4"]::after,
+.kalos-gen-tile[data-cart="ds"][data-gen="5"]::after {
+	right: -2px;
+	bottom: 11px;
+	width: 3px;
+	height: 15px;
+	border: 0;
+	border-radius: 0 2px 2px 0;
+	background: #08090a;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	width: 78%;
+	height: 72%;
+	padding: 5px;
+	border: 1px solid #050607;
+	border-radius: 5px;
+	background: #e9e3da;
+	box-shadow:
+		inset 0 0 0 1px rgba(255,255,255,0.8),
+		0 1px 2px rgba(0,0,0,0.6);
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-boxart {
+	inset: 5px;
+	width: calc(100% - 10px);
+	height: calc(100% - 10px);
+	object-fit: cover;
+	object-position: center;
+	transform: none;
+}
+/* Reuse the GBA completion-bar hierarchy above the two DS cards. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	position: absolute;
+	top: -57px;
+	left: 50%;
+	width: calc(100% + 8px);
+	height: 36px;
+	box-sizing: border-box;
+	transform: translateX(-50%);
+	z-index: 12;
+	display: grid;
+	grid-template-columns: 23px minmax(0, 1fr) minmax(68px, 39%);
+	align-items: center;
+	column-gap: 7px;
+	padding: 3px 8px 5px 7px;
+	border: 2px solid #a8dce3;
+	border-radius: 12px 12px 14px 14px;
+	background:
+		repeating-linear-gradient(180deg, rgba(42,58,160,0.055) 0 1px, transparent 1px 4px),
+		linear-gradient(180deg, #ffffff 0%, #f6ffff 55%, #e1f6f8 100%);
+	box-shadow:
+		0 3px 0 #79c4cf,
+		0 6px 11px rgba(26,100,116,0.2),
+		inset 0 1px 0 #ffffff,
+		inset 0 -1px 0 rgba(42,58,160,0.12);
+	color: var(--blue-dark);
+	pointer-events: none;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-gba-ball {
+	width: 23px;
+	height: 23px;
+	flex-basis: 23px;
+	border-radius: 50%;
+	background: radial-gradient(circle at 35% 28%, #ffffff 0%, #baf6fd 44%, #8ceefb 70%, #5bc2d4 100%);
+	border: 1px solid var(--blue);
+	box-shadow: 0 0 0 2px rgba(217,252,255,0.95), 0 1px 3px rgba(22,32,92,0.42), inset 0 1px 0 rgba(255,255,255,0.95);
+	overflow: hidden;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-gba-ball img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	filter: drop-shadow(0 1px 1px rgba(0,0,0,0.45));
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-ds-region {
+	min-width: 0;
+	font-family: var(--hud);
+	font-size: clamp(8px, 2.25vw, 10px);
+	font-weight: 900;
+	letter-spacing: 0.85px;
+	color: var(--blue-dark);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-ds-progress {
+	height: 27px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding-left: 7px;
+	border-left: 1px solid rgba(42,58,160,0.24);
+	background: linear-gradient(90deg, rgba(216,249,252,0.12), rgba(177,234,241,0.48));
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-ds-progress strong {
+	font-family: var(--mono);
+	font-size: clamp(11px, 3.5vw, 15px);
+	font-weight: 900;
+	line-height: 0.92;
+	letter-spacing: -0.06em;
+	color: #5165c2;
+	text-shadow: 0 1px 0 #ffffff;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-ds-progress small {
+	margin-top: 3px;
+	font-family: var(--mono);
+	font-size: clamp(5.6px, 1.7vw, 8px);
+	font-weight: 800;
+	line-height: 1;
+	color: var(--blue-dark);
+}
+
+/* DS face-area proportion correction ------------------------------------------------
+   Match the GBA relationship between the completion bar and its cartridge:
+   the bar aligns exactly to the shell width, while the central face occupies
+   nearly all of the available DS body instead of leaving a heavy lower band. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	padding: 5px 3px 3px;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	width: 88%;
+	height: 88%;
+	padding: 2px;
+	border: 1px solid #050607;
+	border-radius: 4px;
+	background: #0a0b0c;
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 1px 2px rgba(0,0,0,0.52);
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-boxart {
+	display: block;
+	inset: 2px;
+	width: calc(100% - 4px);
+	height: calc(100% - 4px);
+	object-fit: cover;
+	object-position: center;
+	transform: none;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	width: 100%;
+}
+
+/* Keep the complete supplied DS-cartridge photograph visible. The prior cover
+   crop enlarged only the dark cartridge body, making the face read as blank.
+   Contain preserves the Diamond label and the photo’s light surround. */
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	background: #ede5da;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-boxart {
+	object-fit: contain;
+	background: #ede5da;
+}
+
+/* Final DS alignment: clear the lower shell edge and match the GBA HUD span. */
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	transform: translateY(-3px);
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	/* The GBA header resolves to approximately 274px in the mobile rail. */
+	width: 274px;
+	max-width: calc(100vw - 84px);
+	top: -49px;
+}
+
+/* DS header width correction: follow the shell width, as the GBA bar does. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	width: 100%;
+	max-width: none;
+}
+
+/* DS header width: match the GBA completion bar’s measured mobile span. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	width: 274px;
+	max-width: calc(100vw - 84px);
+}
+
+/* Moderate DS header span: wider than the DS shell, narrower than the GBA bar. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	width: 220px;
+	max-width: calc(100vw - 84px);
+}
+
+/* Slightly shorter DS header while retaining a subtle shell overhang. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	width: 205px;
+}
+
+/* Nudge the DS header closer to the cartridge. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	top: -44px;
+}
+
+/* Final small downward nudge for the DS header. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	top: -40px;
+}
+
+/* Smaller DS body with a little more air beneath the completion header. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	flex-basis: 57%;
+	top: 6px;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	/* Counter the shell offset so the header stays put while the cartridge drops. */
+	top: -46px;
+}
+
+/* Restore a larger DS body while reserving space above the lower panel. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	flex-basis: 61%;
+	margin-bottom: 12px;
+}
+
+/* Subtle extra material along the DS cartridge’s upper edge. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	border-top-width: 4px;
+}
+
+/* Increase the black interior material above the DS image box without resizing it. */
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	transform: translateY(3px);
+}
+
+/* Give the DS shell a slightly deeper lower section than its top section. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	padding-bottom: 8px;
+}
+
+/* Compact the DS completion header without changing the cartridge body. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	width: 190px;
+}
+
+/* Compact DS header and more legible region names across every generation. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	width: 175px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-region,
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-ds-region,
+.kalos-gen-tile .kalos-gen-tile-region {
+	font-size: clamp(10px, 2.7vw, 12px);
+	letter-spacing: 0.75px;
+}
+
+/* Ensure GBA region names receive the same final legibility increase. */
+.kalos-gba-region {
+	font-size: clamp(10px, 2.7vw, 12px) !important;
+	letter-spacing: 0.75px;
+}
+
+/* Thinner DS completion bar: preserve the width and enlarged region name. */
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	height: 32px;
+	grid-template-columns: 20px minmax(0, 1fr) minmax(61px, 39%);
+	column-gap: 6px;
+	padding: 2px 6px 3px;
+	border-radius: 10px 10px 12px 12px;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-gba-ball {
+	width: 20px;
+	height: 20px;
+	flex-basis: 20px;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-ds-progress {
+	height: 22px;
+	padding-left: 5px;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-ds-progress strong {
+	font-size: clamp(10px, 3.1vw, 13px);
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion .kalos-ds-progress small {
+	font-size: clamp(5px, 1.5vw, 7px);
+}
+
+/* Header-height refinement: slimmer GBA bar and requested 34px DS bar. */
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion {
+	height: 34px;
+	padding: 2px 8px 3px 7px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-ball {
+	width: 22px;
+	height: 22px;
+	flex-basis: 22px;
+}
+.kalos-gen-tile[data-cart="gba"] > .kalos-gba-completion .kalos-gba-progress {
+	height: 24px;
+}
+.kalos-gen-tile[data-cart="ds"] > .kalos-ds-completion {
+	height: 34px;
+}
+
+/* GBA header lives inside the sticker markup: apply the thinner treatment there. */
+.kalos-gen-tile[data-cart="gba"] .kalos-gba-completion {
+	height: 34px;
+	padding: 2px 8px 3px 7px;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gba-completion .kalos-gba-ball {
+	width: 22px;
+	height: 22px;
+	flex-basis: 22px;
+}
+.kalos-gen-tile[data-cart="gba"] .kalos-gba-completion .kalos-gba-progress {
+	height: 24px;
+}
+
+/* Restore the DS cartridge’s opaque black material and keep its assigned art visibly above it. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	background: #050607 !important;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	background-color: #050607;
+	background-image: none;
+	padding: 2px;
+	overflow: hidden;
+	isolation: isolate;
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 1px 2px rgba(0,0,0,0.7);
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-boxart {
+	position: relative;
+	z-index: 2;
+	display: block;
+	width: calc(100% - 4px);
+	height: calc(100% - 4px);
+	object-fit: contain;
+	object-position: center;
+	background: #050607;
+}
+
+/* Guaranteed visible DS artwork layer: paint the supplied cartridge photograph above the black inset face. */
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	position: relative;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo::after {
+	content: "";
+	display: block !important;
+	position: absolute;
+	inset: 2px;
+	z-index: 6;
+	pointer-events: none;
+	background: #050607 url("images/game-symbols/ds-diamond-cartridge.png") center / contain no-repeat;
+}
+
+/* Dark charcoal DS outer rim, matched to the supplied cartridge reference. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	border-color: #394142;
+	box-shadow:
+		0 4px 0 #101415,
+		0 8px 12px rgba(0,0,0,0.38),
+		inset 1px 1px 0 rgba(118,132,133,0.34),
+		inset -1px -2px 3px rgba(0,0,0,0.62);
+}
+
+/* Fill the complete DS inset face with the assigned artwork. */
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo::after {
+	background-size: cover;
+	background-position: center;
+}
+
+/* Per-generation DS artwork: Diamond for Sinnoh, Black for Unova. */
+.kalos-gen-tile[data-gen="4"] .kalos-gen-tile-sticker.has-ds-reference-photo::after {
+	background-image: url("images/game-symbols/platinum.jpg");
+}
+.kalos-gen-tile[data-gen="5"] .kalos-gen-tile-sticker.has-ds-reference-photo::after {
+	background-image: url("images/game-symbols/black.jpg");
+}
+
+/* Cartridge renderer lock ---------------------------------------------------------
+   Every collapsed rail rebuilt by renderKalosMobileDex is tagged
+   data-carousel-design="cartridge-v2". Keep the retired generic badge, label,
+   and serial overlays out of these physical-cartridge faces even while a card
+   is being translated or interrupted mid-swipe. Completion remains in the
+   dedicated HUD above each shell. */
+.kalos-gen-grid[data-carousel-design="cartridge-v2"]:not(.kalos-gen-grid-open) .kalos-gen-tile[data-cart="gba"] .dex-gen-badge,
+.kalos-gen-grid[data-carousel-design="cartridge-v2"]:not(.kalos-gen-grid-open) .kalos-gen-tile[data-cart="gba"] .kalos-gen-tile-label,
+.kalos-gen-grid[data-carousel-design="cartridge-v2"]:not(.kalos-gen-grid-open) .kalos-gen-tile[data-cart="gba"] .kalos-cart-product-code,
+.kalos-gen-grid[data-carousel-design="cartridge-v2"]:not(.kalos-gen-grid-open) .kalos-gen-tile[data-cart="ds"] .dex-gen-badge,
+.kalos-gen-grid[data-carousel-design="cartridge-v2"]:not(.kalos-gen-grid-open) .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-label,
+.kalos-gen-grid[data-carousel-design="cartridge-v2"]:not(.kalos-gen-grid-open) .kalos-gen-tile[data-cart="ds"] .kalos-cart-product-code {
+	display: none !important;
+}
+
+/* Opened generation view — retain the original regional-map design -------------
+   Closed cards are the physical cartridge picker. Once a generation is opened,
+   its expanded pane intentionally returns to the older banner + map-backed
+   species grid shown in the reference, including the compact three-column
+   mobile layout. This state is explicit so closed-cartridge rules cannot bleed
+   into an opened generation. */
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded {
+	flex: 0 0 100%;
+	box-sizing: border-box;
+	min-width: 0;
+	padding: 0;
+	border: 2.5px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--bg-panel);
+	box-shadow: 0 5px 0 rgba(43, 35, 32, 0.14);
+	overflow: hidden;
+}
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded .kalos-gen-detail-banner {
+	padding: 0;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+}
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded .kalos-gen-detail-head {
+	padding: 14px;
+	background: linear-gradient(195deg, rgba(20, 15, 12, 0.20) 0%, rgba(20, 15, 12, 0.82) 100%);
+}
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded .dex-species-panel {
+	display: block;
+	border-top: 2.5px dashed var(--line);
+	padding: 14px 18px 18px;
+	background-size: cover;
+	background-position: center;
+	background-repeat: no-repeat;
+	max-height: 65vh;
+	overflow-y: auto;
+}
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded .dex-species-grid {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+}
+
+/* Opened generations are fixed detail panels, never a horizontal carousel. */
+.kalos-gen-grid[data-open-presentation="region-map"] {
+	overflow-x: hidden;
+	scroll-snap-type: none;
+}
+.kalos-gen-grid[data-open-presentation="region-map"] .dex-species-panel {
+	touch-action: pan-y;
+	overscroll-behavior-x: contain;
+}
+
+/* Final DS palette — charcoal-grey molded plastic for closed Gen 4–5 shells. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	border-color: #596467;
+	background:
+		linear-gradient(100deg, rgba(255,255,255,0.18) 0%, transparent 12% 86%, rgba(0,0,0,0.34) 100%),
+		linear-gradient(180deg, #707b7d 0%, #4b5658 42%, #2e383a 100%) !important;
+	box-shadow:
+		0 4px 0 #1e2729,
+		0 8px 12px rgba(0,0,0,0.38),
+		inset 1px 1px 0 rgba(221,231,231,0.28),
+		inset -1px -2px 3px rgba(0,0,0,0.54);
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo,
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-boxart,
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo::after {
+	background-color: #20292b;
+}
+
+/* Small centered retention notch on the closed DS cartridge bottom edge. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"][data-gen="4"]::before,
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"][data-gen="5"]::before {
+	content: "";
+	display: block;
+	position: absolute;
+	left: 50%;
+	bottom: -5px;
+	width: 14px;
+	height: 5px;
+	transform: translateX(-50%);
+	background: #2e383a;
+	clip-path: polygon(0 0, 100% 0, 68% 100%, 32% 100%);
+	box-shadow: 0 1px 0 rgba(205,220,220,0.16), 0 2px 1px rgba(0,0,0,0.34);
+	z-index: 8;
+	pointer-events: none;
+}
+
+/* Make room for the DS lower protrusion inside the clipped carousel rail. */
+.kalos-gen-grid[data-open-presentation="cartridge"].kalos-depth-ready:not(.kalos-gen-grid-open) {
+	padding-bottom: 8px;
+}
+/* Final visible DS lower triangle: larger, highlighted, and below the body edge. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"][data-gen="4"]::before,
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"][data-gen="5"]::before {
+	bottom: -7px;
+	width: 20px;
+	height: 8px;
+	background: linear-gradient(180deg, #788486 0%, #3a4648 100%);
+	clip-path: polygon(0 0, 100% 0, 67% 100%, 33% 100%);
+	filter: drop-shadow(0 1px 1px rgba(0,0,0,0.58));
+	z-index: 30;
+}
+
+/* Direct DS lower triangle: explicit markup keeps the small protrusion visible
+   above the shell and the carousel’s depth layers. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"]::before {
+	content: none;
+	display: none;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] > .kalos-ds-bottom-triangle {
+	display: block;
+	position: absolute;
+	left: 50%;
+	bottom: -7px;
+	width: 20px;
+	height: 8px;
+	transform: translateX(-50%);
+	background: linear-gradient(180deg, #788486 0%, #3a4648 100%);
+	clip-path: polygon(0 0, 100% 0, 67% 100%, 33% 100%);
+	filter: drop-shadow(0 1px 1px rgba(0,0,0,0.58));
+	z-index: 50;
+	pointer-events: none;
+}
+
+/* DS triangle position: sit slightly closer to the lower shell edge. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] > .kalos-ds-bottom-triangle {
+	bottom: -5px;
+}
+
+/* Remove the retired DS shell pseudo-element from the artwork face. The lower
+   triangle is now the explicit .kalos-ds-bottom-triangle child only. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"][data-gen="4"]::before,
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"][data-gen="5"]::before {
+	content: none !important;
+	display: none !important;
+	background: none !important;
+	clip-path: none !important;
+}
+
+/* Unified opened-generation frame ------------------------------------------------
+   A closed tile may retain its console cartridge geometry for the first frame
+   of the expand animation. Once opened, every generation deliberately becomes
+   the same largest mobile map panel—never a GBA, DS, 3DS, or Switch shape. */
+.kalos-gen-grid.kalos-gen-grid-open[data-open-presentation="region-map"] {
+	width: 100%;
+	max-width: none;
+	margin-inline: 0;
+	padding: 0 !important;
+	align-items: stretch;
+}
+.kalos-gen-grid.kalos-gen-grid-open[data-open-presentation="region-map"] .kalos-gen-tile-expanded {
+	display: flex;
+	flex: 0 0 100% !important;
+	width: 100% !important;
+	min-width: 100% !important;
+	max-width: 100% !important;
+	height: min(82svh, 700px);
+	min-height: min(82svh, 700px);
+	aspect-ratio: auto !important;
+	align-self: stretch !important;
+	margin: 0 !important;
+}
+.kalos-gen-grid.kalos-gen-grid-open[data-open-presentation="region-map"] .kalos-gen-tile-expanded .kalos-gen-detail-banner {
+	flex: 0 0 auto;
+}
+.kalos-gen-grid.kalos-gen-grid-open[data-open-presentation="region-map"] .kalos-gen-tile-expanded .dex-species-panel {
+	flex: 1 1 auto;
+	min-height: 0;
+	height: auto !important;
+	max-height: none !important;
+	overflow-y: auto;
+}
+
+/* Closed Nintendo 3DS cartridges — Gen 6–7 ----------------------------------
+   The shell is intentionally independent from the DS and GBA treatments: a
+   pale moulded card with a white printed label, a Nintendo 3DS brand strip,
+   and the assigned game artwork filling only the middle inset. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] {
+	flex: 0 0 62%;
+	aspect-ratio: 0.91 / 1;
+	box-sizing: border-box;
+	position: relative;
+	padding: 5px;
+	border: 2px solid #b7c3c7;
+	border-radius: 7px 7px 14px 14px;
+	background:
+		linear-gradient(100deg, rgba(255,255,255,0.72) 0%, transparent 14% 86%, rgba(101,119,124,0.20) 100%),
+		linear-gradient(180deg, #f7fbfc 0%, #dce8eb 58%, #c6d3d6 100%);
+	box-shadow:
+		0 4px 0 #9eafb3,
+		0 8px 12px rgba(23,38,42,0.24),
+		inset 1px 1px 0 rgba(255,255,255,0.96),
+		inset -1px -2px 3px rgba(77,98,104,0.18);
+	overflow: visible;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"]::before {
+	content: none !important;
+	display: none !important;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"]::after {
+	content: "";
+	display: block;
+	position: absolute;
+	right: -4px;
+	top: 15px;
+	width: 5px;
+	height: 17px;
+	border: 1px solid #aebcc0;
+	border-left: 0;
+	border-radius: 0 3px 3px 0;
+	background: linear-gradient(90deg, #c2d0d3, #eef6f7);
+	box-shadow: none;
+	z-index: 2;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 3px 3px 8px 8px;
+	background: transparent;
+	box-shadow: none;
+	overflow: hidden;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] .kalos-3ds-label {
+	display: grid;
+	grid-template-rows: 24% 60% 16%;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	overflow: hidden;
+	border: 1.5px solid #b8c4c8;
+	border-radius: 3px 3px 7px 7px;
+	background: #fff;
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.94);
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-brand {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	padding-top: 1px;
+	border-bottom: 1px solid #d4dde0;
+	font-family: var(--hud);
+	font-size: clamp(7px, 2.2vw, 11px);
+	font-weight: 800;
+	letter-spacing: 0.25px;
+	color: #252d30;
+	white-space: nowrap;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-brand sup {
+	align-self: flex-start;
+	margin-top: 4px;
+	font-size: 4px;
+	color: #313a3c;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark {
+	display: inline-flex;
+	align-items: center;
+	gap: 1px;
+	font-family: var(--hud);
+	font-size: 1.45em;
+	line-height: 1;
+	font-weight: 900;
+	letter-spacing: -0.5px;
+	color: #e04a39;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark i {
+	display: inline-block;
+	width: 3px;
+	height: 3px;
+	border: 1px solid #4d585b;
+	box-sizing: border-box;
+	background: #fff;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark i + i {
+	margin-left: -4px;
+	margin-top: 5px;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-inset-art {
+	position: relative;
+	margin: 3px 4px 2px;
+	overflow: hidden;
+	border: 1px solid #b0bec2;
+	background: #dfe8ea;
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.78);
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-boxart {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-product-code {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 2px 1px;
+	border-top: 1px solid #d4dde0;
+	font-family: var(--mono);
+	font-size: clamp(5px, 1.55vw, 7px);
+	font-weight: 700;
+	letter-spacing: 0.55px;
+	color: #3c474a;
+	white-space: nowrap;
+}
+
+/* 3DS completion HUD — intentionally identical in size to the final DS bar. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] > .kalos-ds-completion {
+	position: absolute;
+	top: -46px;
+	left: 50%;
+	width: 175px;
+	height: 34px;
+	box-sizing: border-box;
+	transform: translateX(-50%);
+	z-index: 12;
+	display: grid;
+	grid-template-columns: 20px minmax(0, 1fr) minmax(61px, 39%);
+	align-items: center;
+	column-gap: 6px;
+	padding: 2px 6px 3px;
+	border: 2px solid #a8dce3;
+	border-radius: 10px 10px 12px 12px;
+	background:
+		repeating-linear-gradient(180deg, rgba(42,58,160,0.055) 0 1px, transparent 1px 4px),
+		linear-gradient(180deg, #ffffff 0%, #f6ffff 55%, #e1f6f8 100%);
+	box-shadow:
+		0 3px 0 #79c4cf,
+		0 6px 11px rgba(26,100,116,0.2),
+		inset 0 1px 0 #ffffff,
+		inset 0 -1px 0 rgba(42,58,160,0.12);
+	color: var(--blue-dark);
+	pointer-events: none;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] > .kalos-ds-completion .kalos-gba-ball {
+	width: 20px;
+	height: 20px;
+	flex-basis: 20px;
+	border-radius: 50%;
+	background: radial-gradient(circle at 35% 28%, #ffffff 0%, #baf6fd 44%, #8ceefb 70%, #5bc2d4 100%);
+	border: 1px solid var(--blue);
+	box-shadow: 0 0 0 2px rgba(217,252,255,0.95), 0 1px 3px rgba(22,32,92,0.42), inset 0 1px 0 rgba(255,255,255,0.95);
+	overflow: hidden;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] > .kalos-ds-completion .kalos-gba-ball img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	filter: drop-shadow(0 1px 1px rgba(0,0,0,0.45));
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] > .kalos-ds-completion .kalos-ds-region {
+	min-width: 0;
+	font-family: var(--hud);
+	font-size: clamp(10px, 2.7vw, 12px);
+	font-weight: 900;
+	letter-spacing: 0.75px;
+	color: var(--blue-dark);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] > .kalos-ds-completion .kalos-ds-progress {
+	height: 22px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding-left: 5px;
+	border-left: 1px solid rgba(42,58,160,0.24);
+	background: linear-gradient(90deg, rgba(216,249,252,0.12), rgba(177,234,241,0.48));
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] > .kalos-ds-completion .kalos-ds-progress strong {
+	font-family: var(--mono);
+	font-size: clamp(10px, 3.1vw, 13px);
+	font-weight: 900;
+	line-height: 0.92;
+	letter-spacing: -0.06em;
+	color: #5165c2;
+	text-shadow: 0 1px 0 #ffffff;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] > .kalos-ds-completion .kalos-ds-progress small {
+	margin-top: 3px;
+	font-family: var(--mono);
+	font-size: clamp(5px, 1.5vw, 7px);
+	font-weight: 800;
+	line-height: 1;
+	color: var(--blue-dark);
 }
