@@ -3376,12 +3376,13 @@ views.collection.setAttribute('aria-hidden', tab === 'collection' ? 'false' : 't
 views.livingdex.setAttribute('aria-hidden', tab === 'livingdex' ? 'false' : 'true');
 setBodyBg(tab);
 }
-// Switches the active tab: chrome (above) plus a full render. This is the
-// entry point for changing tabs once the script has finished loading -
-// the swipe handler and nav clicks below both call this.
+// Switches the active tab's visible chrome only. A page swipe is navigation,
+// not a data update, so it must not rebuild #kalos-gen-grid: rebuilding the
+// carousel mid-transition briefly exposed its older generic tile layer before
+// the current cartridge treatment restabilised. Data mutations continue to
+// call renderAll() directly at their own call sites.
 function applyTabState(tab) {
 syncTabChrome(tab);
-renderAll();
 if (tab === 'livingdex') lockKalosToggleFilterCardHeight();
 }
 function activateTab(tab) {
@@ -5491,8 +5492,8 @@ var GEN_BOX_ART = {
 1: "firegreen.jpg", // Kanto
 2: "heartgold.jpg",  // Johto
 3: "emerald.jpg",    // Hoenn
-4: "platinum.jpg",   // Sinnoh
-5: "black.jpg",      // Unova
+4: "platinum.jpg",              // Sinnoh — Pokémon Platinum cover artwork
+5: "black.jpg",                 // Unova — Pokémon Black cover artwork
 6: "x.jpg",   // Kalos
 7: "usum.png"         // Alola
 };
@@ -5519,21 +5520,80 @@ buildDexGenBadgeHtml(g, pct) +
 '<span class="kalos-switch-rating-sub">Everyone</span>' +
 '</div>' +
 '</div>' +
-'<div class="kalos-switch-footer">GEN-0' + g.gen + '-USA</div>' +
+'<div class="kalos-switch-footer">LA-H-TRK-0' + g.gen + '-USA</div>' +
 '</div>'
 );
 }
 var cartStyleForBoxArt = kalosCartStyleForGen(g.gen);
 var boxArt = (cartStyleForBoxArt === 'gba' || cartStyleForBoxArt === 'ds' || cartStyleForBoxArt === '3ds') ? GEN_BOX_ART[g.gen] : null;
-return (
-'<div class="kalos-gen-tile-sticker' + (boxArt ? ' has-boxart' : '') + '">' +
-(boxArt ? '<img class="kalos-gen-tile-boxart" src="images/game-symbols/' + boxArt + '" alt="" onerror="this.remove()">' : '') +
+var usesDsReferencePhoto = cartStyleForBoxArt === 'ds' && Boolean(boxArt);
+var cartPrefix = cartStyleForBoxArt === 'gba' ? 'AGB' : (cartStyleForBoxArt === 'ds' ? 'NTR' : 'LNA-CTR');
+var cartCode = cartPrefix + '-TRK-' + String(g.gen).padStart(2, '0') + '-USA';
+var hudBallFile = REGION_BALLS[g.region];
+var hudBallFallbacks = {
+"ball_kanto_pokeball.png": "poke-ball",
+"ball_johto_greatball.png": "great-ball",
+"ball_hoenn_ultraball.png": "ultra-ball",
+"ball_sinnoh_masterball.png": "master-ball",
+"ball_unova_quickball.png": "quick-ball",
+"ball_kalos_timerball.png": "timer-ball",
+"ball_alola_beastball.png": "beast-ball",
+"ball_galar_dynamaxball.png": "poke-ball",
+"ball_paldea_premierball.png": "premier-ball"
+};
+var hudBallSlug = hudBallFallbacks[hudBallFile] || "poke-ball";
+var hudBallRemote = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/" + hudBallSlug + ".png";
+var gbaHudBall = hudBallFile ?
+('<span class="kalos-gba-ball"><img src="' + hudBallRemote + '" data-local-src="images/region-balls/' + hudBallFile + '" alt="" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'is-fallback\');"></span>') :
+'<span class="kalos-gba-ball is-fallback"></span>';
+var gbaCompletion = cartStyleForBoxArt === 'gba' ? (
+'<div class="kalos-gba-completion" style="--complete:' + pct + '%;--complete-rail:calc(' + pct + '% - 11px)" aria-label="' + escapeHtml(g.region) + ' completion ' + pct + ' percent">' +
+gbaHudBall +
+'<span class="kalos-gba-region">' + escapeHtml(g.region) + '</span>' +
+'<span class="kalos-gba-progress"><strong>' + pct + '%</strong><small>' + genCaught + ' / ' + g.species.length + '</small></span>' +
+'</div>'
+) : '';
+var dsCompletion = (cartStyleForBoxArt === 'ds' || cartStyleForBoxArt === '3ds') ? (
+'<div class="kalos-ds-completion" aria-label="' + escapeHtml(g.region) + ' completion ' + pct + ' percent">' +
+gbaHudBall +
+'<span class="kalos-ds-region">' + escapeHtml(g.region) + '</span>' +
+'<span class="kalos-ds-progress"><strong>' + pct + '%</strong><small>' + genCaught + ' / ' + g.species.length + '</small></span>' +
+'</div>'
+) : '';
+// An explicit element is used for the small lower DS retention triangle. It
+// keeps the detail above the shell artwork and avoids pseudo-element layering
+// being suppressed by the carousel’s depth/overflow treatment.
+var dsBottomTriangle = cartStyleForBoxArt === 'ds' ?
+'<span class="kalos-ds-bottom-triangle" aria-hidden="true"></span>' : '';
+var threeDsLabel = cartStyleForBoxArt === '3ds' ? (
+'<div class="kalos-3ds-label">' +
+'<div class="kalos-3ds-brand">NINTENDO <span class="kalos-3ds-mark"><i></i><i></i>3DS</span><sup>™</sup></div>' +
+'<div class="kalos-3ds-inset-art">' +
+(boxArt ? '<img class="kalos-3ds-boxart" src="images/game-symbols/' + boxArt + '" alt="" onerror="this.remove()">' : '') +
+'</div>' +
+'<div class="kalos-3ds-product-code">LNA-CTR-TRK-0' + g.gen + '-USA</div>' +
+'</div>'
+) : '';
+// GBA and DS cards are now physical cartridges with their own dedicated
+// completion HUD above the shell. Do not keep the retired generic card
+// badge/label/code inside those faces: during a swipe that old markup was
+// still present in the DOM and could be exposed by the older shared styles.
+var usesPhysicalCartridgeChrome = cartStyleForBoxArt === 'gba' || cartStyleForBoxArt === 'ds' || cartStyleForBoxArt === '3ds';
+var legacyTileDetails = usesPhysicalCartridgeChrome ? '' : (
 buildDexGenBadgeHtml(g, pct) +
 '<div class="kalos-gen-tile-label">' +
 '<div class="kalos-gen-tile-region">' + escapeHtml(g.region) + '</div>' +
 '<div class="kalos-gen-tile-count">' + genCaught + ' / ' + g.species.length + '</div>' +
 '</div>' +
-'</div>'
+'<div class="kalos-cart-product-code">' + cartCode + '</div>'
+);
+return (
+'<div class="kalos-gen-tile-sticker' + (boxArt ? ' has-boxart' : '') + (usesDsReferencePhoto ? ' has-ds-reference-photo' : '') + '">' +
+(threeDsLabel || ((boxArt ? '<img class="kalos-gen-tile-boxart" src="images/game-symbols/' + boxArt + '" alt="" onerror="this.remove()">' : '') + legacyTileDetails)) +
+'</div>' +
+dsBottomTriangle +
+gbaCompletion +
+dsCompletion
 );
 }
 function buildKalosTileExpandedHtml(g, caught, genCaught) {
@@ -5592,6 +5652,13 @@ if (!tileGrid) return;
 // and restore it on the freshly-built panel below.
 var openPanelBefore = tileGrid.querySelector('.kalos-gen-tile-expanded[data-gen="' + kalosOpenGen + '"] .dex-species-panel');
 var savedPanelScrollTop = openPanelBefore ? openPanelBefore.scrollTop : null;
+// Marks every rebuilt tile rail as the current cartridge renderer. The
+// stylesheet uses this state to keep the retired generic-card treatment out
+// of the modern mobile carousel.
+tileGrid.dataset.carouselDesign = 'cartridge-v2';
+// Open generations deliberately use the original map-and-species-panel view;
+// only the collapsed rail uses the newer physical cartridge presentation.
+tileGrid.dataset.openPresentation = kalosOpenGen ? 'region-map' : 'cartridge';
 tileGrid.innerHTML = '';
 // Mirrors the .shiny-mode class the desktop #dex-grid gets (see
 // renderLivingDex) so the same rainbow "caught" styling that grid uses
@@ -5605,7 +5672,10 @@ tileGrid.classList.toggle('shiny-mode', dexMode === 'shiny');
 var openIdx = kalosOpenGen ? kalosGenIndexOf(kalosOpenGen) : -1;
 GEN_DATA.forEach(function(g, i) {
 var genCaught = kalosGenCaughtCount(g, caught);
-var isPane = openIdx !== -1 && (i === openIdx || i === openIdx - 1 || i === openIdx + 1);
+// An opened generation is a fixed detail view. Neighbour generations remain
+// hidden until this panel is closed, so horizontal swiping cannot switch the
+// person away from the map they deliberately opened.
+var isPane = openIdx !== -1 && i === openIdx;
 var tile = document.createElement('div');
 tile.dataset.gen = g.gen;
 if (isPane) {
@@ -5658,7 +5728,27 @@ applyDexTypeFilter();
 applyDexVariantFilter();
 applyDexEvoStageFilter();
 }
-// ---------- mobile Kalos dex: peek/coverflow carousel ----------
+// ---------- mobile Kalos dex: depth carousel ----------
+// The earlier implementation relied on the browser to snap a horizontal track
+// into place and then re-measured the cards. This controller adopts the supplied
+// DepthCarousel model in plain JavaScript: a continuous position drives the
+// depth, tilt, tint and scale of every card; GSAP eases the same position to its
+// resting generation after a drag, wheel move, dot tap or adjacent-card tap.
+var kalosCarouselSyncQueued = false;
+var kalosDepthTween = null;
+var kalosDepthDrag = null;
+var kalosDepthWheelTimer = null;
+var kalosDepthIgnoreClickUntil = 0;
+var KALOS_DEPTH_CONFIG = {
+  depth: 118,
+  spread: 32,
+  tilt: 10,
+  visibleCards: 3,
+  falloff: 0.17,
+  blur: 2.4,
+  duration: 0.62
+};
+
 // Builds the dot row underneath the carousel, one dot per generation.
 function buildKalosDots() {
 var dotsWrap = document.getElementById('kalos-gen-dots');
@@ -5676,14 +5766,7 @@ dot.classList.toggle('active', i === index);
 });
 }
 // Hand-rolled requestAnimationFrame tween, used as a fallback for scrollLeft/
-// scrollTop sliding animations whenever the Motion library (loaded from a CDN
-// <script type="module"> in index.html) hasn't loaded - e.g. a slow or
-// blocked network. Without this, every "if (window.Motion...) animate, else
-// snap instantly" branch below falls straight to the instant snap, which is
-// what was making gen-to-gen switching in the Living Dex look like a hard cut
-// instead of a slide. Mirrors the CSS-transition fallback flipAnimate()
-// already has below; scrollLeft/scrollTop can't be eased with a CSS
-// transition, so this hand-rolls the same cubic ease-in-out over rAF instead.
+// scrollTop sliding animations whenever an animation library is unavailable.
 function rafTweenValue(from, to, durationSec, onUpdate, onDone) {
 var start = null;
 function easeInOutCubic(t) {
@@ -5701,73 +5784,169 @@ onDone();
 }
 requestAnimationFrame(step);
 }
-// Scrolls the carousel so the tile at `index` sits centered. Smooth moves
-// (dot taps, tapping a peeking neighbor) are driven by Motion so they
-// share the same easing as the rest of the app's motion; non-smooth moves
-// (restoring position after a data-only re-render) jump straight there.
-function scrollKalosCarouselToIndex(index, smooth) {
+function kalosReducedMotion() {
+return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+function stopKalosDepthMotion() {
+// Motion playback controls use stop(); the previous GSAP controller used
+// kill(). Support both so an interrupted swipe always starts from the exact
+// scroll position currently visible on screen.
+if (kalosDepthTween) {
+if (kalosDepthTween.stop) kalosDepthTween.stop();
+else if (kalosDepthTween.kill) kalosDepthTween.kill();
+}
+kalosDepthTween = null;
+if (kalosDepthWheelTimer) clearTimeout(kalosDepthWheelTimer);
+kalosDepthWheelTimer = null;
+}
+function kalosCarouselTargetForIndex(index) {
 var grid = document.getElementById('kalos-gen-grid');
-if (!grid) return;
+if (!grid) return null;
 var tile = grid.children[index];
-if (!tile) return;
+if (!tile) return null;
+var maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
 var target = tile.offsetLeft - (grid.clientWidth - tile.clientWidth) / 2;
-if (!smooth) {
-grid.scrollLeft = target;
-} else if (window.Motion && window.Motion.animate) {
-window.Motion.animate(grid.scrollLeft, target, {
-duration: 0.4,
-ease: [0.65, 0, 0.35, 1],
-onUpdate: function(v) { grid.scrollLeft = v; }
-});
-} else {
-rafTweenValue(grid.scrollLeft, target, 0.4, function(v) { grid.scrollLeft = v; });
+return Math.max(0, Math.min(maxScroll, target));
+}
+// Converts the physical scroll position into the carousel's continuous logical
+// position. It uses real per-card targets rather than a fixed card width, which
+// keeps the motion smooth even though the cartridge silhouettes vary in width.
+function kalosCarouselPositionFromScroll(grid, scrollLeft) {
+var count = grid.children.length;
+if (!count) return 0;
+var first = kalosCarouselTargetForIndex(0);
+if (first === null || scrollLeft <= first) return 0;
+var last = kalosCarouselTargetForIndex(count - 1);
+if (last === null || scrollLeft >= last) return count - 1;
+for (var i = 0; i < count - 1; i++) {
+var a = kalosCarouselTargetForIndex(i);
+var b = kalosCarouselTargetForIndex(i + 1);
+if (a === null || b === null) continue;
+if (scrollLeft >= a && scrollLeft <= b) {
+var span = Math.max(1, b - a);
+return i + (scrollLeft - a) / span;
 }
 }
-var kalosCarouselSyncQueued = false;
-// Continuously scales/fades every tile based on its live distance from
-// the carousel's center, so the centered card visibly swells into focus
-// as the person drags rather than just popping between two fixed states.
-// Called on every scroll frame (throttled to one measurement per animation
-// frame) plus once after any re-render.
-function syncKalosCarousel() {
-kalosCarouselSyncQueued = false;
+return Math.max(0, Math.min(count - 1, Math.round(scrollLeft / Math.max(1, grid.clientWidth * 0.7))));
+}
+function kalosCarouselIndexForScroll(grid, scrollLeft) {
+return Math.max(0, Math.min(grid.children.length - 1, Math.round(kalosCarouselPositionFromScroll(grid, scrollLeft))));
+}
+// Applies the supplied DepthCarousel's perspective treatment to the existing
+// cartridge tiles. The central card stays crisp and frontmost; neighbours step
+// backward in Z-space, fan outward, darken and gently blur as they recede.
+function layoutKalosDepthCarousel(position) {
 var grid = document.getElementById('kalos-gen-grid');
 if (!grid || kalosOpenGen) return;
 var tiles = grid.querySelectorAll('.kalos-gen-tile');
 if (!tiles.length) return;
-var gridRect = grid.getBoundingClientRect();
-var center = gridRect.left + gridRect.width / 2;
-var closestIdx = 0, closestDist = Infinity;
+var cfg = KALOS_DEPTH_CONFIG;
 Array.prototype.forEach.call(tiles, function(tile, i) {
-var tRect = tile.getBoundingClientRect();
-var dist = (tRect.left + tRect.width / 2) - center;
-var norm = Math.min(Math.abs(dist) / (gridRect.width / 2), 1);
-var scale = 1 - norm * 0.16;
-var opacity = 1 - norm * 0.5;
-tile.style.transform = 'scale(' + scale.toFixed(3) + ')';
+// This matches the supplied DepthCarousel rail: the selected generation
+// sits at the front, while later generations fan out to the right and
+// recede into the screen. A previous generation can briefly ghost in while
+// the position is fractional, then fades rather than competing with the
+// forward stack.
+var d = i - position;
+var back = Math.max(0, d);
+var distance = Math.abs(d);
+var shown = distance <= cfg.visibleCards + 0.55;
+var side = d * cfg.spread;
+var z = -cfg.depth * d;
+var rotate = cfg.tilt * Math.max(0, Math.min(d, 1));
+var scale = Math.max(0.82, 1 - back * 0.045);
+var opacity = d < 0 ? Math.max(0, 1 + d) : 1;
+if (!shown) opacity = 0;
+var brightness = Math.max(0.42, 1 - back * cfg.falloff);
+var blur = Math.min(cfg.blur, (back / Math.max(1, cfg.visibleCards)) * cfg.blur);
+tile.style.transform = 'translate3d(' + side.toFixed(2) + 'px, 0, ' + z.toFixed(2) + 'px) rotateY(' + rotate.toFixed(2) + 'deg) scale(' + scale.toFixed(3) + ')';
 tile.style.opacity = opacity.toFixed(3);
-if (Math.abs(dist) < closestDist) {
-closestDist = Math.abs(dist);
-closestIdx = i;
-}
+tile.style.filter = 'brightness(' + brightness.toFixed(3) + ') blur(' + blur.toFixed(2) + 'px)';
+tile.style.zIndex = String(2000 - Math.round(d * 20));
+tile.style.pointerEvents = shown && opacity > 0.05 ? 'auto' : 'none';
 });
-if (closestIdx !== kalosCarouselIndex) {
-kalosCarouselIndex = closestIdx;
-updateKalosDots(closestIdx);
+var nearest = Math.max(0, Math.min(tiles.length - 1, Math.round(position)));
+if (nearest !== kalosCarouselIndex) {
+kalosCarouselIndex = nearest;
+updateKalosDots(nearest);
 }
+}
+function syncKalosCarousel() {
+kalosCarouselSyncQueued = false;
+var grid = document.getElementById('kalos-gen-grid');
+if (!grid || kalosOpenGen) return;
+layoutKalosDepthCarousel(kalosCarouselPositionFromScroll(grid, grid.scrollLeft));
 }
 function queueKalosCarouselSync() {
 if (kalosCarouselSyncQueued) return;
 kalosCarouselSyncQueued = true;
 requestAnimationFrame(syncKalosCarousel);
 }
-// One-time wiring for the carousel's scroll tracking, dot taps, and
-// resize handling. Safe to call once at startup - renderKalosMobileDex()
-// re-renders the tiles themselves on every subsequent data change.
+function tweenKalosCarouselTo(target, animate) {
+var grid = document.getElementById('kalos-gen-grid');
+if (!grid) return;
+stopKalosDepthMotion();
+if (!animate || kalosReducedMotion()) {
+grid.scrollLeft = target;
+syncKalosCarousel();
+return;
+}
+if (window.Motion && window.Motion.animate) {
+// Motion animates the numeric scroll value while the grid itself remains the
+// source of truth for native touch dragging and scroll measurements. A short,
+// no-bounce spring preserves momentum without the elastic overshoot that can
+// make the depth cards momentarily stack over one another.
+var motionControl = window.Motion.animate(grid.scrollLeft, target, {
+type: 'spring',
+visualDuration: 0.42,
+bounce: 0,
+onUpdate: function(value) {
+grid.scrollLeft = value;
+queueKalosCarouselSync();
+}
+});
+kalosDepthTween = motionControl;
+motionControl.then(function() {
+if (kalosDepthTween !== motionControl) return;
+kalosDepthTween = null;
+syncKalosCarousel();
+});
+} else {
+rafTweenValue(grid.scrollLeft, target, KALOS_DEPTH_CONFIG.duration, function(value) {
+grid.scrollLeft = value;
+queueKalosCarouselSync();
+}, function() {
+syncKalosCarousel();
+});
+}
+}
+// Public helper used by dots, keyboard activation and a tap on a peeking card.
+function scrollKalosCarouselToIndex(index, smooth) {
+var grid = document.getElementById('kalos-gen-grid');
+if (!grid) return;
+var safeIndex = Math.max(0, Math.min(grid.children.length - 1, index));
+var target = kalosCarouselTargetForIndex(safeIndex);
+if (target === null) return;
+tweenKalosCarouselTo(target, smooth);
+}
+function nearestKalosCarouselIndex(grid, velocityX) {
+var projected = grid.scrollLeft - velocityX * 220;
+var maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
+projected = Math.max(0, Math.min(maxScroll, projected));
+return kalosCarouselIndexForScroll(grid, projected);
+}
+function consumeKalosDepthDragClick() {
+if (Date.now() < kalosDepthIgnoreClickUntil) {
+kalosDepthIgnoreClickUntil = 0;
+return true;
+}
+return false;
+}
 function initKalosCarousel() {
 var grid = document.getElementById('kalos-gen-grid');
 var dotsWrap = document.getElementById('kalos-gen-dots');
 if (!grid) return;
+grid.classList.add('kalos-depth-ready');
 grid.addEventListener('scroll', queueKalosCarouselSync, { passive: true });
 window.addEventListener('resize', queueKalosCarouselSync);
 if (dotsWrap) {
@@ -5777,6 +5956,78 @@ if (!dot) return;
 scrollKalosCarouselToIndex(parseInt(dot.dataset.index, 10), true);
 });
 }
+grid.addEventListener('wheel', function(e) {
+if (kalosOpenGen || grid.children.length < 2) return;
+var raw = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+if (!raw) return;
+e.preventDefault();
+stopKalosDepthMotion();
+var delta = e.deltaMode === 1 ? raw * 24 : raw;
+var maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
+grid.scrollLeft = Math.max(0, Math.min(maxScroll, grid.scrollLeft + delta));
+queueKalosCarouselSync();
+kalosDepthWheelTimer = setTimeout(function() {
+scrollKalosCarouselToIndex(nearestKalosCarouselIndex(grid, 0), true);
+}, 120);
+}, { passive: false });
+// Mobile gesture policy: do not assume that a touch beginning on a card
+// belongs to the carousel. The first few pixels choose an axis; a vertical
+// gesture is handed straight back to the page, while a horizontal gesture is
+// captured and drives the continuous depth layout below.
+var KALOS_SWIPE_AXIS_THRESHOLD = 8;
+grid.addEventListener('pointerdown', function(e) {
+if (kalosOpenGen || grid.children.length < 2 || !e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
+stopKalosDepthMotion();
+kalosDepthDrag = {
+id: e.pointerId,
+startX: e.clientX,
+startY: e.clientY,
+startScroll: grid.scrollLeft,
+lastX: e.clientX,
+lastTime: performance.now(),
+velocityX: 0,
+axis: null,
+moved: false
+};
+});
+grid.addEventListener('pointermove', function(e) {
+var drag = kalosDepthDrag;
+if (!drag || drag.id !== e.pointerId || kalosOpenGen) return;
+var dx = e.clientX - drag.startX;
+var dy = e.clientY - drag.startY;
+if (!drag.axis) {
+if (Math.abs(dx) < KALOS_SWIPE_AXIS_THRESHOLD && Math.abs(dy) < KALOS_SWIPE_AXIS_THRESHOLD) return;
+drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+if (drag.axis === 'y') return;
+drag.moved = true;
+grid.classList.add('is-dragging');
+grid.setPointerCapture(e.pointerId);
+}
+if (drag.axis !== 'x') return;
+// touch-action: pan-y lets the browser keep vertical page scrolling, while
+// this cancellation keeps a horizontal swipe entirely under carousel control.
+e.preventDefault();
+var now = performance.now();
+var dt = Math.max(now - drag.lastTime, 1);
+drag.velocityX = (e.clientX - drag.lastX) / dt;
+drag.lastX = e.clientX;
+drag.lastTime = now;
+var maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
+grid.scrollLeft = Math.max(0, Math.min(maxScroll, drag.startScroll - dx));
+queueKalosCarouselSync();
+}, { passive: false });
+function finishDepthDrag(e) {
+var drag = kalosDepthDrag;
+if (!drag || (e && drag.id !== e.pointerId)) return;
+kalosDepthDrag = null;
+grid.classList.remove('is-dragging');
+if (!drag.moved || drag.axis !== 'x' || kalosOpenGen) return;
+kalosDepthIgnoreClickUntil = Date.now() + 360;
+scrollKalosCarouselToIndex(nearestKalosCarouselIndex(grid, drag.velocityX), true);
+}
+grid.addEventListener('pointerup', finishDepthDrag, { passive: true });
+grid.addEventListener('pointercancel', finishDepthDrag, { passive: true });
+grid.addEventListener('lostpointercapture', finishDepthDrag, { passive: true });
 syncKalosCarousel();
 }
 function kalosCurrentCaughtMap() {
@@ -5911,15 +6162,21 @@ var g = GEN_DATA.filter(function(x) {
 return String(x.gen) === String(gen);
 })[0];
 if (!g) return;
+stopKalosDepthMotion();
 var first = tile.getBoundingClientRect();
 var grid = tile.parentNode;
 kalosCarouselIndex = Array.prototype.indexOf.call(grid.children, tile);
 kalosOpenGen = gen;
 grid.classList.add('kalos-gen-grid-open');
+// Expansion changes from a console cartridge into the shared region-map frame.
+// Set this state immediately; waiting for a later render left the first open
+// frame constrained by the closed DS/GBA/3DS/Switch dimensions.
+grid.dataset.openPresentation = 'region-map';
 var dots = document.getElementById('kalos-gen-dots');
 if (dots) dots.hidden = true;
 var caught = kalosCurrentCaughtMap();
 tile.className = 'kalos-gen-tile kalos-gen-tile-expanded dex-card';
+tile.removeAttribute('data-cart');
 tile.removeAttribute('role');
 tile.removeAttribute('tabindex');
 // Clear whatever scale/opacity syncKalosCarousel() left inline on this
@@ -5929,7 +6186,12 @@ tile.removeAttribute('tabindex');
 tile.style.transform = '';
 tile.style.opacity = '';
 tile.innerHTML = buildKalosTileExpandedHtml(g, caught, kalosGenCaughtCount(g, caught));
-buildKalosNeighborPanes(tile, grid, caught);
+// Opened panels no longer swipe between generations. Keep only the selected
+// full-width map panel in the rail so it owns every available pixel.
+Array.prototype.forEach.call(grid.children, function(sibling) {
+	sibling.hidden = sibling !== tile;
+});
+grid.scrollLeft = tile.offsetLeft;
 hideChipsForStagger(tile);
 applyEvoStageBoosts(tile);
 flipAnimate(tile, first, function() { staggerChipsIn(tile); });
@@ -5961,6 +6223,7 @@ return String(x.gen) === String(kalosOpenGen);
 var first = tile.getBoundingClientRect();
 var caught = kalosCurrentCaughtMap();
 kalosOpenGen = null;
+grid.dataset.openPresentation = 'cartridge';
 // Revert the flanking prev/next panes (see buildKalosNeighborPanes)
 // back to their small collapsed squares too - they were only ever
 // borrowed from the grid for the swipe, not actually "open".
@@ -5981,6 +6244,8 @@ tile.className = 'kalos-gen-tile';
 tile.setAttribute('role', 'button');
 tile.setAttribute('tabindex', '0');
 tile.innerHTML = buildKalosTileCollapsedHtml(g, genCaught);
+var cartStyle = kalosCartStyleForGen(g.gen);
+if (cartStyle) tile.dataset.cart = cartStyle;
 }
 Array.prototype.forEach.call(grid.children, function(t) {
 t.hidden = false;
@@ -6106,6 +6371,9 @@ rafTweenValue(grid.scrollLeft, target, 0.32, function(v) { grid.scrollLeft = v; 
 function initKalosGenSwipe() {
 var grid = document.getElementById('kalos-gen-grid');
 if (!grid) return;
+// Expanded generations are fixed map panels, not a second carousel. Closed
+// generations still use initKalosCarousel() and retain their normal swipe.
+return;
 grid.addEventListener('scroll', scheduleKalosGenScrollSettle, { passive: true });
 
 var DIRECTION_THRESHOLD = 8; // px moved before we decide horizontal vs vertical
@@ -6275,6 +6543,11 @@ var kalosGrid = document.getElementById('kalos-gen-grid');
 if (kalosGrid) {
 preventChipFocusScroll(kalosGrid);
 kalosGrid.addEventListener('click', function(e) {
+if (consumeKalosDepthDragClick()) {
+e.preventDefault();
+e.stopPropagation();
+return;
+}
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
 restoreScrollAfter(function() {
@@ -7476,3 +7749,8 @@ s.style.top = (TOP_CLEAR_PERCENT + Math.random() * usableRange) + '%';
 s.style.animationDelay = (Math.random() * 4) + 's';
 container.appendChild(s);
 }})
+
+// Populate the interface from local state immediately. Cloud sync can return
+// an identical payload and intentionally skip its later render pass, so this
+// initial render is required for a valid saved tracker to appear on first load.
+renderAll();
