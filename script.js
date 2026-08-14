@@ -5860,13 +5860,25 @@ var kalosDepthTween = null;
 var kalosDepthDrag = null;
 var kalosDepthWheelTimer = null;
 var kalosDepthIgnoreClickUntil = 0;
+var kalosPendingScrollLeft = null;
+var kalosPointerMoveQueued = false;
+// Applies the most recent drag-computed scrollLeft (see the pointermove
+// handler in initKalosCarousel) and the depth layout together in one rAF
+// tick, however many pointermove samples arrived since the last frame.
+function applyKalosPendingScroll() {
+kalosPointerMoveQueued = false;
+if (kalosPendingScrollLeft === null) return;
+var grid = document.getElementById('kalos-gen-grid');
+if (grid) grid.scrollLeft = kalosPendingScrollLeft;
+kalosPendingScrollLeft = null;
+syncKalosCarousel();
+}
 var KALOS_DEPTH_CONFIG = {
   depth: 118,
   spread: 32,
   tilt: 10,
   visibleCards: 3,
   falloff: 0.17,
-  blur: 2.4,
   duration: 0.62
 };
 
@@ -5919,6 +5931,10 @@ else if (kalosDepthTween.kill) kalosDepthTween.kill();
 kalosDepthTween = null;
 if (kalosDepthWheelTimer) clearTimeout(kalosDepthWheelTimer);
 kalosDepthWheelTimer = null;
+// Drop any drag-sample scrollLeft still waiting for its rAF tick, so a stray
+// pre-release touch sample can't overwrite the position a tween/jump is
+// about to set.
+kalosPendingScrollLeft = null;
 }
 function kalosCarouselTargetForIndex(index) {
 var grid = document.getElementById('kalos-gen-grid');
@@ -5955,14 +5971,26 @@ return Math.max(0, Math.min(grid.children.length - 1, Math.round(kalosCarouselPo
 }
 // Applies the supplied DepthCarousel's perspective treatment to the existing
 // cartridge tiles. The central card stays crisp and frontmost; neighbours step
-// backward in Z-space, fan outward, darken and gently blur as they recede.
+// backward in Z-space, fan outward and darken as they recede.
+//
+// iOS Safari note: this used to also grow a `blur()` filter on receding
+// tiles. WebKit renders `filter` on elements sitting inside a
+// `transform-style: preserve-3d` / `perspective` context (which this rail
+// needs for the fan-out) off the compositor, so every one of those blurred
+// tiles was being *repainted on the CPU* on every single rAF tick of a drag -
+// the actual source of the stutter on iPhone. Depth is still communicated by
+// scale + darkening + opacity alone (all fully compositor-driven), and tiles
+// far enough away to be functionally invisible now skip style writes and
+// pointer-event checks entirely instead of still being pushed through the
+// transform/opacity/z-index pipeline every frame.
 function layoutKalosDepthCarousel(position) {
 var grid = document.getElementById('kalos-gen-grid');
 if (!grid || kalosOpenGen) return;
-var tiles = grid.querySelectorAll('.kalos-gen-tile');
+var tiles = grid.children;
 if (!tiles.length) return;
 var cfg = KALOS_DEPTH_CONFIG;
-Array.prototype.forEach.call(tiles, function(tile, i) {
+for (var i = 0; i < tiles.length; i++) {
+var tile = tiles[i];
 // This matches the supplied DepthCarousel rail: the selected generation
 // sits at the front, while later generations fan out to the right and
 // recede into the screen. A previous generation can briefly ghost in while
@@ -5972,20 +6000,28 @@ var d = i - position;
 var back = Math.max(0, d);
 var distance = Math.abs(d);
 var shown = distance <= cfg.visibleCards + 0.55;
+if (!shown) {
+// Already fully faded out and off to the side - cheapest possible state,
+// and skipping the writes below means far-off tiles cost nothing per frame.
+if (tile.dataset.kalosShown === '0') continue;
+tile.dataset.kalosShown = '0';
+tile.style.opacity = '0';
+tile.style.pointerEvents = 'none';
+continue;
+}
+tile.dataset.kalosShown = '1';
 var side = d * cfg.spread;
 var z = -cfg.depth * d;
 var rotate = cfg.tilt * Math.max(0, Math.min(d, 1));
 var scale = Math.max(0.82, 1 - back * 0.045);
 var opacity = d < 0 ? Math.max(0, 1 + d) : 1;
-if (!shown) opacity = 0;
 var brightness = Math.max(0.42, 1 - back * cfg.falloff);
-var blur = Math.min(cfg.blur, (back / Math.max(1, cfg.visibleCards)) * cfg.blur);
 tile.style.transform = 'translate3d(' + side.toFixed(2) + 'px, 0, ' + z.toFixed(2) + 'px) rotateY(' + rotate.toFixed(2) + 'deg) scale(' + scale.toFixed(3) + ')';
 tile.style.opacity = opacity.toFixed(3);
-tile.style.filter = 'brightness(' + brightness.toFixed(3) + ') blur(' + blur.toFixed(2) + 'px)';
+tile.style.filter = 'brightness(' + brightness.toFixed(3) + ')';
 tile.style.zIndex = String(2000 - Math.round(d * 20));
-tile.style.pointerEvents = shown && opacity > 0.05 ? 'auto' : 'none';
-});
+tile.style.pointerEvents = opacity > 0.05 ? 'auto' : 'none';
+}
 var nearest = Math.max(0, Math.min(tiles.length - 1, Math.round(position)));
 if (nearest !== kalosCarouselIndex) {
 kalosCarouselIndex = nearest;
@@ -6095,7 +6131,7 @@ scrollKalosCarouselToIndex(nearestKalosCarouselIndex(grid, 0), true);
 // belongs to the carousel. The first few pixels choose an axis; a vertical
 // gesture is handed straight back to the page, while a horizontal gesture is
 // captured and drives the continuous depth layout below.
-var KALOS_SWIPE_AXIS_THRESHOLD = 8;
+var KALOS_SWIPE_AXIS_THRESHOLD = 6;
 grid.addEventListener('pointerdown', function(e) {
 if (kalosOpenGen || grid.children.length < 2 || !e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
 stopKalosDepthMotion();
@@ -6143,12 +6179,30 @@ drag.velocityX = drag.velocityX * 0.7 + instantVelocityX * 0.3;
 drag.lastX = e.clientX;
 drag.lastTime = now;
 var maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
-grid.scrollLeft = Math.max(0, Math.min(maxScroll, drag.startScroll - dx));
-queueKalosCarouselSync();
+// iOS delivers pointermove samples faster than the display can paint (often
+// well above 60/sec), so writing `scrollLeft` straight from every sample -
+// each write immediately followed by the depth layout's own layout reads -
+// was forcing far more synchronous layout work per second than the screen
+// could ever show. Only the arithmetic runs here now; the actual scrollLeft
+// write plus the depth-layout pass are coalesced onto a single rAF tick
+// below, one per real frame no matter how many touch samples land inside it.
+kalosPendingScrollLeft = Math.max(0, Math.min(maxScroll, drag.startScroll - dx));
+if (!kalosPointerMoveQueued) {
+kalosPointerMoveQueued = true;
+requestAnimationFrame(applyKalosPendingScroll);
+}
 }, { passive: false });
 function finishDepthDrag(e) {
 var drag = kalosDepthDrag;
 if (!drag || (e && drag.id !== e.pointerId)) return;
+// Make sure grid.scrollLeft reflects the very last drag sample (it may not
+// have hit its rAF tick yet) before reading it below to decide the release
+// target - otherwise a fast release right after a pointermove could compute
+// the flung index off a one-frame-stale position.
+if (kalosPendingScrollLeft !== null) {
+grid.scrollLeft = kalosPendingScrollLeft;
+kalosPendingScrollLeft = null;
+}
 kalosDepthDrag = null;
 grid.classList.remove('is-dragging');
 if (!drag.moved || drag.axis !== 'x' || kalosOpenGen) return;
