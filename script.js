@@ -3564,6 +3564,7 @@ var track = dexClamshell.querySelector('.dex-track');
 if (!track) return;
 var frame = dexClamshell.querySelector('.dex-frame');
 var TRANSITION = 'transform 0.55s cubic-bezier(0.65, 0, 0.35, 1)';
+var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 var RESIST = 0.35; // damping applied when dragging past an edge (nothing to reveal)
 var COMMIT_RATIO = 0.28; // fraction of width dragged before the swipe "sticks"
 var COMMIT_VELOCITY = 0.5; // px/ms - fast flicks commit even if short
@@ -3659,7 +3660,7 @@ dragging = false;
 var touch = e.changedTouches[0];
 var dx = touch.clientX - startX;
 var dt = Math.max(1, Date.now() - startTime);
-var velocity = dx / dt;
+var velocity = dx / dt; // px/ms, signed with drag direction
 var committed = Math.abs(dx) > width * COMMIT_RATIO || Math.abs(velocity) > COMMIT_VELOCITY;
 var toTab = fromTab;
 if (committed && dx < 0 && NEXT_TAB[fromTab]) {
@@ -3667,16 +3668,49 @@ toTab = NEXT_TAB[fromTab];
 } else if (committed && dx > 0 && PREV_TAB[fromTab]) {
 toTab = PREV_TAB[fromTab];
 }
-// Re-enable the transition, force the browser to register it at the
+// Snapshot exactly where the finger left the track/frame before
+// applyTabState() below flips data-active (and with it, the CSS resting
+// transform this element would otherwise snap straight to).
+var canAdvance = (dx < 0 && !!NEXT_TAB[fromTab]) || (dx > 0 && !!PREV_TAB[fromTab]);
+var effectiveDx = canAdvance ? dx : dx * RESIST;
+effectiveDx = Math.max(-width, Math.min(width, effectiveDx));
+var currentX = baseX + effectiveDx;
+var currentMargin = frame ? (parseFloat(frame.style.marginLeft) || marginLeftFor(fromTab)) : 0;
+var targetX = -TAB_POSITION[toTab] * width + (toTab === 'collection' ? 24 : 0);
+var targetMargin = marginLeftFor(toTab);
+
+if (toTab !== fromTab) applyTabState(toTab);
+
+if (window.Motion && window.Motion.animate && !reduceMotion) {
+// A physical spring (fed the release velocity) instead of the old fixed
+// cubic-bezier transition - flicks carry their momentum into the
+// animation instead of every swipe easing in at the same fixed rate
+// regardless of how fast the finger was moving.
+track.style.transition = 'none';
+if (frame) frame.style.transition = 'none';
+var SPRING = { type: 'spring', bounce: 0, duration: 0.5 };
+var trackSpring = Object.assign({ velocity: velocity * 1000 }, SPRING);
+window.Motion.animate(track, { x: [currentX, targetX] }, trackSpring).finished.then(function() {
+track.style.transition = '';
+track.style.transform = '';
+});
+if (frame) {
+window.Motion.animate(frame, { marginLeft: [currentMargin, targetMargin] }, SPRING).finished.then(function() {
+frame.style.transition = '';
+frame.style.marginLeft = '';
+});
+}
+} else {
+// Re-enable the CSS transition, force the browser to register it at the
 // current drag position, then commit/spring back so it animates from
 // exactly where the finger let go rather than snapping first.
 track.style.transition = TRANSITION;
 if (frame) frame.style.transition = '';
 void dexClamshell.offsetHeight; // force reflow so the transition above "takes"
-if (toTab !== fromTab) applyTabState(toTab);
 track.style.transform = '';
 if (frame) frame.style.marginLeft = '';
 setTimeout(resetDragStyles, 600);
+}
 }
 
 function onCancel() {
@@ -4469,6 +4503,10 @@ renderCollection();
 var dexOpenGen = null;
 var dexMode = 'living';
 var dexSortMode = 'dex';
+// When on, tapping a species sprite in an opened gen box opens its 3D
+// model (see open3DModelModal) instead of toggling it caught. Flipped by
+// #btn-dex-3d-toggle/#btn-k-3d-toggle - see wiring near those ids below.
+var dex3DMode = false;
 var dexTypeFilter = '';
 // Which generation (if any) is currently drilled into on the mobile Kalos
 // dex's gen-detail screen (null = showing the 3-per-row gen tile grid).
@@ -5313,7 +5351,11 @@ var nameHtml = '<span class="dex-chip-name-text">' + escapeHtml(variant.base) + 
 // more now that the chip leads with a sprite/silhouette and the name
 // text itself is secondary and easy for a screen reader to miss.
 var chipLabel = variant.base + (variant.tag ? ' (' + variant.tag + ')' : '') + (has ? ', caught' : ', not caught');
-var interactive = ' data-action="toggle-species" data-name="' + escapeHtml(normName(sp[1])) + '" role="button" tabindex="0" aria-pressed="' + (has ? 'true' : 'false') + '" aria-label="' + escapeHtml(chipLabel) + '"';
+// data-dexnum/data-display back the 3D View toggle (open3DModelModal) -
+// sp[0] is the National Dex number shared by every regional form of a
+// species, which is also how the Pokemon-3D-api model repo keys its
+// files (see pokemon3DModelUrls below).
+var interactive = ' data-action="toggle-species" data-name="' + escapeHtml(normName(sp[1])) + '" data-dexnum="' + sp[0] + '" data-display="' + escapeHtml(variant.base + (variant.tag ? ' (' + variant.tag + ')' : '')) + '" role="button" tabindex="0" aria-pressed="' + (has ? 'true' : 'false') + '" aria-label="' + escapeHtml(chipLabel) + '"';
 // data-variant tags each chip with its regional-variant category (or
 // "Original" for base-form species) so applyDexVariantFilter() can
 // show/hide chips by category without re-parsing the display name.
@@ -6771,6 +6813,10 @@ return;
 }
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
+if (dex3DMode) {
+open3DModelModal(chip.dataset.display, chip.dataset.dexnum, dexMode === 'shiny');
+return;
+}
 restoreScrollAfter(function() {
 toggleDexChip(chip, false);
 });
@@ -6921,6 +6967,10 @@ preventChipFocusScroll(document.getElementById('dex-grid'));
 document.getElementById('dex-grid').addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
+if (dex3DMode) {
+open3DModelModal(chip.dataset.display, chip.dataset.dexnum, dexMode === 'shiny');
+return;
+}
 restoreScrollAfter(function() {
 toggleDexChip(chip, true);
 });
@@ -6948,6 +6998,27 @@ if (!chip) return;
 e.preventDefault();
 chip.click();
 });
+// 3D View toggle: desktop (#btn-dex-3d-toggle) and mobile
+// (#btn-k-3d-toggle) both flip the same dex3DMode flag and stay in sync
+// with each other, the same way the desktop/mobile Sort/Type toolbars
+// mirror dexSortMode/dexTypeFilter elsewhere in this file. Only a class
+// toggle on the two grids (for the cursor/badge affordance in style.css) -
+// no re-render needed, since the click handlers above read dex3DMode live.
+(function() {
+var desktopBtn = document.getElementById('btn-dex-3d-toggle');
+var mobileBtn = document.getElementById('btn-k-3d-toggle');
+var desktopGrid = document.getElementById('dex-grid');
+var mobileGrid = document.getElementById('kalos-gen-grid');
+function toggleDex3DMode() {
+dex3DMode = !dex3DMode;
+if (desktopBtn) desktopBtn.setAttribute('aria-pressed', dex3DMode ? 'true' : 'false');
+if (mobileBtn) mobileBtn.setAttribute('aria-pressed', dex3DMode ? 'true' : 'false');
+if (desktopGrid) desktopGrid.classList.toggle('mode-3d', dex3DMode);
+if (mobileGrid) mobileGrid.classList.toggle('mode-3d', dex3DMode);
+}
+if (desktopBtn) desktopBtn.addEventListener('click', toggleDex3DMode);
+if (mobileBtn) mobileBtn.addEventListener('click', toggleDex3DMode);
+})();
 // Recomputes and updates the per-card and overall Living Dex counters
 // (caught/total counts, progress bars, percentages) without touching any
 // sprite <img> elements, so sprites never reload/re-flash from a counter
@@ -7128,6 +7199,62 @@ document.documentElement.classList.remove('modal-open');
 });
 scrollLockObserver.observe(document.body, { childList: true });
 return overlay;
+}
+// ---------- Living Dex: 3D model viewer ----------
+// Model source: Pokemon-3D-api's community-maintained, web-optimized (Draco
+// + WebP) .glb repo, keyed by National Dex number the same way this app's
+// own sprite lookups (dexEntrySpriteUrls, shinySpriteUrls above) are keyed
+// by name/slug. Regional/alt forms don't have their own distinct entry in
+// that repo yet, so every variant of a species (e.g. every Rattata form)
+// currently falls back to the same base-species model - an approximation,
+// not a bug, until the source repo grows form-specific files.
+function pokemon3DModelUrls(dexNum, shiny) {
+var n = parseInt(dexNum, 10);
+if (!n || n < 1) return [];
+var base = 'https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/';
+var primary = base + (shiny ? 'shiny' : 'regular') + '/' + n + '.glb';
+// If a shiny-specific model doesn't exist yet, fall back to the regular
+// recolor rather than showing nothing - see the <model-viewer> "error"
+// listener in open3DModelModal, which is what actually triggers this.
+var fallback = base + 'regular/' + n + '.glb';
+return shiny ? [primary, fallback] : [primary];
+}
+// Opens a species' 3D model in the shared modal chrome (openModal above).
+// displayName is what's shown in the header; dexNum/shiny pick which .glb
+// gets loaded. Swaps <model-viewer>'s src to the next candidate URL on
+// load failure instead of just erroring out, the same "ordered candidate
+// list" pattern smallSpriteMarkup/window.__spriteErr already use for
+// sprites.
+function open3DModelModal(displayName, dexNum, shiny) {
+var urls = pokemon3DModelUrls(dexNum, shiny);
+if (!urls.length) return;
+var name = displayName || 'Pokémon';
+var overlay = openModal(
+'<div class="model3d-head"><h3>' + escapeHtml(name) + (shiny ? ' <span class="model3d-shiny-tag">✦ Shiny</span>' : '') + '</h3>' +
+'<button type="button" class="ghost model3d-close" id="model3d-close" aria-label="Close">✕</button></div>' +
+'<div class="model3d-stage">' +
+'<model-viewer id="model3d-viewer" src="' + urls[0] + '" alt="3D model of ' + escapeHtml(name) + '" camera-controls auto-rotate rotation-per-second="18deg" shadow-intensity="0.9" exposure="0.95" interaction-prompt="none" loading="eager"></model-viewer>' +
+'<div class="model3d-loading" id="model3d-loading">Loading model…</div>' +
+'</div>' +
+'<p class="model3d-hint">Drag to rotate · Pinch or scroll to zoom</p>',
+'modal-3d-viewer'
+);
+var viewer = overlay.querySelector('#model3d-viewer');
+var loadingEl = overlay.querySelector('#model3d-loading');
+var fallbacks = urls.slice(1);
+viewer.addEventListener('load', function() {
+if (loadingEl) loadingEl.style.display = 'none';
+});
+viewer.addEventListener('error', function() {
+if (fallbacks.length) {
+viewer.setAttribute('src', fallbacks.shift());
+} else if (loadingEl) {
+loadingEl.textContent = 'No 3D model available yet for ' + name + '.';
+}
+});
+overlay.querySelector('#model3d-close').addEventListener('click', function() {
+overlay.remove();
+});
 }
 function gameOptions(sel) {
 return GAMES.map(function(g) {
@@ -8222,6 +8349,7 @@ s.style.top = (TOP_CLEAR_PERCENT + Math.random() * usableRange) + '%';
 s.style.animationDelay = (Math.random() * 4) + 's';
 container.appendChild(s);
 }})
+
 
 // Populate the interface from local state immediately. Cloud sync can return
 // an identical payload and intentionally skip its later render pass, so this
