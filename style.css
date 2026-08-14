@@ -6180,6 +6180,12 @@ cursor: grab;
 user-select: none;
 -webkit-user-select: none;
 -webkit-user-drag: none;
+/* iOS Safari shows a long-press callout (copy/save-image popup) on a
+   touch-held tile before a horizontal drag is even detected, which eats the
+   first chunk of the gesture and reads as the carousel "not responding".
+   This turns that callout off entirely for the carousel. */
+-webkit-touch-callout: none;
+-webkit-tap-highlight-color: transparent;
 }
 .kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open).is-dragging {
 cursor: grabbing;
@@ -6189,6 +6195,10 @@ will-change: transform, opacity, filter;
 transform-style: preserve-3d;
 backface-visibility: hidden;
 -webkit-backface-visibility: hidden;
+/* Promotes each tile to its own compositor layer up front instead of
+   letting Safari decide mid-drag, which is where the first swipe or two on
+   iPhone used to visibly hitch before the layers "warmed up". */
+-webkit-transform: translateZ(0);
 }
 @media (prefers-reduced-motion: reduce) {
 .kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile {
@@ -9426,7 +9436,7 @@ display: none;
 
 /* DS triangle position: sit slightly closer to the lower shell edge. */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] > .kalos-ds-bottom-triangle {
-	bottom: -5px;
+	bottom: -3px;
 }
 
 /* Remove the retired DS shell pseudo-element from the artwork face. The lower
