@@ -11,6 +11,11 @@
       import { animate, stagger } from "https://cdn.jsdelivr.net/npm/motion@latest/+esm";
       window.Motion = { animate: animate, stagger: stagger };
     </script>
+    <!-- Google's <model-viewer> web component: powers the Living Dex's "3D
+         View" toggle (see .dex-chip 3D click handling in script.js). Plain
+         custom element, no build step/React needed, so it drops straight
+         into this vanilla page the same way the sprite <img>s do. -->
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <link rel="stylesheet" href="style.css?v=3ds-header-22">
   </head>
   <body>
@@ -150,7 +155,7 @@
             <div class="pc-screen-bezel">
               <button type="button" class="dex-toggle-back-btn" title="Back to Active Hunts" aria-label="Back to Active Hunts">←</button>
               <div class="pc-screen">
-                <div class="pc-screen-content">
+                <div class="pc-screen-content dex-screen-content" id="pc-screen-content" data-dex-view="grid">
                   <div class="dex-split-toggle" id="dex-mode-toggle"></div>
                   <div class="dex-grid" id="dex-grid"></div>
                 </div>
@@ -269,6 +274,13 @@
                   </div>
                 </div>
               </div>
+              <!-- 3D View toggle: while pressed, tapping a species sprite in an
+                   opened gen box (below) opens that Pokemon's 3D model instead
+                   of toggling it caught. See dex3DMode in script.js. -->
+              <div class="pc-key pc-key-fn">
+                <span class="pc-key-label">3D</span>
+                <button class="ghost" id="btn-dex-3d-toggle" type="button" aria-pressed="false" title="Toggle 3D model view">🧊 3D View</button>
+              </div>
             </div>
           </div>
 
@@ -314,7 +326,7 @@
             </span>
             <div class="kalos-screen-wrap" id="kalos-screen-wrap">
               <div class="kalos-screen">
-                <div class="kalos-screen-content">
+                <div class="kalos-screen-content dex-screen-content" id="kalos-screen-content" data-dex-view="grid">
                   <!-- Toggle + filter strip share one rounded card (see
                        .kalos-toggle-filter-card in style.css) so percentages
                        and filters read as a single connected block instead
@@ -403,6 +415,10 @@
                           <div class="dex-select-option" data-value="single">Single-stage</div>
                         </div>
                       </div>
+                      <!-- Mobile counterpart of #btn-dex-3d-toggle above: same
+                           dex3DMode state, just a compact icon button to match
+                           the rest of this toolbar's buttons. -->
+                      <button type="button" class="log-dex-grid-btn" id="btn-k-3d-toggle" title="3D View" aria-label="Toggle 3D model view" aria-pressed="false">🧊</button>
                       <button type="button" class="log-dex-grid-btn" id="btn-k-reset-filters" title="Reset Filters" aria-label="Reset all filters">⟲</button>
                     </div>
                   </div>
