@@ -1,3 +1,20 @@
+// Temporary diagnostic: shows any uncaught JS error as a banner at the top
+// of the screen instead of failing silently. Several past bugs in this file
+// (see comments near syncTabChrome and connectToCloud) were invisible on
+// mobile precisely because nothing surfaced the thrown error - this makes
+// the next one visible without needing a computer/dev tools. Safe to remove
+// once things are stable again.
+(function() {
+var shown = 0;
+window.addEventListener('error', function(e) {
+if (shown >= 3) return;
+shown++;
+var banner = document.createElement('div');
+banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#c0392b;color:#fff;font:11px/1.4 monospace;padding:10px 12px;white-space:pre-wrap;max-height:40vh;overflow:auto;box-shadow:0 2px 8px rgba(0,0,0,.4);';
+banner.textContent = 'JS Error: ' + e.message + '\n' + (e.filename ? e.filename.split('/').pop() : '') + ':' + e.lineno + ':' + e.colno;
+document.body.appendChild(banner);
+});
+})();
 // alone). The Firestore listener's own use of it wasn't wrapped in a
 // try/catch though, so it threw on every snapshot and stopped the sync
 // from ever applying - which is what broke "Firestore loading info"
@@ -34,68 +51,174 @@ pushToCloud();
 // as the initial baseline. Every save() also pushes up (debounced) so
 // other devices pick up changes next time they load.
 var db = null;
+// The populated document in this Firebase project stores tracker fields directly
+// at shinyTracker/state. Earlier revisions mistakenly listened to mydata.payload,
+// which is a separate, empty legacy document and therefore made the app appear to
+// stop loading saved data.
+var CLOUD_DOC = null;
+var LEGACY_CLOUD_DOC = null;
+// Rolling snapshot history: a copy of state is written here every time
+// pushToCloud() successfully saves, so a bad overwrite (this bug, a future
+// bug, a fat-finger) can be undone from inside the app without touching the
+// Firebase console. Only the most recent HISTORY_LIMIT snapshots are kept -
+// see pruneHistory(). This is a recent-changes safety net, not a substitute
+// for Firestore's own daily backups/PITR, which cover longer time spans.
+var HISTORY_COLLECTION = null;
+var HISTORY_LIMIT = 30;
+var _cloudSaveTimer = null;
+var _cloudRetryTimer = null;
+var _cloudSyncStarted = false;
+var _cloudMigrationAttempted = false;
+// Guards against a stale local copy (e.g. a device/PWA install that hasn't
+// been opened in a while, sitting on old localStorage) pushing its old data
+// over a newer cloud document before it's had a chance to pull the current
+// state down first. Until the first real pull-down completes, pushes are
+// queued instead of sent, so we never win a race against our own stale cache.
+var _cloudInitialPullDone = false;
+var _pushPendingAfterPull = false;
+function connectToCloud() {
+if (CLOUD_DOC) return true;
 try {
-if (window.firebase && firebase.apps && firebase.apps.length) {
+if (!window.firebase || !firebase.apps || !firebase.apps.length || !firebase.firestore) return false;
 db = firebase.firestore();
-}
+CLOUD_DOC = db.collection('shinyTracker').doc('state');
+LEGACY_CLOUD_DOC = db.collection('shinyTracker').doc('mydata');
+HISTORY_COLLECTION = db.collection('shinyTrackerHistory');
+return true;
 } catch (e) {
 console.error('Firestore unavailable', e);
+return false;
 }
-var CLOUD_DOC = db ? db.collection('shinyTracker').doc('mydata') : null;
-var _cloudSaveTimer = null;
+}
+function retryCloudConnection() {
+if (_cloudRetryTimer) return;
+_cloudRetryTimer = setTimeout(function() {
+_cloudRetryTimer = null;
+syncFromCloud();
+}, 1000);
+}
+function normaliseCloudState(source) {
+source = source && typeof source === 'object' ? source : {};
+return {
+hunts: Array.isArray(source.hunts) ? source.hunts : [],
+collection: Array.isArray(source.collection) ? source.collection : [],
+livingDex: source.livingDex && typeof source.livingDex === 'object' ? source.livingDex : {},
+livingDexShiny: source.livingDexShiny && typeof source.livingDexShiny === 'object' ? source.livingDexShiny : {},
+lastHuntPrefs: Object.prototype.hasOwnProperty.call(source, 'lastHuntPrefs') ? source.lastHuntPrefs : null
+};
+}
+function cloudStateSignature(source) {
+return JSON.stringify(normaliseCloudState(source));
+}
+function cloudFieldsFromState(source) {
+var clean = normaliseCloudState(source);
+clean.updatedAt = Date.now();
+return clean;
+}
+function applyCloudState(remote) {
+var clean = normaliseCloudState(remote);
+if (cloudStateSignature(clean) === cloudStateSignature(state)) {
+markInitialPullDone();
+return;
+}
+state = clean;
+try {
+localStorage.setItem(STORE_KEY, JSON.stringify(state));
+} catch (e) {}
+renderAll();
+markInitialPullDone();
+}
+function markInitialPullDone() {
+if (_cloudInitialPullDone) return;
+_cloudInitialPullDone = true;
+if (_pushPendingAfterPull) {
+_pushPendingAfterPull = false;
+pushToCloud();
+}
+}
 function pushToCloud() {
-if (!CLOUD_DOC) return;
+if (!connectToCloud()) {
+retryCloudConnection();
+return;
+}
+if (!_cloudInitialPullDone) {
+// Don't write yet - we don't know if our local copy is stale. Remember
+// that a push is owed and send it as soon as the first pull lands.
+_pushPendingAfterPull = true;
+return;
+}
 clearTimeout(_cloudSaveTimer);
 _cloudSaveTimer = setTimeout(function() {
-CLOUD_DOC.set({
-payload: JSON.stringify(state),
-updatedAt: Date.now()
+CLOUD_DOC.set(cloudFieldsFromState(state)).then(function() {
+recordHistorySnapshot();
 }).catch(function(e) {
 console.error('Firestore save failed', e);
 });
 }, 600);
 }
-function syncFromCloud() {
-if (!CLOUD_DOC) return;
-CLOUD_DOC.onSnapshot(function(doc) {
-if (!doc.exists) {
-// No cloud doc yet - seed it with whatever's currently local.
+function recordHistorySnapshot() {
+if (!HISTORY_COLLECTION) return;
+var snapshot = cloudFieldsFromState(state);
+snapshot.savedAt = Date.now();
+HISTORY_COLLECTION.add(snapshot).then(pruneHistory).catch(function(e) {
+console.error('Firestore history save failed', e);
+});
+}
+function pruneHistory() {
+if (!HISTORY_COLLECTION) return;
+HISTORY_COLLECTION.orderBy('savedAt', 'desc').get().then(function(snap) {
+if (snap.size <= HISTORY_LIMIT) return;
+var batch = db.batch();
+snap.docs.slice(HISTORY_LIMIT).forEach(function(doc) {
+batch.delete(doc.ref);
+});
+batch.commit().catch(function(e) {
+console.error('Firestore history prune failed', e);
+});
+}).catch(function(e) {
+console.error('Firestore history prune query failed', e);
+});
+}
+function migrateLegacyCloudIfNeeded() {
+if (_cloudMigrationAttempted || !LEGACY_CLOUD_DOC) {
 pushToCloud();
 return;
 }
-// A write we just made locally echoes back through this listener before
-// it's confirmed by the server (hasPendingWrites). Our local state
-// already reflects that write, so skip re-applying it to avoid clobbering
-// anything the person is doing right this moment (e.g. mid-typing).
-if (doc.metadata.hasPendingWrites) return;
-var data = doc.data();
-if (!data || !data.payload) return;
-// Once that same local write is actually confirmed by the server,
-// Firestore delivers ANOTHER snapshot for it - this time with
-// hasPendingWrites already false, so the check above no longer catches
-// it, and it's otherwise indistinguishable from a genuine change made
-// on another device. This was the actual cause of "tapping a sprite
-// sends the page back to the top": every toggle saves (pushToCloud,
-// debounced ~600ms), the write lands, this listener fires again for
-// our own just-saved data, and that fell through to state = remote +
-// renderAll() below - rebuilding the entire grid (and, while sprite
-// images were mid-reflow/reload, briefly overflowing the viewport,
-// which is also what let the page get dragged left/right). Skipping
-// when the incoming payload is byte-for-byte what's already saved
-// locally filters out that self-echo while still picking up real
-// changes from another device.
-if (data.payload === localStorage.getItem(STORE_KEY)) return;
+_cloudMigrationAttempted = true;
+LEGACY_CLOUD_DOC.get().then(function(legacyDoc) {
+var legacy = legacyDoc.exists ? legacyDoc.data() : null;
+if (legacy && typeof legacy.payload === 'string') {
 try {
-var remote = JSON.parse(data.payload);
-if (!remote.livingDex) remote.livingDex = {};
-if (!remote.livingDexShiny) remote.livingDexShiny = {};
-if (!remote.lastHuntPrefs) remote.lastHuntPrefs = null;
-state = remote;
-localStorage.setItem(STORE_KEY, data.payload);
-renderAll();
+applyCloudState(JSON.parse(legacy.payload));
 } catch (e) {
-console.error('Failed to parse cloud data', e);
+console.error('Failed to parse legacy Firestore data', e);
 }
+}
+pushToCloud();
+}).catch(function(e) {
+console.error('Firestore legacy migration failed', e);
+pushToCloud();
+});
+}
+function syncFromCloud() {
+if (!connectToCloud()) {
+retryCloudConnection();
+return;
+}
+if (_cloudSyncStarted) return;
+_cloudSyncStarted = true;
+CLOUD_DOC.onSnapshot(function(doc) {
+if (!doc.exists) {
+// First use of the current direct-field document: safely import an older
+// payload document when present, otherwise seed it from local state.
+// Nothing exists yet in the cloud, so there's no newer data we could
+// clobber - safe to let a push through immediately.
+_cloudInitialPullDone = true;
+migrateLegacyCloudIfNeeded();
+return;
+}
+if (doc.metadata.hasPendingWrites) return;
+applyCloudState(doc.data());
 }, function(e) {
 console.error('Firestore sync error', e);
 });
@@ -113,35 +236,33 @@ var GAMES = ["Scarlet/Violet", "Legends Arceus", "Sword/Shield", "Let's Go Pikac
 ];
 // Custom per-game icon images for the catch-confirmation card (tcg-stats
 // table "Game" row). Each entry lists the version(s) bundled into that
-// game option, in images/game-symbols/<name>.png - gameIconMarkup() below
-// renders one icon per name side by side. If a file is missing, its own
-// onerror just hides that icon (the other version's icon still shows);
-// if a game has no mapping at all it falls back to the generic cartridge
-// glyph (ICON_GAME).
-// NOTE: names below match what you gave me exactly for Scarlet/Violet,
-// Legends Arceus, Sword/Shield, Ultra Sun/Ultra Moon, Sun/Moon, Omega
-// Ruby/Alpha Sapphire, and X/Y. The rest (Let's Go, Black 2/White 2,
-// Black/White, HeartGold/SoulSilver, Platinum, Diamond/Pearl, FireRed/
-// LeafGreen, Ruby/Sapphire/Emerald, Pokémon GO) are my best guess at
-// matching filenames in the same style - rename these lines to match
-// whatever you actually saved the images as.
+// game option as a full filename (with extension) living in
+// images/game-symbols/ - gameIconMarkup() below renders one icon per
+// name side by side. Extensions don't have to match each other (mix
+// .png/.jpg/.webp freely) since the filename here is used exactly as
+// written. If a file is missing, its own onerror just hides that icon
+// (the other version's icon still shows); if a game has no mapping at
+// all it falls back to the generic cartridge glyph (ICON_GAME).
+// NOTE: rename these to match whatever you actually saved the images as
+// (including the correct extension - a mismatched extension is the most
+// common reason an icon silently fails to show).
 var GAME_ICONS = {
-"Scarlet/Violet": ["scarlet", "violet"],
-"Legends Arceus": ["arceus"],
-"Sword/Shield": ["sword", "shield"],
-"Let's Go Pikachu/Eevee": ["letsgopikachu", "letsgoeevee"],
-"Ultra Sun/Ultra Moon": ["ultrasun", "ultramoon"],
-"Sun/Moon": ["sun", "moon"],
-"Omega Ruby/Alpha Sapphire": ["omegaruby", "alphasapphire"],
-"X/Y": ["pokemonx", "pokemony"],
-"Black 2/White 2": ["black2", "white2"],
-"Black/White": ["black", "white"],
-"HeartGold/SoulSilver": ["heartgold", "soulsilver"],
-"Platinum": ["platinum"],
-"Diamond/Pearl": ["diamond", "pearl"],
-"FireRed/LeafGreen": ["firered", "leafgreen"],
-"Ruby/Sapphire/Emerald": ["ruby", "sapphire", "emerald"],
-"Pokémon GO": ["pokemongo"],
+"Scarlet/Violet": ["scarlet.jpg", "violet.jpg"],
+"Legends Arceus": ["arceus.jpg"],
+"Sword/Shield": ["sword.jpg", "shield.jpg"],
+"Let's Go Pikachu/Eevee": ["letsgopikachu.jpg", "letsgoeevee.jpg"],
+"Ultra Sun/Ultra Moon": ["ultrasun.jpg", "ultramoon.jpg"],
+"Sun/Moon": ["sun.jpg", "moon.jpg"],
+"Omega Ruby/Alpha Sapphire": ["omegaruby.jpg", "alphasapphire.jpg"],
+"X/Y": ["pokemonx.jpg", "pokemony.jpg"],
+"Black 2/White 2": ["black2.jpg", "white2.jpg"],
+"Black/White": ["black.jpg", "white.jpg"],
+"HeartGold/SoulSilver": ["heartgold.jpg", "soulsilver.jpg"],
+"Platinum": ["platinum.png"],
+"Diamond/Pearl": ["diamond.png", "pearl.png"],
+"FireRed/LeafGreen": ["firered.png", "leafgreen.png"],
+"Ruby/Sapphire/Emerald": ["ruby.png", "sapphire.png", "emerald.png"],
+"Pokémon GO": ["pokemongo.png"],
 "Other": []
 };
 var METHODS = ["Random Encounter", "Soft Reset", "Masuda Method", "Chain Fishing",
@@ -515,23 +636,23 @@ imgEl.style.display = 'none';
 function gameIconMarkup(game) {
 var files = GAME_ICONS[game];
 if (!files || !files.length) return ICON_GAME;
-var imgs = files.map(function(name) {
-return '<img class="tcg-stats-icon-img tcg-icon-game" src="images/game-symbols/' + name + '.png" alt="' + escapeHtml(game) + '" onerror="handleGameIconError(this)">';
+var imgs = files.map(function(filename) {
+return '<img class="tcg-stats-icon-img tcg-icon-game" src="images/game-symbols/' + filename + '" alt="' + escapeHtml(game) + '" onerror="handleGameIconError(this)">';
 }).join('');
 return '<span class="tcg-stats-icon-group">' + imgs + '</span>';
 }
 // Box-art style thumbnails for the Game field on the Start Hunt modal
 // (see syncGameSelectVisual() below). Reuses the same GAME_ICONS
-// mapping and images/game-symbols/<name>.png files as gameIconMarkup()
-// above, just rendered bigger (.hunt-radar-game-icon-img in style.css)
-// since this box has more room than the small table row icon. Falls
-// back to the generic cartridge glyph if the game has no mapping, and
-// a broken image just hides itself via handleGameIconError().
+// mapping and images/game-symbols/ files as gameIconMarkup() above, just
+// rendered bigger (.hunt-radar-game-icon-img in style.css) since this
+// box has more room than the small table row icon. Falls back to the
+// generic cartridge glyph if the game has no mapping, and a broken
+// image just hides itself via handleGameIconError().
 function gameBoxArtMarkup(game) {
 var files = GAME_ICONS[game];
 if (!files || !files.length) return ICON_GAME;
-return files.map(function(name) {
-return '<img class="hunt-radar-game-icon-img" src="images/game-symbols/' + name + '.png" alt="' + escapeHtml(game) + '" onerror="handleGameIconError(this)">';
+return files.map(function(filename) {
+return '<img class="hunt-radar-game-icon-img" src="images/game-symbols/' + filename + '" alt="' + escapeHtml(game) + '" onerror="handleGameIconError(this)">';
 }).join('');
 }
 // Single custom-image versions of the Method / Shiny Charm row icons.
@@ -3634,8 +3755,8 @@ el.innerHTML =
 '<div class="hunt-dex-lens hunt-dex-flap-lens" data-action="new-hunt" role="button" tabindex="0" title="Start a Hunt" aria-label="Start a Hunt"><span class="hunt-dex-flap-lens-inner"></span></div>' +
 '<div class="hunt-dex-lights hunt-dex-flap-lights">' +
 '<button class="hunt-dex-light r" data-action="delete-hunt" data-id="' + hunt.id + '" title="Abandon hunt" aria-label="Abandon hunt"></button>' +
-'<span class="hunt-dex-light y" aria-hidden="true"></span>' +
-'<span class="hunt-dex-light g' + (hunt.running ? ' lit' : '') + '" title="' + (hunt.running ? 'Timer running' : 'Timer paused') + '"></span>' +
+'<button class="hunt-dex-light y" data-action="dev-tools" data-id="' + hunt.id + '" title="Add to Log" aria-label="Add to Log"></button>' +
+'<button class="hunt-dex-light g' + (hunt.running ? ' lit' : '') + '" data-action="edit-hunt" data-id="' + hunt.id + '" title="Edit Hunt" aria-label="Edit Hunt"></button>' +
 '</div>' +
 '</div>' +
 '</div>' +
@@ -5983,6 +6104,7 @@ id: e.pointerId,
 startX: e.clientX,
 startY: e.clientY,
 startScroll: grid.scrollLeft,
+startIndex: kalosCarouselIndexForScroll(grid, grid.scrollLeft),
 lastX: e.clientX,
 lastTime: performance.now(),
 velocityX: 0,
@@ -6009,7 +6131,15 @@ if (drag.axis !== 'x') return;
 e.preventDefault();
 var now = performance.now();
 var dt = Math.max(now - drag.lastTime, 1);
-drag.velocityX = (e.clientX - drag.lastX) / dt;
+// A single pointermove sample's instantaneous speed can spike wildly on
+// iPhone (very small dt between samples turns even a few px of jitter
+// into a huge px/ms figure), which - fed into nearestKalosCarouselIndex's
+// velocity projection - was flinging the carousel several cards past
+// where a normal one-card swipe should land. Smoothing it into a running
+// average instead of using the raw last-sample value keeps the release
+// velocity representative of the whole gesture, not just its final tick.
+var instantVelocityX = (e.clientX - drag.lastX) / dt;
+drag.velocityX = drag.velocityX * 0.7 + instantVelocityX * 0.3;
 drag.lastX = e.clientX;
 drag.lastTime = now;
 var maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
@@ -6023,7 +6153,14 @@ kalosDepthDrag = null;
 grid.classList.remove('is-dragging');
 if (!drag.moved || drag.axis !== 'x' || kalosOpenGen) return;
 kalosDepthIgnoreClickUntil = Date.now() + 360;
-scrollKalosCarouselToIndex(nearestKalosCarouselIndex(grid, drag.velocityX), true);
+// However fast the flick, a single swipe should only ever advance one
+// card - it's a row of gen boxes to page through deliberately, not a
+// long inertial scroller. nearestKalosCarouselIndex's velocity-projected
+// landing spot is still used to decide *which* neighbor (or whether to
+// snap back to the start card), just clamped to a one-card step.
+var flungIndex = nearestKalosCarouselIndex(grid, drag.velocityX);
+var target = Math.max(drag.startIndex - 1, Math.min(drag.startIndex + 1, flungIndex));
+scrollKalosCarouselToIndex(target, true);
 }
 grid.addEventListener('pointerup', finishDepthDrag, { passive: true });
 grid.addEventListener('pointercancel', finishDepthDrag, { passive: true });
@@ -6859,14 +6996,12 @@ renderHunts();
 } else if (action === 'mark-found') {
 spawnSparkle(btn);
 openFoundModal(hunt);
+} else if (action === 'dev-tools') {
+openDevToolsModal(hunt);
+} else if (action === 'edit-hunt') {
+openEditHuntModal(hunt);
 } else if (action === 'delete-hunt') {
-if (confirm('Abandon this hunt? This can\'t be undone.')) {
-state.hunts = state.hunts.filter(function(h) {
-return h.id !== id;
-});
-save();
-renderHunts();
-}
+openAbandonHuntModal(hunt);
 }
 }
 function spawnSparkle(btn) {
@@ -7201,6 +7336,260 @@ this.classList.toggle('active', logEditMode);
 this.setAttribute('aria-pressed', logEditMode ? 'true' : 'false');
 renderCollection();
 });
+// Lets you directly edit an active hunt's saved data (Pokemon, game,
+// method, shiny charm, encounters, and time spent) rather than only
+// bumping the encounter counter or timer - useful for re-entering a
+// hunt's progress after it was lost, or correcting a mistake, without
+// having to abandon and restart the hunt from zero. Opened from the
+// green light on the hunt card.
+// Shared header markup for the hunt-card popup menus (Abandon Hunt, Add
+// to Log, Edit Hunt) so all three read as the same "device menu" instead
+// of each modal inventing its own header treatment - a dot + title on
+// the left, two small decorative status lights on the right, matching
+// the look already established by the Dev Tools / Start a Hunt modals.
+function huntMenuHeadHtml(title) {
+return '<div class="modal-dex-head">' +
+'<div class="modal-dex-head-title"><span class="modal-dex-dot"></span><h3>' + escapeHtml(title) + '</h3></div>' +
+'<div class="modal-dex-lights" aria-hidden="true"><span class="modal-dex-light g lit"></span><span class="modal-dex-light y"></span></div>' +
+'</div>';
+}
+// Confirmation step for abandoning a hunt, in the same unified-menu style
+// as Add to Log and Edit Hunt rather than a native confirm() popup. The
+// primary button itself carries the second confirmation: the first click
+// swaps it into an armed "Tap again to confirm" state, and only a second
+// click on that same button actually deletes the hunt - so a stray tap
+// can't silently abandon it, and Cancel (or the backdrop) always backs
+// out safely.
+function openAbandonHuntModal(hunt) {
+var overlay = openModal(
+huntMenuHeadHtml('Abandon Hunt') +
+'<p class="field-hint">Abandoning <strong>' + escapeHtml(hunt.pokemon) + '</strong> permanently deletes its encounter count, timer, and hunt settings. This can\'t be undone.</p>' +
+'<div class="modal-actions"><button class="ghost" id="ab-cancel">Cancel</button><button class="ghost danger" id="ab-confirm">Abandon Hunt</button></div>',
+'modal-abandon-hunt'
+);
+var confirmBtn = overlay.querySelector('#ab-confirm');
+var armed = false;
+overlay.querySelector('#ab-cancel').addEventListener('click', function() {
+overlay.remove();
+});
+confirmBtn.addEventListener('click', function() {
+if (!armed) {
+armed = true;
+confirmBtn.textContent = 'Tap again to confirm';
+confirmBtn.classList.add('is-confirming');
+return;
+}
+state.hunts = state.hunts.filter(function(h) {
+return h.id !== hunt.id;
+});
+save();
+renderHunts();
+overlay.remove();
+});
+}
+function openEditHuntModal(hunt) {
+var totalSeconds = elapsedSeconds(hunt);
+var hrs = Math.floor(totalSeconds / 3600);
+var mins = Math.floor((totalSeconds % 3600) / 60);
+var overlay = openModal(
+huntMenuHeadHtml('Edit Hunt') +
+'<div class="field"><label>Pok\u00e9mon</label><input type="text" id="eh-pokemon" value="' + escapeHtml(hunt.pokemon) + '" autofocus></div>' +
+'<div class="field-row">' +
+'<div class="field"><label>Game</label><select id="eh-game">' + gameOptions(hunt.game) + '</select></div>' +
+'<div class="field"><label>Method</label><select id="eh-method">' + methodOptions(hunt.method) + '</select></div>' +
+'</div>' +
+'<div class="field-row">' +
+'<div class="field"><label>Odds (1 in ___)</label><input type="number" id="eh-denom" min="1" value="' + hunt.denom + '"></div>' +
+'<div class="field"><label>Encounters</label><input type="number" id="eh-encounters" min="0" value="' + hunt.encounters + '"></div>' +
+'</div>' +
+'<div class="field-row">' +
+'<div class="field"><label>Time spent</label><div class="field-row dt-time-row"><input type="number" id="eh-hours" min="0" placeholder="Hrs" value="' + hrs + '"><input type="number" id="eh-minutes" min="0" max="59" placeholder="Min" value="' + mins + '"></div></div>' +
+'<div class="checkbox-field" style="align-self:flex-end;margin-bottom:10px;"><input type="checkbox" id="eh-charm"' + (hunt.shinyCharm ? ' checked' : '') + '><label for="eh-charm">Shiny Charm</label></div>' +
+'</div>' +
+'<p class="field-hint">Odds recalculate automatically when you change Game/Method/Shiny Charm, unless you edit the Odds field yourself afterward.</p>' +
+'<div class="modal-actions"><button class="ghost" id="eh-cancel">Cancel</button><button class="primary" id="eh-save">Save Changes</button></div>'
+);
+attachPokemonAutocomplete(overlay.querySelector('#eh-pokemon'));
+var gameSel = overlay.querySelector('#eh-game');
+var methodSel = overlay.querySelector('#eh-method');
+var charmChk = overlay.querySelector('#eh-charm');
+var denomInput = overlay.querySelector('#eh-denom');
+var denomTouched = false;
+denomInput.addEventListener('input', function() { denomTouched = true; });
+function refreshDenom() {
+if (denomTouched) return;
+denomInput.value = computeOdds(gameSel.value, methodSel.value, charmChk.checked);
+}
+gameSel.addEventListener('change', refreshDenom);
+methodSel.addEventListener('change', refreshDenom);
+charmChk.addEventListener('change', refreshDenom);
+overlay.querySelector('#eh-cancel').addEventListener('click', function() {
+overlay.remove();
+});
+overlay.querySelector('#eh-save').addEventListener('click', function() {
+var name = overlay.querySelector('#eh-pokemon').value.trim();
+if (!name) {
+overlay.querySelector('#eh-pokemon').focus();
+return;
+}
+hunt.pokemon = name;
+hunt.game = gameSel.value;
+hunt.method = methodSel.value;
+hunt.shinyCharm = charmChk.checked;
+hunt.denom = parseInt(denomInput.value, 10) || 1;
+hunt.encounters = parseInt(overlay.querySelector('#eh-encounters').value || '0', 10) || 0;
+var newHours = parseInt(overlay.querySelector('#eh-hours').value || '0', 10) || 0;
+var newMinutes = parseInt(overlay.querySelector('#eh-minutes').value || '0', 10) || 0;
+hunt.accumulatedSeconds = (newHours * 3600) + (newMinutes * 60);
+// If the timer's currently running, restart its running reference point
+// now so the freshly-entered total isn't immediately padded by however
+// long has elapsed since the hunt originally started running.
+if (hunt.running) {
+hunt.runStart = Date.now();
+}
+save();
+renderHunts();
+overlay.remove();
+});
+}
+function openDevToolsModal(hunt) {
+var overlay = openModal(
+huntMenuHeadHtml('Dev Tools') +
+'<div class="dev-tools-tabs" id="dt-tabs">' +
+'<button type="button" class="dev-tools-tab active" data-tab="add">Add Entry</button>' +
+'<button type="button" class="dev-tools-tab" data-tab="history">Version History</button>' +
+'</div>' +
+'<div class="dev-tools-panel" id="dt-panel-add">' +
+'<p class="field-hint">Manually log a catch - use this to re-enter records that were lost, or to log something you caught outside a tracked hunt.</p>' +
+'<div class="field"><label>Pokémon</label><input type="text" id="dt-pokemon" placeholder="e.g. Gible" value="' + escapeHtml(hunt ? hunt.pokemon : '') + '"></div>' +
+'<div class="field-row">' +
+'<div class="field"><label>Game</label><select id="dt-game">' + gameOptions(hunt ? hunt.game : null) + '</select></div>' +
+'<div class="field"><label>Method</label><select id="dt-method">' + methodOptions(hunt ? hunt.method : null) + '</select></div>' +
+'</div>' +
+'<div class="field-row">' +
+'<div class="field"><label>Odds (1 in ___)</label><input type="number" id="dt-denom" min="1" value="' + (hunt ? hunt.denom : 4096) + '"></div>' +
+'<div class="field"><label>Encounters</label><input type="number" id="dt-encounters" min="0" value="' + (hunt ? hunt.encounters : 0) + '"></div>' +
+'</div>' +
+'<div class="field-row">' +
+'<div class="field"><label>Date Began</label><input type="date" id="dt-date-began"></div>' +
+'<div class="field"><label>Date Ended</label><input type="date" id="dt-date-ended" value="' + fmtDate(new Date()) + '"></div>' +
+'</div>' +
+'<div class="field-row">' +
+'<div class="field"><label>Time Spent</label><div class="field-row dt-time-row"><input type="number" id="dt-hours" min="0" placeholder="Hrs" value="0"><input type="number" id="dt-minutes" min="0" max="59" placeholder="Min" value="0"></div></div>' +
+'<div class="checkbox-field" style="align-self:flex-end;margin-bottom:10px;"><input type="checkbox" id="dt-charm"' + (hunt && hunt.shinyCharm ? ' checked' : '') + '><label for="dt-charm">Shiny Charm</label></div>' +
+'</div>' +
+'<div class="field"><label>Notes</label><textarea id="dt-notes" rows="2"></textarea></div>' +
+'<div class="modal-actions"><button class="ghost" id="dt-cancel">Cancel</button><button class="primary" id="dt-save">Add to Log</button></div>' +
+'</div>' +
+'<div class="dev-tools-panel" id="dt-panel-history" style="display:none;">' +
+'<p class="field-hint">Recent saved snapshots of your data. Restoring replaces your current hunts/collection with that snapshot\'s contents.</p>' +
+'<div class="dev-history-list" id="dt-history-list"><div class="dev-history-empty">Loading…</div></div>' +
+'</div>',
+'modal-dev-tools'
+);
+attachPokemonAutocomplete(overlay.querySelector('#dt-pokemon'));
+overlay.querySelector('#dt-cancel').addEventListener('click', function() { overlay.remove(); });
+var tabs = overlay.querySelector('#dt-tabs');
+var panelAdd = overlay.querySelector('#dt-panel-add');
+var panelHistory = overlay.querySelector('#dt-panel-history');
+var historyLoaded = false;
+tabs.addEventListener('click', function(e) {
+var btn = e.target.closest('[data-tab]');
+if (!btn) return;
+tabs.querySelectorAll('.dev-tools-tab').forEach(function(b) { b.classList.remove('active'); });
+btn.classList.add('active');
+var isHistory = btn.dataset.tab === 'history';
+panelAdd.style.display = isHistory ? 'none' : '';
+panelHistory.style.display = isHistory ? '' : 'none';
+if (isHistory && !historyLoaded) {
+historyLoaded = true;
+loadHistoryList(overlay);
+}
+});
+overlay.querySelector('#dt-save').addEventListener('click', function() {
+var pokemon = overlay.querySelector('#dt-pokemon').value.trim();
+if (!pokemon) {
+overlay.querySelector('#dt-pokemon').focus();
+return;
+}
+var info = speciesInfo(pokemon);
+var dateBeganVal = overlay.querySelector('#dt-date-began').value;
+var dateEndedVal = overlay.querySelector('#dt-date-ended').value;
+state.collection.push({
+id: uid(),
+pokemon: pokemon,
+gen: info ? info.gen : null,
+types: info ? info.types : [],
+game: overlay.querySelector('#dt-game').value,
+method: overlay.querySelector('#dt-method').value,
+shinyCharm: overlay.querySelector('#dt-charm').checked,
+denom: parseInt(overlay.querySelector('#dt-denom').value, 10) || 0,
+encounters: parseInt(overlay.querySelector('#dt-encounters').value, 10) || 0,
+dateBegan: dateBeganVal || dateEndedVal || fmtDate(new Date()),
+dateEnded: dateEndedVal || fmtDate(new Date()),
+timeSpentMinutes: (parseInt(overlay.querySelector('#dt-hours').value, 10) || 0) * 60 + (parseInt(overlay.querySelector('#dt-minutes').value, 10) || 0),
+notes: overlay.querySelector('#dt-notes').value.trim()
+});
+logSelectedId = state.collection[state.collection.length - 1].id;
+save();
+renderAll();
+overlay.remove();
+var tabBtn = document.querySelector('nav.tabs button[data-tab="collection"]');
+if (tabBtn) { tabBtn.click(); } else { activateTab('collection'); }
+});
+}
+function loadHistoryList(overlay) {
+var list = overlay.querySelector('#dt-history-list');
+if (!connectToCloud() || !HISTORY_COLLECTION) {
+list.innerHTML = '<div class="dev-history-empty">Cloud sync isn\'t connected right now.</div>';
+return;
+}
+HISTORY_COLLECTION.orderBy('savedAt', 'desc').limit(HISTORY_LIMIT).get().then(function(snap) {
+if (!overlay.isConnected) return;
+if (snap.empty) {
+list.innerHTML = '<div class="dev-history-empty">No saved snapshots yet - they start building up as you use the tracker.</div>';
+return;
+}
+list.innerHTML = snap.docs.map(function(doc) {
+var d = doc.data();
+var when = new Date(d.savedAt);
+var whenStr = isNaN(when.getTime()) ? 'Unknown time' : (fmtDate(when) + ' ' + when.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'}));
+var huntsCount = Array.isArray(d.hunts) ? d.hunts.length : 0;
+var collCount = Array.isArray(d.collection) ? d.collection.length : 0;
+return '<div class="dev-history-row">' +
+'<div class="dev-history-meta"><div class="dev-history-when">' + escapeHtml(whenStr) + '</div>' +
+'<div class="dev-history-counts">' + huntsCount + ' active hunt' + (huntsCount === 1 ? '' : 's') + ' · ' + collCount + ' logged catch' + (collCount === 1 ? '' : 'es') + '</div></div>' +
+'<button type="button" class="ghost dev-history-restore-btn" data-doc-id="' + doc.id + '">Restore</button>' +
+'</div>';
+}).join('');
+list.querySelectorAll('.dev-history-restore-btn').forEach(function(btn) {
+btn.addEventListener('click', function() {
+restoreHistorySnapshot(btn.dataset.docId, overlay);
+});
+});
+}).catch(function(e) {
+console.error('Failed to load history', e);
+list.innerHTML = '<div class="dev-history-empty">Couldn\'t load snapshot history.</div>';
+});
+}
+function restoreHistorySnapshot(docId, overlay) {
+if (!confirm('Restore this snapshot? Your current hunts and collection will be replaced with what was saved at that point.')) return;
+HISTORY_COLLECTION.doc(docId).get().then(function(doc) {
+if (!doc.exists) {
+alert('That snapshot is no longer available.');
+return;
+}
+var clean = normaliseCloudState(doc.data());
+state = clean;
+try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+renderAll();
+save();
+overlay.remove();
+}).catch(function(e) {
+console.error('Restore failed', e);
+alert('Restore failed - check your connection and try again.');
+});
+}
 function openFoundModal(hunt) {
 
   var info = speciesInfo(hunt.pokemon);
