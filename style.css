@@ -8847,7 +8847,7 @@ display: none;
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
 	flex: 0 0 64%;
-	aspect-ratio: 0.85 / 1;
+	aspect-ratio: 0.95 / 1;
 	padding: 12px 6px 8px;
 	border: 3px solid #151516;
 	border-radius: 12px 12px 15px 15px;
@@ -8909,7 +8909,7 @@ display: none;
 /* DS refinement — thin black shell, centered photo face, GBA-style status bar */
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
-	padding: 6px 4px 10px;
+	padding: 6px 4px 16px;
 	border: 1px solid #050607;
 	border-radius: 10px 10px 13px 13px;
 	background:
