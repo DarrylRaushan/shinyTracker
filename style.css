@@ -8909,7 +8909,7 @@ display: none;
 /* DS refinement — thin black shell, centered photo face, GBA-style status bar */
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
-	padding: 8px 4px 6px;
+	padding: 6px 4px 10px;
 	border: 1px solid #050607;
 	border-radius: 10px 10px 13px 13px;
 	background:
