@@ -5621,6 +5621,31 @@ var GEN_BOX_ART = {
 function buildKalosTileCollapsedHtml(g, genCaught) {
 var pct = Math.round((genCaught / g.species.length) * 100);
 if (kalosCartStyleForGen(g.gen) === 'switch') {
+// Same floating completion-bar hierarchy used above the GBA/DS/3DS
+// cartridges, reused here so the Switch cards get a matching bar on top.
+var switchHudBallFile = REGION_BALLS[g.region];
+var switchHudBallFallbacks = {
+"ball_kanto_pokeball.png": "poke-ball",
+"ball_johto_greatball.png": "great-ball",
+"ball_hoenn_ultraball.png": "ultra-ball",
+"ball_sinnoh_masterball.png": "master-ball",
+"ball_unova_quickball.png": "quick-ball",
+"ball_kalos_timerball.png": "timer-ball",
+"ball_alola_beastball.png": "beast-ball",
+"ball_galar_dynamaxball.png": "poke-ball",
+"ball_paldea_premierball.png": "premier-ball"
+};
+var switchHudBallSlug = switchHudBallFallbacks[switchHudBallFile] || "poke-ball";
+var switchHudBallRemote = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/" + switchHudBallSlug + ".png";
+var switchHudBall = switchHudBallFile ?
+('<span class="kalos-gba-ball"><img src="' + switchHudBallRemote + '" data-local-src="images/region-balls/' + switchHudBallFile + '" alt="" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'is-fallback\');"></span>') :
+'<span class="kalos-gba-ball is-fallback"></span>';
+var switchCompletion =
+'<div class="kalos-ds-completion" aria-label="' + escapeHtml(g.region) + ' completion ' + pct + ' percent">' +
+switchHudBall +
+'<span class="kalos-ds-region">' + escapeHtml(g.region) + '</span>' +
+'<span class="kalos-ds-progress"><strong>' + pct + '%</strong><small>' + genCaught + ' / ' + g.species.length + '</small></span>' +
+'</div>';
 return (
 '<div class="kalos-gen-tile-sticker">' +
 '<div class="kalos-switch-header">' +
@@ -5642,7 +5667,8 @@ buildDexGenBadgeHtml(g, pct) +
 '</div>' +
 '</div>' +
 '<div class="kalos-switch-footer">LA-H-TRK-0' + g.gen + '-USA</div>' +
-'</div>'
+'</div>' +
+switchCompletion
 );
 }
 var cartStyleForBoxArt = kalosCartStyleForGen(g.gen);
@@ -5691,6 +5717,10 @@ var threeDsLabel = cartStyleForBoxArt === '3ds' ? (
 '<div class="kalos-3ds-brand">NINTENDO <span class="kalos-3ds-mark"><i></i><i></i>3DS</span><sup>™</sup></div>' +
 '<div class="kalos-3ds-inset-art">' +
 (boxArt ? '<img class="kalos-3ds-boxart" src="images/game-symbols/' + boxArt + '" alt="" onerror="this.remove()">' : '') +
+'</div>' +
+'<div class="kalos-3ds-info-bar">' +
+'<span class="kalos-3ds-nintendo"><span class="kalos-3ds-nintendo-word">Nintendo</span><span class="kalos-3ds-nintendo-sub">The Pokémon Company</span></span>' +
+'<span class="kalos-3ds-ce" aria-hidden="true">CE</span>' +
 '</div>' +
 '<div class="kalos-3ds-product-code">LNA-CTR-TRK-0' + g.gen + '-USA</div>' +
 '</div>'
