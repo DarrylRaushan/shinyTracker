@@ -8909,7 +8909,7 @@ display: none;
 /* DS refinement — thin black shell, centered photo face, GBA-style status bar */
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
-	padding: 6px 4px 16px;
+	padding: 6px 4px 10px;
 	border: 1px solid #050607;
 	border-radius: 10px 10px 13px 13px;
 	background:
@@ -9144,13 +9144,13 @@ display: none;
 
 /* Increase the black interior material above the DS image box without resizing it. */
 .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
-	transform: translateY(3px);
+	transform: translateY(-6px);
 }
 
 /* Give the DS shell a slightly deeper lower section than its top section. */
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
-	padding-bottom: 8px;
+	padding-bottom: 16px;
 }
 
 /* Compact the DS completion header without changing the cartridge body. */
