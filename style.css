@@ -4979,6 +4979,42 @@ white-space: nowrap;
 overflow: hidden;
 text-overflow: ellipsis;
 }
+/* 3D View toggle (desktop pc-key + mobile kalos toolbar icon button) - a
+   real pressed/unpressed toggle rather than a panel-opener, so it gets its
+   own filled "on" look instead of the .dex-select-wrap .ghost.active style
+   used by Sort/Type/Forms. */
+#btn-dex-3d-toggle[aria-pressed="true"] {
+background: var(--red);
+border-color: var(--red-dark);
+color: #fff;
+}
+#btn-dex-3d-toggle[aria-pressed="true"]:hover {
+color: #fff;
+border-color: var(--red-dark);
+}
+.kalos-filter-toolbar .log-dex-grid-btn#btn-k-3d-toggle[aria-pressed="true"],
+.log-dex-grid-btn#btn-k-3d-toggle[aria-pressed="true"] {
+background: var(--red);
+color: #fff;
+}
+/* Small affordance so it's obvious sprites now open the 3D viewer instead
+   of toggling caught, without needing a full chip re-render - just a class
+   flip on the grid (see toggleDex3DMode in script.js). */
+.dex-grid.mode-3d .dex-chip.interactive,
+.kalos-gen-grid.mode-3d .dex-chip.interactive {
+cursor: zoom-in;
+}
+.dex-grid.mode-3d .dex-chip.interactive::after,
+.kalos-gen-grid.mode-3d .dex-chip.interactive::after {
+content: "🧊";
+position: absolute;
+top: 2px;
+right: 3px;
+font-size: 10px;
+opacity: 0.75;
+filter: drop-shadow(0 1px 0 rgba(0,0,0,0.3));
+pointer-events: none;
+}
 /* CSS-7: Living Dex mobile: Handheld Pokédex — full rationale in NOTES.md */
 /* CSS-KALOS-MOBILE: Living Dex mobile - Kalos-style Pokédex clamshell.
    Desktop's .pc-monitor/.pc-keyboard-tray/.dex-closed-cover are untouched
@@ -10042,4 +10078,87 @@ display: none;
    wider width here instead, independent of the tile underneath it. */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="switch"] > .kalos-ds-completion {
   width: 190px;
+}
+
+
+
+
+/* ---------- Living Dex: 3D model viewer modal ---------- */
+/* Opened via open3DModelModal() (script.js) using the shared openModal()
+   overlay helper, with 'modal-3d-viewer' as the extraClass - same
+   .overlay/.modal chrome every other modal in this app uses, just wider
+   and taller to give the <model-viewer> room to breathe. */
+.modal.modal-3d-viewer {
+max-width: 560px;
+width: 100%;
+padding: 20px;
+background: #14121f;
+border-color: var(--line);
+}
+.model3d-head {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 12px;
+margin-bottom: 12px;
+}
+.model3d-head h3 {
+margin: 0;
+color: #fff;
+}
+.model3d-shiny-tag {
+font-size: 12px;
+font-weight: 800;
+color: #ffd166;
+margin-left: 6px;
+}
+.model3d-close {
+flex: none;
+padding: 6px 12px;
+font-size: 15px;
+line-height: 1;
+}
+.model3d-stage {
+position: relative;
+width: 100%;
+aspect-ratio: 1 / 1;
+max-height: 62vh;
+border-radius: 16px;
+overflow: hidden;
+background: radial-gradient(circle at 50% 40%, #2a2540 0%, #14121f 75%);
+border: 2px solid var(--line);
+}
+#model3d-viewer {
+width: 100%;
+height: 100%;
+--poster-color: transparent;
+}
+.model3d-loading {
+position: absolute;
+inset: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 24px;
+text-align: center;
+color: #cfc9e6;
+font-size: 13px;
+font-weight: 700;
+pointer-events: none;
+}
+.model3d-hint {
+margin: 10px 0 0;
+text-align: center;
+font-size: 11.5px;
+color: var(--ink-dim);
+color: #9c94bd;
+letter-spacing: 0.3px;
+}
+@media (max-width: 640px) {
+.modal.modal-3d-viewer {
+padding: 14px;
+}
+.model3d-stage {
+max-height: 50vh;
+}
 }
