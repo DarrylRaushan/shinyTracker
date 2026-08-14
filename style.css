@@ -9279,6 +9279,15 @@ display: none;
 		inset -1px -2px 3px rgba(0,0,0,0.62);
 }
 
+/* Reserve more shell material above the screen - a chain of earlier padding
+   overrides (see the 5px/3px/3px shorthand further up) had shrunk this to
+   almost nothing, so the image was touching the top edge. This is the
+   last-in-cascade padding-top for these tiles, so it's the one that wins. */
+.kalos-gen-tile[data-cart="ds"][data-gen="4"],
+.kalos-gen-tile[data-cart="ds"][data-gen="5"] {
+	padding-top: 12px;
+}
+
 /* Fill the complete DS inset face with the assigned artwork. */
 .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo::after {
 	background-size: cover;
@@ -9436,7 +9445,7 @@ display: none;
 
 /* DS triangle position: sit slightly closer to the lower shell edge. */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] > .kalos-ds-bottom-triangle {
-	bottom: -3px;
+	bottom: 6px;
 }
 
 /* Remove the retired DS shell pseudo-element from the artwork face. The lower
