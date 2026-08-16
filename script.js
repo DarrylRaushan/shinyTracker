@@ -1,3 +1,8 @@
+// of the screen instead of failing silently. Several past bugs in this file
+// (see comments near syncTabChrome and connectToCloud) were invisible on
+// mobile precisely because nothing surfaced the thrown error - this makes
+// the next one visible without needing a computer/dev tools. Safe to remove
+// once things are stable again.
 (function() {
 var shown = 0;
 window.addEventListener('error', function(e) {
@@ -7632,8 +7637,27 @@ updateLensLines = function() {
 if (!document.body.contains(overlay) || !document.body.contains(kalosLensCorner) || !modalEl) return;
 var lensRect = kalosLensCorner.getBoundingClientRect();
 var modalRect = modalEl.getBoundingClientRect();
-var lx = lensRect.left + lensRect.width / 2;
-var ly = lensRect.top + lensRect.height / 2;
+// getBoundingClientRect() always reports coordinates in the LAYOUT
+// viewport (the fixed, address-bar-collapsed size implied by 100vh/
+// 100vw). But .model3d-lens-lines-fixed/.model3d-lens-cone-fill are
+// position:fixed, and on iOS Safari position:fixed elements are
+// painted relative to the VISUAL viewport instead - which shifts
+// vertically (and can shift horizontally too, e.g. pinch-zoom)
+// whenever Safari's chrome (address/tab bar) is partially shown. That
+// mismatch is exactly why the lines used to miss both the lens and the
+// modal corners: every coordinate needs to be re-expressed in visual-
+// viewport space before it's handed to the fixed SVG. window.
+// visualViewport isn't available in every engine, so this is a no-op
+// (offsets of 0) anywhere it's missing rather than a hard dependency.
+var vv = window.visualViewport;
+var vvOffsetX = vv ? vv.offsetLeft : 0;
+var vvOffsetY = vv ? vv.offsetTop : 0;
+var lx = lensRect.left + lensRect.width / 2 - vvOffsetX;
+var ly = lensRect.top + lensRect.height / 2 - vvOffsetY;
+var modalLeft = modalRect.left - vvOffsetX;
+var modalTop = modalRect.top - vvOffsetY;
+var modalRight = modalRect.right - vvOffsetX;
+var modalBottom = modalRect.bottom - vvOffsetY;
 // .modal has a 24px border-radius, so the true bounding-box corner
 // sits past the visible curve - a line aimed straight at it overshoots
 // the border instead of landing on it. Pulling each corner in along
@@ -7643,10 +7667,10 @@ var ly = lensRect.top + lensRect.height / 2;
 var modalRadius = 24;
 var cornerInset = modalRadius * (1 - Math.SQRT1_2);
 var corners = [
-[modalRect.left + cornerInset, modalRect.top + cornerInset],
-[modalRect.right - cornerInset, modalRect.top + cornerInset],
-[modalRect.left + cornerInset, modalRect.bottom - cornerInset],
-[modalRect.right - cornerInset, modalRect.bottom - cornerInset]
+[modalLeft + cornerInset, modalTop + cornerInset],
+[modalRight - cornerInset, modalTop + cornerInset],
+[modalLeft + cornerInset, modalBottom - cornerInset],
+[modalRight - cornerInset, modalBottom - cornerInset]
 ];
 lensLineEls.forEach(function(lineEl, i) {
 var cx = corners[i][0], cy = corners[i][1];
@@ -7655,7 +7679,7 @@ var cx = corners[i][0], cy = corners[i][1];
 // point it first meets the popup's edge instead - the popup then
 // visually overtakes the rest of the beam, rather than the beam
 // drawing over the popup.
-var entry = segmentRectEntry(lx, ly, cx, cy, modalRect.left, modalRect.top, modalRect.right, modalRect.bottom);
+var entry = segmentRectEntry(lx, ly, cx, cy, modalLeft, modalTop, modalRight, modalBottom);
 lineEl.setAttribute('x1', lx);
 lineEl.setAttribute('y1', ly);
 lineEl.setAttribute('x2', entry ? entry.x : cx);
@@ -7680,6 +7704,16 @@ return pt[0] + 'px ' + pt[1] + 'px';
 };
 updateLensLines();
 window.addEventListener('resize', updateLensLines);
+// A plain 'resize' on window doesn't reliably fire when iOS Safari's
+// address/tab bar collapses or expands on scroll - that only moves the
+// visual viewport, not the layout viewport window.addEventListener('resize')
+// is tied to. Without this, the lens/corner offset correction above
+// would use a stale vv.offsetTop/offsetLeft until something else (e.g.
+// a real rotation) happened to trigger a resize.
+if (window.visualViewport) {
+window.visualViewport.addEventListener('resize', updateLensLines);
+window.visualViewport.addEventListener('scroll', updateLensLines);
+}
 }
 if (kalosDexEl) {
 kalosDexEl.setAttribute('data-model-active', 'true');
@@ -7688,9 +7722,14 @@ if (!document.body.contains(overlay)) {
 kalosLensObserver.disconnect();
 kalosDexEl.removeAttribute('data-model-active');
 // Tear down the lens-line overlay alongside the modal itself,
-// rather than leaving a stray fixed <svg> + resize listener behind.
+// rather than leaving a stray fixed <svg> + resize/visualViewport
+// listener behind.
 if (lensLinesSvg) {
 window.removeEventListener('resize', updateLensLines);
+if (window.visualViewport) {
+window.visualViewport.removeEventListener('resize', updateLensLines);
+window.visualViewport.removeEventListener('scroll', updateLensLines);
+}
 lensLinesSvg.remove();
 lensLinesSvg = null;
 }
