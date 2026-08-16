@@ -1,9 +1,3 @@
-// Temporary diagnostic: shows any uncaught JS error as a banner at the top
-// of the screen instead of failing silently. Several past bugs in this file
-// (see comments near syncTabChrome and connectToCloud) were invisible on
-// mobile precisely because nothing surfaced the thrown error - this makes
-// the next one visible without needing a computer/dev tools. Safe to remove
-// once things are stable again.
 (function() {
 var shown = 0;
 window.addEventListener('error', function(e) {
@@ -3146,6 +3140,53 @@ return pretty;
 return null;
 });
 }
+// Live Pokédex-entry lookup via PokeAPI, used by the 3D model viewer to
+// show genus/height/weight/flavor text like an actual dex entry rather
+// than a bare model window. Two endpoints are combined - species (genus +
+// flavor text) and the base pokemon resource (height/weight, which live
+// separately) - and merged into one small object. Cached per slug like
+// fetchEvolvesFrom above, and any failure resolves to null so the caller
+// can just leave the entry panel blank instead of erroring.
+var _dexEntryCache = {};
+function fetchDexEntryData(name) {
+var slug = pokemonSlug(name);
+if (!slug) return Promise.resolve(null);
+if (Object.prototype.hasOwnProperty.call(_dexEntryCache, slug)) {
+return Promise.resolve(_dexEntryCache[slug]);
+}
+var speciesPromise = fetch('https://pokeapi.co/api/v2/pokemon-species/' + slug + '/')
+.then(function(res) {
+if (!res.ok) throw new Error('pokeapi species lookup failed');
+return res.json();
+});
+var pokemonPromise = fetch('https://pokeapi.co/api/v2/pokemon/' + slug + '/')
+.then(function(res) {
+if (!res.ok) throw new Error('pokeapi pokemon lookup failed');
+return res.json();
+});
+return Promise.all([speciesPromise, pokemonPromise])
+.then(function(results) {
+var species = results[0], mon = results[1];
+var genusEntry = (species.genera || []).filter(function(g) { return g.language && g.language.name === 'en'; })[0];
+var flavorEntry = (species.flavor_text_entries || []).filter(function(f) { return f.language && f.language.name === 'en'; }).pop();
+var entry = {
+genus: genusEntry ? genusEntry.genus : null,
+// PokeAPI flavor text keeps the original games' line-break/form-feed
+// characters baked in, which read as garbage whitespace outside a
+// fixed-width in-game textbox - collapse them to normal spaces here.
+flavorText: flavorEntry ? flavorEntry.flavor_text.replace(/[\n\f\r]+/g, ' ') : null,
+// height is decimetres, weight is hectograms - convert to metres/kg.
+heightM: typeof mon.height === 'number' ? (mon.height / 10) : null,
+weightKg: typeof mon.weight === 'number' ? (mon.weight / 10) : null
+};
+_dexEntryCache[slug] = entry;
+return entry;
+})
+.catch(function() {
+_dexEntryCache[slug] = null;
+return null;
+});
+}
 // Walks a PokeAPI evolution-chain tree looking for the node whose species
 // slug matches targetSlug, returning { stage, isFinal } (stage: 0 = the
 // base/basic form, 1 = first evolution, 2 = second evolution, etc;
@@ -4977,6 +5018,7 @@ o.classList.remove('active');
 });
 syncDexEvoStageButtonState();
 applyDexEvoStageFilter();
+setDexAnimatedOnlyFilter(false);
 closeOtherDexDropdowns(null);
 });
 // Re-orders the chips already sitting in the DOM to match dexSortMode,
@@ -5576,6 +5618,7 @@ animateDexSplitToggleTo(livingProgress, shinyProgress);
 renderKalosMobileDex(caught);
 applyDexTypeFilter();
 applyDexVariantFilter();
+applyDexAnimatedFilter();
 updateLivingDexPillBadge();
 }
 // ---------- mobile Kalos dex: gen-tile grid + gen-detail drill-down ----------
@@ -5920,6 +5963,7 @@ pinKalosSpeciesPanelHeights(tileGrid);
 applyDexTypeFilter();
 applyDexVariantFilter();
 applyDexEvoStageFilter();
+applyDexAnimatedFilter();
 }
 // ---------- mobile Kalos dex: depth carousel ----------
 // The earlier implementation relied on the browser to snap a horizontal track
@@ -6466,6 +6510,7 @@ pinKalosSpeciesPanelHeights(grid);
 applyDexTypeFilter();
 applyDexVariantFilter();
 applyDexEvoStageFilter();
+applyDexAnimatedFilter();
 }
 // Collapses the currently-expanded tile back down into its own square and
 // brings the other squares back.
@@ -6814,7 +6859,7 @@ return;
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
 if (dex3DMode) {
-open3DModelModal(chip.dataset.display, chip.dataset.dexnum, dexMode === 'shiny');
+open3DModelModal(chip.dataset.display, chip.dataset.dexnum, dexMode === 'shiny', chip.dataset.variant);
 return;
 }
 restoreScrollAfter(function() {
@@ -6867,87 +6912,143 @@ scrollKalosCarouselToIndex(idx, true);
 initKalosCarousel();
 initKalosGenSwipe();
 }
-// The two shell halves both toggle the same open/closed state - tapping
-// either one opens the closed shell, and tapping either one again closes
-// it back up. Neither half nor the screen ever disappears mid-transition;
-// see CSS-KALOS-MOBILE in style.css for the actual slide.
+// The two shell halves (plus the corner lens button) all toggle the same
+// open/closed state - tapping any of them opens the closed shell, and
+// tapping again closes it back up. No shell-swing/height-grow choreography
+// any more: opening just flips data-open and lets the plain CSS transition
+// on .kalos-screen-wrap's max-height (see CSS-KALOS-MOBILE in style.css)
+// and .kalos-screen-content's own opacity transition handle the reveal,
+// while .kalos-lens-corner-beam-fx fades in alongside it (CSS-KALOS-LENS-BEAM
+// in style.css) so the screen reads as being projected from the corner lens
+// rather than the case physically opening.
 var kalosDex = document.getElementById('kalos-dex');
 var kalosTop = document.getElementById('kalos-top');
 var kalosBottom = document.getElementById('kalos-bottom');
+var kalosLensCorner = document.getElementById('kalos-lens-corner');
 var kalosScreenWrap = document.getElementById('kalos-screen-wrap');
-var kalosContent = kalosScreenWrap ? kalosScreenWrap.querySelector('.kalos-screen-content') : null;
-var kalosGenGrid = document.getElementById('kalos-gen-grid');
 
 if (kalosDex && kalosTop && kalosBottom && kalosScreenWrap) {
-var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-var kalosBusy = false;
-
+var kalosScreenContent = kalosScreenWrap.querySelector('.kalos-screen-content');
+// The shell "opening" is really just .kalos-screen-wrap growing from 0
+// height to its content's natural height, which pushes .kalos-bottom
+// down as it grows (see the CSS-KALOS-MOBILE comment in style.css) -
+// but that growth used to happen in a single instant frame (no
+// transition on max-height any more, see that same comment), which is
+// what read as a sudden pop open/shut. This animates the actual height
+// with Motion instead, measuring the wrap's natural open height first
+// since data-open flips every dependent CSS rule (aspect-ratio, the
+// shell-half sizing, the max-height cap) straight to its resting value
+// the instant it's set - so for closing in particular, that flip is
+// held off until the collapse animation has actually finished, or the
+// shell would snap back into its compact closed shape while the screen
+// was still visibly open above it.
+// Kept as live handles (rather than fire-and-forget) so a rapid re-tap
+// mid-animation stops whatever's still running first - otherwise two
+// competing height tweens would fight over the same inline style and
+// the shell would visibly stutter instead of just smoothly reversing
+// direction.
+var kalosHeightAnim = null;
+var kalosContentAnim = null;
+var stopKalosAnims = function() {
+if (kalosHeightAnim) { try { kalosHeightAnim.stop(); } catch (e) {} kalosHeightAnim = null; }
+if (kalosContentAnim) { try { kalosContentAnim.stop(); } catch (e) {} kalosContentAnim = null; }
+};
 var setKalosOpen = function(open) {
-if (kalosBusy) return;
 kalosTop.setAttribute('aria-expanded', open ? 'true' : 'false');
 kalosBottom.setAttribute('aria-expanded', open ? 'true' : 'false');
+if (kalosLensCorner) kalosLensCorner.setAttribute('aria-expanded', open ? 'true' : 'false');
 
-// No Motion (or reduced-motion preference): fall back to the plain CSS transition.
-if (reduceMotion || !(window.Motion && window.Motion.animate)) {
+var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (!window.Motion || !window.Motion.animate || reduceMotion) {
 kalosDex.dataset.open = open ? 'true' : 'false';
 return;
 }
 
-var animate = window.Motion.animate;
-var stagger = window.Motion.stagger;
-kalosBusy = true;
-kalosScreenWrap.style.transition = 'none'; // hand this element over to Motion
-if (kalosContent) kalosContent.style.transition = 'none';
+stopKalosAnims();
+
+// Asymmetric easing reads more polished than one curve run both ways:
+// opening eases out (quick off the mark, settles gently at full height,
+// like the screen catching up to the tap) and closing eases in (starts
+// unhurried, gathers speed into the close) rather than mirroring the
+// same shape in reverse.
+var OPEN_EASE = [0.16, 1, 0.3, 1];
+var CLOSE_EASE = [0.7, 0, 0.84, 0];
 
 if (open) {
-// Flip the data-open flag first so the CSS max-height cap lifts
-// immediately - otherwise it clips the height Motion is growing.
 kalosDex.dataset.open = 'true';
-
-animate(kalosScreenWrap, { height: [0, 'auto'] }, { duration: 0.5, ease: [0.65, 0, 0.35, 1] })
-.finished.then(function() {
-kalosScreenWrap.style.transition = '';
-kalosBusy = false;
-});
-
-if (kalosContent) {
-animate(kalosContent, { opacity: [0, 1], y: [10, 0] }, { duration: 0.3, delay: 0.16 });
+var targetHeight = kalosScreenWrap.scrollHeight;
+kalosScreenWrap.style.maxHeight = 'none';
+kalosScreenWrap.style.height = '0px';
+if (kalosScreenContent) {
+kalosScreenContent.style.opacity = '0';
+kalosScreenContent.style.transform = 'translateY(6px)';
 }
-if (kalosGenGrid) {
-var tiles = kalosGenGrid.querySelectorAll('.kalos-gen-tile');
-if (tiles.length) {
-animate(tiles, { opacity: [0, 1], y: [8, 0] }, {
-duration: 0.25,
-delay: stagger(0.025, { startDelay: 0.22 })
-}).finished.then(function() {
-// The entrance stagger just took over each tile's transform/opacity
-// - hand it back to the carousel so neighbors settle into their
-// scaled-down, dimmed resting look instead of staying at the
-// stagger's final translateY(0)/opacity:1.
-if (!kalosOpenGen) syncKalosCarousel();
-});
-}
+void kalosScreenWrap.offsetHeight; // force layout so the 0px start registers before animating
+kalosHeightAnim = window.Motion.animate(
+kalosScreenWrap,
+{ height: ['0px', targetHeight + 'px'] },
+{ duration: 0.48, easing: OPEN_EASE }
+);
+kalosHeightAnim.finished.then(function() {
+kalosScreenWrap.style.height = '';
+kalosScreenWrap.style.maxHeight = '';
+kalosHeightAnim = null;
+}).catch(function() {});
+if (kalosScreenContent) {
+kalosContentAnim = window.Motion.animate(
+kalosScreenContent,
+{ opacity: [0, 1], transform: ['translateY(6px)', 'translateY(0px)'] },
+{ duration: 0.32, delay: 0.14, easing: 'ease-out' }
+);
+kalosContentAnim.finished.then(function() {
+kalosScreenContent.style.opacity = '';
+kalosScreenContent.style.transform = '';
+kalosContentAnim = null;
+}).catch(function() {});
 }
 } else {
-if (kalosContent) animate(kalosContent, { opacity: 0 }, { duration: 0.15 });
-
-animate(kalosScreenWrap, { height: 0 }, { duration: 0.4, ease: [0.65, 0, 0.35, 1] })
-.finished.then(function() {
-// Only drop the max-height cap back down once the shell has
-// actually finished closing, so it doesn't clip mid-collapse.
+var startHeight = kalosScreenWrap.scrollHeight;
+kalosScreenWrap.style.maxHeight = 'none';
+kalosScreenWrap.style.height = startHeight + 'px';
+void kalosScreenWrap.offsetHeight;
+if (kalosScreenContent) {
+kalosContentAnim = window.Motion.animate(
+kalosScreenContent,
+{ opacity: [1, 0], transform: ['translateY(0px)', 'translateY(6px)'] },
+{ duration: 0.18, easing: 'ease-in' }
+);
+kalosContentAnim.finished.then(function() { kalosContentAnim = null; }).catch(function() {});
+}
+var finishClose = function() {
 kalosDex.dataset.open = 'false';
-kalosScreenWrap.style.transition = '';
-if (kalosContent) kalosContent.style.transition = '';
-kalosBusy = false;
-});
+kalosScreenWrap.style.height = '';
+kalosScreenWrap.style.maxHeight = '';
+if (kalosScreenContent) {
+kalosScreenContent.style.opacity = '';
+kalosScreenContent.style.transform = '';
+}
+kalosHeightAnim = null;
+};
+kalosHeightAnim = window.Motion.animate(
+kalosScreenWrap,
+{ height: [startHeight + 'px', '0px'] },
+{ duration: 0.34, easing: CLOSE_EASE }
+);
+kalosHeightAnim.finished.then(finishClose).catch(finishClose);
 }
 };
 
 var toggleKalosOpen = function() {
 setKalosOpen(kalosDex.dataset.open !== 'true');
 };
-[kalosTop, kalosBottom].forEach(function(half) {
-half.addEventListener('click', toggleKalosOpen);
+[kalosTop, kalosBottom, kalosLensCorner].forEach(function(half) {
+if (!half) return;
+half.addEventListener('click', function(e) {
+// The lens is its own <button> nested alongside kalosTop/kalosBottom,
+// not inside either - stopPropagation isn't needed here, but guard
+// against double-firing if it's ever nested in future edits.
+toggleKalosOpen();
+});
 half.addEventListener('keydown', function(e) {
 if (e.key === 'Enter' || e.key === ' ') {
 e.preventDefault();
@@ -6968,7 +7069,7 @@ document.getElementById('dex-grid').addEventListener('click', function(e) {
 var chip = e.target.closest('[data-action="toggle-species"]');
 if (chip) {
 if (dex3DMode) {
-open3DModelModal(chip.dataset.display, chip.dataset.dexnum, dexMode === 'shiny');
+open3DModelModal(chip.dataset.display, chip.dataset.dexnum, dexMode === 'shiny', chip.dataset.variant);
 return;
 }
 restoreScrollAfter(function() {
@@ -7200,6 +7301,77 @@ document.documentElement.classList.remove('modal-open');
 scrollLockObserver.observe(document.body, { childList: true });
 return overlay;
 }
+// ---------- Living Dex: animated-only filter ----------
+// Which National Dex numbers currently have a *rigged and animated* .glb in
+// the Pokemon-3D-api repo, split by regular/shiny the same way the repo's
+// own folders are. There's no metadata endpoint for this - the repo's own
+// README tells contributors to check per-model with a VS Code extension -
+// so this list was generated by range-fetching just the GLB header + JSON
+// chunk of every regular/shiny model (national dex 1-1028) and checking for
+// a non-empty "animations" array, without downloading the full mesh/texture
+// data. It's a snapshot, not a live check: models the repo adds or replaces
+// after this list was built won't be reflected until it's regenerated the
+// same way. Regional-variant folders (alolan/galar/hisuian) aren't covered
+// yet - see pokemon3DModelUrls below for where those are looked up.
+var ANIMATED_REGULAR_IDS = new Set([
+1, 6, 15, 25, 40, 41, 81, 88, 89, 93, 95, 132, 133, 134, 135, 136, 146, 149, 150, 160,
+168, 183, 196, 197, 200, 210, 212, 249, 253, 271, 302, 330, 341, 348, 353, 386, 392, 404, 429, 452,
+470, 471, 472, 494, 529, 570, 591, 604, 610, 644, 645, 658, 718, 726, 747, 752, 778, 789, 790, 796,
+798, 802, 805, 810, 811, 814, 839, 844, 845, 846, 847, 848, 849, 862, 867, 875, 880, 881, 884, 886,
+887, 890, 892, 893, 896, 897, 899, 900, 901, 902, 903, 904, 905, 909, 910, 911, 920, 921, 922, 923,
+932, 933, 934, 941, 946, 947, 962, 967, 979, 981, 983, 984, 987, 994, 995, 996, 997, 998, 999, 1000,
+1001, 1002, 1003, 1004, 1007, 1008, 1014, 1015, 1016, 1018, 1020, 1023
+]);
+var ANIMATED_SHINY_IDS = new Set([
+6, 15, 25, 81, 132, 149, 150, 160, 249, 330, 341, 376, 386, 645, 658, 718, 726, 747, 752, 790,
+802, 811, 814, 839, 844, 846, 848, 875, 886, 904, 909, 910, 932, 933, 934, 946, 947, 967, 979, 981,
+983, 984, 999, 1000, 1001, 1002, 1003, 1004, 1007, 1008
+]);
+function hasAnimatedModel(dexNum, shiny) {
+var n = parseInt(dexNum, 10);
+if (!n) return false;
+return (shiny ? ANIMATED_SHINY_IDS : ANIMATED_REGULAR_IDS).has(n);
+}
+// All true by default (unfiltered), same convention as dexEvoStageFilter.
+var dexAnimatedOnlyFilter = false;
+// Hides chips whose species has no animated model for the currently active
+// Living/Shiny mode. Re-checks dexMode itself rather than taking shiny as a
+// param, so this can be called from the same generic "re-apply every active
+// filter" spots as applyDexTypeFilter/applyDexVariantFilter/
+// applyDexEvoStageFilter without every call site needing to know it depends
+// on dexMode too. Scans the whole document, same as those (see
+// applyDexTypeFilter above for why).
+function applyDexAnimatedFilter() {
+var shiny = dexMode === 'shiny';
+document.querySelectorAll('.dex-chip[data-dexnum]').forEach(function(chip) {
+if (!dexAnimatedOnlyFilter) {
+chip.classList.remove('anim-hidden');
+return;
+}
+chip.classList.toggle('anim-hidden', !hasAnimatedModel(chip.dataset.dexnum, shiny));
+});
+}
+function syncDexAnimatedFilterUI() {
+['btn-dex-anim-filter', 'btn-k-anim-filter'].forEach(function(id) {
+var btn = document.getElementById(id);
+if (!btn) return;
+btn.classList.toggle('active', dexAnimatedOnlyFilter);
+btn.setAttribute('aria-pressed', dexAnimatedOnlyFilter ? 'true' : 'false');
+});
+}
+function setDexAnimatedOnlyFilter(value) {
+dexAnimatedOnlyFilter = value;
+syncDexAnimatedFilterUI();
+applyDexAnimatedFilter();
+}
+['btn-dex-anim-filter', 'btn-k-anim-filter'].forEach(function(id) {
+var btn = document.getElementById(id);
+if (!btn) return;
+btn.addEventListener('click', function(e) {
+e.stopPropagation();
+setDexAnimatedOnlyFilter(!dexAnimatedOnlyFilter);
+});
+});
 // ---------- Living Dex: 3D model viewer ----------
 // Model source: Pokemon-3D-api's community-maintained, web-optimized (Draco
 // + WebP) .glb repo, keyed by National Dex number the same way this app's
@@ -7208,16 +7380,37 @@ return overlay;
 // that repo yet, so every variant of a species (e.g. every Rattata form)
 // currently falls back to the same base-species model - an approximation,
 // not a bug, until the source repo grows form-specific files.
-function pokemon3DModelUrls(dexNum, shiny) {
+// Maps this app's dex-chip data-variant tag (see buildDexChipsHtml) to the
+// Pokemon-3D-api asset repo's folder name for that regional form. Paldean
+// is deliberately omitted - the repo only has it under a shared "multiform"
+// bucket (aqua/blaze/combat breeds all point at the same .glb), which isn't
+// a meaningful visual upgrade over the base species model, so it's left
+// out rather than adding a candidate that never differs from the fallback.
+var POKEMON_3D_VARIANT_FOLDERS = {
+Alolan: 'alolan',
+Galarian: 'galar',
+Hisuian: 'hisuian'
+};
+function pokemon3DModelUrls(dexNum, shiny, variant) {
 var n = parseInt(dexNum, 10);
 if (!n || n < 1) return [];
 var base = 'https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/';
-var primary = base + (shiny ? 'shiny' : 'regular') + '/' + n + '.glb';
-// If a shiny-specific model doesn't exist yet, fall back to the regular
-// recolor rather than showing nothing - see the <model-viewer> "error"
-// listener in open3DModelModal, which is what actually triggers this.
-var fallback = base + 'regular/' + n + '.glb';
-return shiny ? [primary, fallback] : [primary];
+var variantFolder = POKEMON_3D_VARIANT_FOLDERS[variant];
+var candidates = [];
+// Regional variants don't have their own shiny recolors in the repo yet
+// (see README's "Shiny Alolan Forms: 0/16"), so even in shiny mode the
+// variant-specific regular model is a closer visual match than jumping
+// straight to the base species - try it first.
+if (variantFolder) candidates.push(base + variantFolder + '/' + n + '.glb');
+if (shiny) candidates.push(base + 'shiny/' + n + '.glb');
+// Base regular model is the last-resort fallback for everything - see the
+// <model-viewer> "error" listener in open3DModelModal, which is what
+// actually steps through this list.
+candidates.push(base + 'regular/' + n + '.glb');
+// De-dupe while preserving order (e.g. a non-shiny, non-variant chip would
+// otherwise just be the same regular URL once - dedupe keeps that safe
+// even if the mappings above ever overlap).
+return candidates.filter(function(url, i) { return candidates.indexOf(url) === i; });
 }
 // Opens a species' 3D model in the shared modal chrome (openModal above).
 // displayName is what's shown in the header; dexNum/shiny pick which .glb
@@ -7225,25 +7418,335 @@ return shiny ? [primary, fallback] : [primary];
 // load failure instead of just erroring out, the same "ordered candidate
 // list" pattern smallSpriteMarkup/window.__spriteErr already use for
 // sprites.
-function open3DModelModal(displayName, dexNum, shiny) {
-var urls = pokemon3DModelUrls(dexNum, shiny);
+function open3DModelModal(displayName, dexNum, shiny, variant) {
+var urls = pokemon3DModelUrls(dexNum, shiny, variant);
 if (!urls.length) return;
 var name = displayName || 'Pokémon';
+// HUD id readout in the header - same "NO. 0006" padding convention used
+// by the rest of the app's dex-number displays (see dexNumberOf callers).
+var dexNumStr = dexNum ? ('NO. ' + String(dexNum).padStart(4, '0')) : 'NO. ????';
+// Type badges are local data (no fetch needed) - same speciesInfo/
+// typeBadges helpers the rest of the app already uses, so they render
+// immediately rather than waiting on the async dex-entry fill below.
+var localInfo = speciesInfo(name);
+var typesMarkup = localInfo && localInfo.types.length ? typeBadges(localInfo.types, 70) : '';
 var overlay = openModal(
+// Corner brackets on the popup itself (not just the inner stage below)
+// so the whole window reads as a projected viewport, same "scanner
+// lock-on" framing language as .model3d-corner already uses inside.
+'<span class="model3d-outer-corner tl" aria-hidden="true"></span>' +
+'<span class="model3d-outer-corner tr" aria-hidden="true"></span>' +
+'<span class="model3d-outer-corner bl" aria-hidden="true"></span>' +
+'<span class="model3d-outer-corner br" aria-hidden="true"></span>' +
 '<div class="model3d-head"><h3>' + escapeHtml(name) + (shiny ? ' <span class="model3d-shiny-tag">✦ Shiny</span>' : '') + '</h3>' +
-'<button type="button" class="ghost model3d-close" id="model3d-close" aria-label="Close">✕</button></div>' +
-'<div class="model3d-stage">' +
-'<model-viewer id="model3d-viewer" src="' + urls[0] + '" alt="3D model of ' + escapeHtml(name) + '" camera-controls auto-rotate rotation-per-second="18deg" shadow-intensity="0.9" exposure="0.95" interaction-prompt="none" loading="eager"></model-viewer>' +
+'<span class="model3d-hud-id" aria-hidden="true">' + dexNumStr + '</span></div>' +
+'<div class="model3d-stage" id="model3d-stage">' +
+// Beam/ring/scanlines/corners are purely decorative (aria-hidden) - the
+// "beamed up from the Pokédex" framing. The stage starts with all of
+// this invisible; adding 'model3d-active' below (right after insertion)
+// is what triggers the CSS reveal. Nested in
+// .model3d-beam-fx (rather than each having its own opacity transition)
+// because .model3d-beam/-beam-ring each already run their own infinite
+// CSS *animation* for the idle pulse, and an element can't also smoothly
+// *transition* a property that a running animation is driving - the
+// animation would just win outright. Fading the wrapper in/out instead
+// leaves the pulse animation alone and still gets a smooth reveal.
+'<div class="model3d-beam-fx" aria-hidden="true"><div class="model3d-beam"></div><div class="model3d-beam-ring"></div></div>' +
+// autoplay is what actually gets a rigged model out of its bind pose -
+// without it, model-viewer just renders the skeleton's default rest
+// position, which for most Pokemon rigs *is* a T-pose, even though an
+// Idle/Walk/Attack clip is baked right into the .glb. animation-name is
+// deliberately left unset so model-viewer picks the model's first clip
+// itself; we only step in (below) to prefer "Idle" when one exists.
+'<model-viewer id="model3d-viewer" src="' + urls[0] + '" alt="3D model of ' + escapeHtml(name) + '" camera-controls auto-rotate autoplay rotation-per-second="18deg" shadow-intensity="0.9" exposure="0.95" interaction-prompt="none" loading="eager"></model-viewer>' +
+'<div class="model3d-scanlines" aria-hidden="true"></div>' +
+// Vertical tick rulers down each side of the stage, like a scanner's
+// depth gauge - purely decorative, layered under the corner brackets.
+'<div class="model3d-hud-ticks left" aria-hidden="true"></div>' +
+'<div class="model3d-hud-ticks right" aria-hidden="true"></div>' +
+// Small live-readout tags in two corners of the stage, echoing the
+// beam/rotation stats the model-viewer is actually running with rather
+// than inventing unrelated numbers.
+'<div class="model3d-hud-readout tl" aria-hidden="true">ROT 18°/S</div>' +
+'<div class="model3d-hud-readout br" aria-hidden="true">LINK STABLE</div>' +
+'<span class="model3d-corner tl" aria-hidden="true"></span>' +
+'<span class="model3d-corner tr" aria-hidden="true"></span>' +
+'<span class="model3d-corner bl" aria-hidden="true"></span>' +
+'<span class="model3d-corner br" aria-hidden="true"></span>' +
 '<div class="model3d-loading" id="model3d-loading">Loading model…</div>' +
 '</div>' +
-'<p class="model3d-hint">Drag to rotate · Pinch or scroll to zoom</p>',
+// Dex-entry readout below the stage, styled like an in-universe Pokédex
+// page: genus + height/weight stats, type badges, an "evolves from" line
+// when one applies, then the flavor text description. Starts in a
+// loading state and fills in once fetchDexEntryData/fetchEvolvesFrom
+// resolve below, same async-fill pattern as the loading-el swap above.
+// Type badges are the one part that's local data, so they render
+// immediately rather than waiting.
+'<div class="model3d-entry" id="model3d-entry">' +
+'<div class="model3d-entry-top">' +
+'<span class="model3d-entry-genus" id="model3d-entry-genus">Accessing entry…</span>' +
+'<span class="model3d-entry-stats" id="model3d-entry-stats"></span>' +
+'</div>' +
+(typesMarkup ? '<div class="model3d-entry-types">' + typesMarkup + '</div>' : '') +
+'<p class="model3d-entry-evofrom" id="model3d-entry-evofrom" hidden></p>' +
+'<p class="model3d-entry-text" id="model3d-entry-text"></p>' +
+'</div>',
 'modal-3d-viewer'
 );
 var viewer = overlay.querySelector('#model3d-viewer');
 var loadingEl = overlay.querySelector('#model3d-loading');
+var stageEl = overlay.querySelector('#model3d-stage');
+var entryGenusEl = overlay.querySelector('#model3d-entry-genus');
+var entryStatsEl = overlay.querySelector('#model3d-entry-stats');
+var entryEvoFromEl = overlay.querySelector('#model3d-entry-evofrom');
+var entryTextEl = overlay.querySelector('#model3d-entry-text');
+// Fills in the dex-entry panel once PokeAPI resolves (or falls back to a
+// short "no data" line if the species can't be found there - some
+// regional-variant slugs the app tracks don't exist as their own PokeAPI
+// entry). Guarded on overlay still being in the DOM since this can
+// resolve after the player's already closed the modal. Evolves-from is
+// fetched alongside via the existing fetchEvolvesFrom helper (already
+// used by the catch confirmation card) rather than duplicated here.
+Promise.all([fetchDexEntryData(name), fetchEvolvesFrom(name)]).then(function(results) {
+if (!document.body.contains(overlay)) return;
+var entry = results[0], evolvesFrom = results[1];
+if (evolvesFrom && entryEvoFromEl) {
+entryEvoFromEl.textContent = 'Evolves from ' + evolvesFrom;
+entryEvoFromEl.hidden = false;
+}
+if (!entry || (!entry.genus && !entry.flavorText)) {
+if (entryGenusEl) entryGenusEl.textContent = 'No entry data available.';
+if (updateLensLines) updateLensLines();
+return;
+}
+if (entryGenusEl) entryGenusEl.textContent = entry.genus || '';
+if (entryStatsEl) {
+var stats = '';
+if (entry.heightM != null) stats += '<span class="model3d-entry-stat"><span class="model3d-entry-stat-label">HT</span>' + entry.heightM.toFixed(1) + ' m</span>';
+if (entry.weightKg != null) stats += '<span class="model3d-entry-stat"><span class="model3d-entry-stat-label">WT</span>' + entry.weightKg.toFixed(1) + ' kg</span>';
+entryStatsEl.innerHTML = stats;
+}
+if (entryTextEl) entryTextEl.textContent = entry.flavorText || '';
+// The entry panel just changed the modal's height (growing it downward
+// only - see the top-pin above), which moves the bottom two corners the
+// hologram lens lines are aimed at. Redraw them against the new layout;
+// harmless no-op if this modal never had lens lines (desktop/no lens).
+if (updateLensLines) updateLensLines();
+});
+// The whole popup - not just the inner 3D stage - is "the window" the
+// lens is projecting: header text and the footer hint sit outside
+// .model3d-stage but are still part of that same window, so the
+// hologram lines below target/clip against this outer element rather
+// than the narrower stage box.
+var modalEl = overlay.querySelector('.modal');
+// The dex-entry panel below fills in asynchronously once PokeAPI responds
+// (see fetchDexEntryData above), and can grow the modal taller than its
+// initial loading-state height. The shared .overlay centers modals
+// vertically via flex, so left as-is that growth would re-centre the
+// whole window - visibly pushing the top edge (and the hologram lens
+// lines aimed at its corners, below) upward instead of only growing
+// downward. Snapshot the modal's centered top offset right after
+// insertion and switch this overlay to flex-start + an equivalent
+// margin-top instead, so later height changes only extend the bottom.
+var initialModalTop = modalEl.getBoundingClientRect().top;
+var overlayPaddingTop = parseFloat(getComputedStyle(overlay).paddingTop) || 0;
+overlay.style.alignItems = 'flex-start';
+modalEl.style.marginTop = Math.max(0, initialModalTop - overlayPaddingTop) + 'px';
+// The mobile Kalos shell's corner lens (see .kalos-lens-corner-beam-fx in
+// style.css) used to light up any time the shell was simply open, which
+// read as "always on" rather than tied to anything actually happening on
+// screen. It's meant to read as "the lens is projecting this", so it
+// should only be lit while a 3D model is genuinely being viewed here -
+// flip a data attribute on #kalos-dex for exactly that, and clear it
+// again whenever this modal leaves the DOM (backdrop click, the close
+// button, or anything else that removes it), the same "watch for the
+// overlay to disappear" pattern openModal already uses for its own
+// scroll-lock above.
+var kalosDexEl = document.getElementById('kalos-dex');
+// Real hologram lines: rather than drawing a decorative copy of a lens
+// inside the modal itself, this traces actual glowing lines from the
+// genuine corner lens on the shell (#kalos-lens-corner - only present/
+// visible at the mobile Kalos breakpoint) to this modal's own four
+// corners, so the projection visibly comes from that physical lens
+// rather than a redundant one. Built as its own <svg> appended straight
+// to <body> (not inside .model3d-stage) because the lens sits outside
+// the modal entirely - the line needs real getBoundingClientRect()
+// coordinates for both endpoints, recomputed on resize since the modal
+// is centered by flexbox and the lens's position depends on the shell
+// layout underneath it.
+var kalosLensCorner = document.getElementById('kalos-lens-corner');
+var lensLinesSvg = null;
+var lensLineEls = null;
+var lensConeFill = null;
+var updateLensLines = null;
+if (kalosLensCorner && kalosLensCorner.getBoundingClientRect().width > 0) {
+lensLinesSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+lensLinesSvg.setAttribute('class', 'model3d-lens-lines-fixed');
+lensLinesSvg.setAttribute('aria-hidden', 'true');
+lensLineEls = [0, 1, 2, 3].map(function() {
+var lineEl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+lineEl.setAttribute('class', 'model3d-lens-line-fixed');
+lensLinesSvg.appendChild(lineEl);
+return lineEl;
+});
+// Solid holographic fill for the wedge between the lines themselves,
+// so the projection reads as one cone of light rather than a few bare
+// strokes with empty space between them. Inserted before the lines'
+// <svg> so the crisp glowing strokes still paint on top of it.
+lensConeFill = document.createElement('div');
+lensConeFill.className = 'model3d-lens-cone-fill';
+lensConeFill.setAttribute('aria-hidden', 'true');
+document.body.appendChild(lensConeFill);
+document.body.appendChild(lensLinesSvg);
+// Finds where a segment first crosses INTO an axis-aligned rect (Liang-
+// Barsky entry parameter). Used below so a line heading to a far corner
+// - e.g. the two bottom corners, reached only by cutting across the
+// popup's face - simply never gets drawn past that entry point, rather
+// than being drawn in full and hidden with clip-path (which doesn't
+// reliably clip elements that also carry a CSS filter, like the glow
+// on these lines). Returns null if the segment never enters the rect
+// before reaching its own endpoint.
+function segmentRectEntry(x0, y0, x1, y1, left, top, right, bottom) {
+var dx = x1 - x0, dy = y1 - y0;
+var p = [-dx, dx, -dy, dy];
+var q = [x0 - left, right - x0, y0 - top, bottom - y0];
+var t0 = 0, t1 = 1;
+for (var i = 0; i < 4; i++) {
+if (p[i] === 0) {
+if (q[i] < 0) return null;
+} else {
+var r = q[i] / p[i];
+if (p[i] < 0) {
+if (r > t1) return null;
+if (r > t0) t0 = r;
+} else {
+if (r < t0) return null;
+if (r < t1) t1 = r;
+}
+}
+}
+if (t0 <= 0 || t0 >= 1) return null;
+return { x: x0 + dx * t0, y: y0 + dy * t0 };
+}
+updateLensLines = function() {
+if (!document.body.contains(overlay) || !document.body.contains(kalosLensCorner) || !modalEl) return;
+var lensRect = kalosLensCorner.getBoundingClientRect();
+var modalRect = modalEl.getBoundingClientRect();
+var lx = lensRect.left + lensRect.width / 2;
+var ly = lensRect.top + lensRect.height / 2;
+// .modal has a 24px border-radius, so the true bounding-box corner
+// sits past the visible curve - a line aimed straight at it overshoots
+// the border instead of landing on it. Pulling each corner in along
+// both axes by r*(1-cos45deg) puts the endpoint exactly on the rounded
+// corner's outermost point instead, so the beam appears to actually
+// meet the border rather than floating past/short of it.
+var modalRadius = 24;
+var cornerInset = modalRadius * (1 - Math.SQRT1_2);
+var corners = [
+[modalRect.left + cornerInset, modalRect.top + cornerInset],
+[modalRect.right - cornerInset, modalRect.top + cornerInset],
+[modalRect.left + cornerInset, modalRect.bottom - cornerInset],
+[modalRect.right - cornerInset, modalRect.bottom - cornerInset]
+];
+lensLineEls.forEach(function(lineEl, i) {
+var cx = corners[i][0], cy = corners[i][1];
+// If this line would have to cross the popup's face to reach its
+// corner (true for the two bottom corners here), stop it at the
+// point it first meets the popup's edge instead - the popup then
+// visually overtakes the rest of the beam, rather than the beam
+// drawing over the popup.
+var entry = segmentRectEntry(lx, ly, cx, cy, modalRect.left, modalRect.top, modalRect.right, modalRect.bottom);
+lineEl.setAttribute('x1', lx);
+lineEl.setAttribute('y1', ly);
+lineEl.setAttribute('x2', entry ? entry.x : cx);
+lineEl.setAttribute('y2', entry ? entry.y : cy);
+});
+if (lensConeFill) {
+// Same endpoints the lines just used (apex + wherever each of the 4
+// lines actually ends now), sorted by angle around the apex so
+// connecting them in order traces a clean, non-self-intersecting fan
+// rather than a tangled shape.
+var endpoints = lensLineEls.map(function(lineEl) {
+return [parseFloat(lineEl.getAttribute('x2')), parseFloat(lineEl.getAttribute('y2'))];
+});
+endpoints.sort(function(a, b) {
+return Math.atan2(a[1] - ly, a[0] - lx) - Math.atan2(b[1] - ly, b[0] - lx);
+});
+var polygonPoints = [[lx, ly]].concat(endpoints);
+lensConeFill.style.clipPath = 'polygon(' + polygonPoints.map(function(pt) {
+return pt[0] + 'px ' + pt[1] + 'px';
+}).join(', ') + ')';
+}
+};
+updateLensLines();
+window.addEventListener('resize', updateLensLines);
+}
+if (kalosDexEl) {
+kalosDexEl.setAttribute('data-model-active', 'true');
+var kalosLensObserver = new MutationObserver(function() {
+if (!document.body.contains(overlay)) {
+kalosLensObserver.disconnect();
+kalosDexEl.removeAttribute('data-model-active');
+// Tear down the lens-line overlay alongside the modal itself,
+// rather than leaving a stray fixed <svg> + resize listener behind.
+if (lensLinesSvg) {
+window.removeEventListener('resize', updateLensLines);
+lensLinesSvg.remove();
+lensLinesSvg = null;
+}
+if (lensConeFill) {
+lensConeFill.remove();
+lensConeFill = null;
+}
+}
+});
+kalosLensObserver.observe(document.body, { childList: true });
+}
+// Adds 'model3d-active' on the very next frame (rather than
+// synchronously) so the browser paints the initial (inactive) state
+// first - otherwise it can coalesce that with 'model3d-active' into a
+// single paint and skip the modal's own beam/model fade-in transition
+// entirely.
+var activateTimer = requestAnimationFrame(function() {
+requestAnimationFrame(function() {
+if (stageEl) stageEl.classList.add('model3d-active');
+if (lensLinesSvg) {
+if (updateLensLines) updateLensLines();
+lensLinesSvg.classList.add('model3d-lens-lines-active');
+if (lensConeFill) lensConeFill.classList.add('model3d-lens-lines-active');
+}
+});
+});
 var fallbacks = urls.slice(1);
 viewer.addEventListener('load', function() {
 if (loadingEl) loadingEl.style.display = 'none';
+// This repo's models are crowd-sourced from Sketchfab per-Pokemon, so
+// not every one has an animation clip baked in - the README even tells
+// contributors to check for that before adding an entry. When one's
+// present, prefer an "Idle" clip by name if the model has several
+// (Idle/Walk/Attack etc.); otherwise autoplay above already started
+// whichever clip is first. When there's truly none, flag it rather
+// than silently leaving the model looking "stuck" in a T-pose.
+var anims = viewer.availableAnimations || [];
+if (anims.length) {
+var idleMatch = anims.filter(function(a) { return /idle/i.test(a); })[0];
+if (idleMatch && idleMatch !== viewer.animationName) {
+viewer.animationName = idleMatch;
+viewer.play();
+}
+// model-viewer auto-frames the camera to the model's REST/bind pose at
+// load time - but an Idle/Walk/Attack clip can swing wings, tails, or
+// limbs well beyond that pose once it's actually playing, which is
+// exactly why some Pokemon load in with a wingtip or antenna cropped
+// off at the stage edge (see Beedrill). Static models are already
+// framed correctly since nothing moves after load, so this margin is
+// only added for models that animate - pulling the camera back ~35%
+// gives the motion room without shrinking everything unnecessarily.
+if (typeof viewer.getCameraOrbit === 'function') {
+var orbit = viewer.getCameraOrbit();
+viewer.cameraOrbit = orbit.theta + 'rad ' + orbit.phi + 'rad ' + (orbit.radius * 1.35) + 'm';
+}
+}
 });
 viewer.addEventListener('error', function() {
 if (fallbacks.length) {
@@ -7252,9 +7755,18 @@ viewer.setAttribute('src', fallbacks.shift());
 loadingEl.textContent = 'No 3D model available yet for ' + name + '.';
 }
 });
-overlay.querySelector('#model3d-close').addEventListener('click', function() {
-overlay.remove();
+// No dedicated close button on this modal (closes via backdrop click,
+// same as openModal's own default) - watch for the overlay leaving the
+// DOM however that happens, so the pending activation frame still gets
+// cancelled instead of only being cleaned up from a click handler on a
+// button that no longer exists.
+var closeCleanupObserver = new MutationObserver(function() {
+if (!document.body.contains(overlay)) {
+closeCleanupObserver.disconnect();
+cancelAnimationFrame(activateTimer);
+}
 });
+closeCleanupObserver.observe(document.body, { childList: true });
 }
 function gameOptions(sel) {
 return GAMES.map(function(g) {
@@ -8354,4 +8866,3 @@ container.appendChild(s);
 // Populate the interface from local state immediately. Cloud sync can return
 // an identical payload and intentionally skip its later render pass, so this
 // initial render is required for a valid saved tracker to appear on first load.
-renderAll();
