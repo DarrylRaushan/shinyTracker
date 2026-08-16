@@ -7443,8 +7443,10 @@ var overlay = openModal(
 '<span class="model3d-outer-corner tr" aria-hidden="true"></span>' +
 '<span class="model3d-outer-corner bl" aria-hidden="true"></span>' +
 '<span class="model3d-outer-corner br" aria-hidden="true"></span>' +
-'<div class="model3d-head"><h3>' + escapeHtml(name) + (shiny ? ' <span class="model3d-shiny-tag">✦ Shiny</span>' : '') + '</h3>' +
-'<span class="model3d-hud-id" aria-hidden="true">' + dexNumStr + '</span></div>' +
+'<div class="model3d-head">' + (shiny ? '<span class="model3d-shiny-tag" aria-label="Shiny">✦</span>' : '') + '<h3>' + escapeHtml(name) + '</h3>' +
+'<span class="model3d-hud-id" aria-hidden="true">' + dexNumStr + '</span>' +
+'<span class="model3d-hud-sprite" aria-hidden="true">' + smallSpriteMarkup(name, dexEntrySpriteUrls(name, shiny)) + '</span>' +
+'</div>' +
 '<div class="model3d-stage" id="model3d-stage">' +
 // Beam/ring/scanlines/corners are purely decorative (aria-hidden) - the
 // "beamed up from the Pokédex" framing. The stage starts with all of
@@ -7457,13 +7459,22 @@ var overlay = openModal(
 // animation would just win outright. Fading the wrapper in/out instead
 // leaves the pulse animation alone and still gets a smooth reveal.
 '<div class="model3d-beam-fx" aria-hidden="true"><div class="model3d-beam"></div><div class="model3d-beam-ring"></div></div>' +
+// The sprite "standing" in the beam before the real model has loaded -
+// same beam-up framing as a real Pokedex scan: the flat sprite floats
+// there first, then hands off to the actual <model-viewer> once it
+// fires 'load' (see model3d-model-loaded toggle below), reading as the
+// sprite "resolving into" the 3D model rather than the model just
+// popping in over an empty beam.
+'<div class="model3d-scan-sprite" id="model3d-scan-sprite" aria-hidden="true">' +
+'<div class="model3d-scan-sprite-inner">' + smallSpriteMarkup(name, dexEntrySpriteUrls(name, shiny)) + '<div class="model3d-scan-sprite-sweep"></div></div>' +
+'</div>' +
 // autoplay is what actually gets a rigged model out of its bind pose -
 // without it, model-viewer just renders the skeleton's default rest
 // position, which for most Pokemon rigs *is* a T-pose, even though an
 // Idle/Walk/Attack clip is baked right into the .glb. animation-name is
 // deliberately left unset so model-viewer picks the model's first clip
 // itself; we only step in (below) to prefer "Idle" when one exists.
-'<model-viewer id="model3d-viewer" src="' + urls[0] + '" alt="3D model of ' + escapeHtml(name) + '" camera-controls auto-rotate autoplay rotation-per-second="18deg" shadow-intensity="0.9" exposure="0.95" interaction-prompt="none" loading="eager"></model-viewer>' +
+'<model-viewer id="model3d-viewer" src="' + urls[0] + '" alt="3D model of ' + escapeHtml(name) + '" camera-controls auto-rotate auto-rotate-delay="10000" autoplay rotation-per-second="18deg" shadow-intensity="0.9" exposure="0.95" interaction-prompt="none" loading="eager"></model-viewer>' +
 '<div class="model3d-scanlines" aria-hidden="true"></div>' +
 // Vertical tick rulers down each side of the stage, like a scanner's
 // depth gauge - purely decorative, layered under the corner brackets.
@@ -7757,8 +7768,32 @@ if (lensConeFill) lensConeFill.classList.add('model3d-lens-lines-active');
 });
 });
 var fallbacks = urls.slice(1);
+// The scan sprite should read as a deliberate "scanning" beat, not just
+// a loading spinner that happens to look like a sprite - so the handoff
+// to the real model waits on whichever finishes LAST: the model
+// actually loading, or this minimum on-screen time. A model that loads
+// instantly (cached) still gets the full scan; a slow one still gets
+// exactly as long as it needs, same as before.
+var SCAN_SPRITE_MIN_MS = 3000;
+var modelLoaded = false;
+var minDisplayElapsed = false;
+var revealModel = function() {
+if (!modelLoaded || !minDisplayElapsed) return;
+if (stageEl) stageEl.classList.add('model3d-model-loaded');
+};
+var scanSpriteTimer = setTimeout(function() {
+minDisplayElapsed = true;
+revealModel();
+}, SCAN_SPRITE_MIN_MS);
 viewer.addEventListener('load', function() {
 if (loadingEl) loadingEl.style.display = 'none';
+// The scan sprite has done its job once the real model is up (and the
+// minimum display time above has elapsed) - fade it out here rather
+// than on a fixed timer, so a slow-loading model still gets the
+// "sprite standing in the beam" moment for as long as it's actually
+// needed instead of handing off to an empty beam early.
+modelLoaded = true;
+revealModel();
 // This repo's models are crowd-sourced from Sketchfab per-Pokemon, so
 // not every one has an animation clip baked in - the README even tells
 // contributors to check for that before adding an entry. When one's
@@ -7803,6 +7838,7 @@ var closeCleanupObserver = new MutationObserver(function() {
 if (!document.body.contains(overlay)) {
 closeCleanupObserver.disconnect();
 cancelAnimationFrame(activateTimer);
+clearTimeout(scanSpriteTimer);
 }
 });
 closeCleanupObserver.observe(document.body, { childList: true });
