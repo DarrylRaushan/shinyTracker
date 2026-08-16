@@ -10311,12 +10311,16 @@ font-family: var(--mono);
 letter-spacing: 0.5px;
 text-shadow: 0 0 10px rgba(110, 225, 255, 0.55);
 }
+/* Just the star now (was "✦ Shiny" text) - sits before the name as its
+   own flex item rather than inline inside the h3, and sized up since
+   it's carrying the "shiny" signal on its own instead of sharing it
+   with a text label. */
 .model3d-shiny-tag {
-font-size: 12px;
-font-weight: 800;
+flex: none;
+font-size: 22px;
+line-height: 1;
 color: #ffd166;
-margin-left: 6px;
-font-family: var(--body, inherit);
+text-shadow: 0 0 10px rgba(255, 209, 102, 0.65);
 }
 /* Dex-number readout pill in the header, styled like a HUD id tag rather
    than plain text - reuses the same cyan glow language as the rest of
@@ -10333,6 +10337,45 @@ border-radius: 4px;
 padding: 3px 9px;
 white-space: nowrap;
 text-shadow: 0 0 6px rgba(110, 225, 255, 0.5);
+}
+/* Small sprite badge sitting right after the dex-number pill in the
+   header - a quick "is this the shiny/regular I expect" glance without
+   waiting on the model itself to load. Same cascading img->fallback-
+   letter markup (smallSpriteMarkup) the Living Dex chips already use. */
+.model3d-hud-sprite {
+flex: none;
+width: 42px;
+height: 42px;
+display: flex;
+align-items: center;
+justify-content: center;
+position: relative;
+/* The img below is intentionally scaled past this box's own size (see
+   .model3d-hud-sprite img) - visible (not hidden) so it's allowed to
+   spill outside without getting clipped. That keeps the sprite's own
+   layout footprint fixed at 42px (so it doesn't push the header row
+   wider/taller) while the art itself can be sized up independently. */
+overflow: visible;
+}
+.model3d-hud-sprite img {
+max-width: 100%;
+max-height: 100%;
+width: auto;
+height: auto;
+object-fit: contain;
+image-rendering: pixelated;
+image-rendering: crisp-edges;
+filter: drop-shadow(0 0 5px rgba(110, 225, 255, 0.5));
+/* Visual-only upsize - change this to make the sprite bigger/smaller
+   without touching .model3d-hud-sprite's width/height above (which
+   controls the actual space reserved in the header row). */
+transform: scale(2.0);
+}
+.model3d-hud-sprite .fallback-letter {
+font-family: var(--mono);
+font-weight: 800;
+font-size: 18px;
+color: rgba(190, 245, 255, 0.9);
 }
 /* Small live-readout tags anchored inside the stage corners - each has a
    blinking status dot so they read as active telemetry rather than
@@ -10476,6 +10519,108 @@ animation: model3d-ring-pulse 2.6s ease-in-out infinite;
 0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.65; }
 50% { transform: translateX(-50%) scaleX(1.18); opacity: 1; }
 }
+/* The flat sprite "standing" in the beam before the real <model-viewer>
+   has loaded - reads as the Pokedex projecting a scan of the species
+   that then resolves into the full 3D model, rather than the model just
+   popping in over an empty beam. Reveals on the same beat as the beam
+   itself (model3d-active), then fades out once model3d-model-loaded is
+   added (see the viewer's 'load' listener in script.js) so the handoff
+   happens exactly when the model is actually ready, not on a guessed
+   timer. Sized/positioned to sit centered in the beam's flare, same
+   footprint .model3d-beam narrows to at its base. */
+.model3d-scan-sprite {
+position: absolute;
+left: 50%;
+bottom: 8%;
+width: 42%;
+max-width: 170px;
+z-index: 2;
+opacity: 0;
+transform: translateX(-50%) translateY(0) scale(0.85);
+transition: opacity 0.5s ease 0.15s, transform 0.5s ease 0.15s;
+pointer-events: none;
+display: flex;
+align-items: flex-end;
+justify-content: center;
+filter: drop-shadow(0 0 16px rgba(120, 225, 255, 0.6));
+}
+.model3d-stage.model3d-active .model3d-scan-sprite {
+opacity: 1;
+transform: translateX(-50%) translateY(0) scale(1);
+animation: model3d-scan-sprite-bob 2.6s ease-in-out infinite 0.65s;
+}
+.model3d-stage.model3d-model-loaded .model3d-scan-sprite {
+opacity: 0;
+transform: translateX(-50%) translateY(-10%) scale(1.15);
+transition: opacity 0.45s ease, transform 0.45s ease;
+animation: none;
+}
+@keyframes model3d-scan-sprite-bob {
+0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+50% { transform: translateX(-50%) translateY(-6px) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+.model3d-scan-sprite { animation: none; }
+}
+.model3d-scan-sprite img {
+width: 100%;
+height: auto;
+object-fit: contain;
+image-rendering: pixelated;
+image-rendering: crisp-edges;
+}
+.model3d-scan-sprite .fallback-letter {
+font-family: var(--mono);
+font-weight: 800;
+font-size: 22px;
+color: rgba(190, 245, 255, 0.9);
+}
+/* Wraps the sprite img so the sweep line below can be clipped to the
+   sprite's own footprint (overflow: hidden) instead of sweeping across
+   the whole beam-width box the outer .model3d-scan-sprite occupies. */
+.model3d-scan-sprite-inner {
+position: relative;
+width: 100%;
+display: flex;
+align-items: flex-end;
+justify-content: center;
+overflow: hidden;
+border-radius: 4px;
+}
+/* The "scanning" line itself - a bright horizontal bar that sweeps down
+   the sprite and back up on a loop, like the sprite is actively being
+   read/digitized rather than just sitting there waiting. screen blend so
+   it brightens the sprite under it instead of covering it with a flat
+   bar. Only runs while the sprite is actually showing (model3d-active
+   and not yet model3d-model-loaded) - see the two toggles below. */
+.model3d-scan-sprite-sweep {
+position: absolute;
+left: -15%;
+right: -15%;
+top: 0;
+height: 3px;
+background: linear-gradient(90deg, transparent 0%, rgba(150, 235, 255, 0.95) 50%, transparent 100%);
+box-shadow: 0 0 8px 2px rgba(120, 225, 255, 0.75);
+mix-blend-mode: screen;
+opacity: 0;
+pointer-events: none;
+}
+.model3d-stage.model3d-active .model3d-scan-sprite-sweep {
+opacity: 1;
+animation: model3d-scan-sprite-sweep-move 1.6s ease-in-out infinite 0.2s;
+}
+.model3d-stage.model3d-model-loaded .model3d-scan-sprite-sweep {
+opacity: 0;
+animation: none;
+}
+@keyframes model3d-scan-sprite-sweep-move {
+0% { top: 0%; }
+50% { top: 100%; }
+100% { top: 0%; }
+}
+@media (prefers-reduced-motion: reduce) {
+.model3d-scan-sprite-sweep { animation: none; opacity: 0; }
+}
 /* Real hologram lines: connects the ACTUAL corner lens on the mobile
    Kalos shell (#kalos-lens-corner, which sits above/outside this modal
    entirely) to this modal's own four corners, using live
@@ -10570,10 +10715,25 @@ height: 100%;
 z-index: 3;
 opacity: 0;
 transform: scale(0.8) translateY(4%);
-transition: opacity 0.6s ease 0.35s, transform 0.6s cubic-bezier(.2, .8, .2, 1) 0.35s;
+/* No delay here (unlike the old model3d-active-driven timing) - the
+   delay that used to live on this transition is now effectively
+   whatever's left of the scan sprite's minimum 3s display time (see
+   SCAN_SPRITE_MIN_MS in script.js), since model3d-model-loaded isn't
+   added until that's elapsed AND the model has actually finished
+   loading. Revealing this immediately once that class lands keeps the
+   sprite->model handoff feeling like one continuous moment instead of
+   the model fading in on top of its own separate delay. */
+transition: opacity 0.6s ease, transform 0.6s cubic-bezier(.2, .8, .2, 1);
 --poster-color: transparent;
 }
-.model3d-stage.model3d-active #model3d-viewer {
+/* Deliberately NOT tied to model3d-active - that fires as soon as the
+   modal opens, well before the model has loaded, which used to let the
+   real model fade in underneath/behind the scan sprite instead of
+   waiting for the sprite's scan to actually finish. model3d-model-loaded
+   only lands once both the model has loaded AND the minimum scan time
+   has elapsed (see revealModel() in script.js), so this is the single
+   source of truth for "the model is allowed to be visible now". */
+.model3d-stage.model3d-model-loaded #model3d-viewer {
 opacity: 1;
 transform: scale(1) translateY(0);
 }
@@ -10719,12 +10879,3 @@ padding: 14px;
 max-height: 50vh;
 }
 }
-
-
-JS
-
-// of the screen instead of failing silently. Several past bugs in this file
-// (see comments near syncTabChrome and connectToCloud) were invisible on
-// mobile precisely because nothing surfaced the thrown error - this makes
-// the next one visible without needing a computer/dev tools. Safe to remove
-// once things are stable again.
