@@ -281,6 +281,16 @@
                 <span class="pc-key-label">3D</span>
                 <button class="ghost" id="btn-dex-3d-toggle" type="button" aria-pressed="false" title="Toggle 3D model view">🧊 3D View</button>
               </div>
+              <!-- Animated-only filter: hides any chip whose 3D model (for the
+                   currently active Living/Shiny mode) has no baked animation
+                   clip, per the precomputed ANIMATED_REGULAR_IDS/
+                   ANIMATED_SHINY_IDS sets in script.js. Independent of
+                   dex3DMode above - it's a browsing filter, not a viewer
+                   mode, so it stays on across taps into/out of 3D View. -->
+              <div class="pc-key pc-key-fn">
+                <span class="pc-key-label">🎬</span>
+                <button class="ghost" id="btn-dex-anim-filter" type="button" aria-pressed="false" title="Show only species with an animated 3D model">🎬 Animated Only</button>
+              </div>
             </div>
           </div>
 
@@ -324,6 +334,28 @@
             <span class="kalos-seam" aria-hidden="true">
               <span class="kalos-seam-ring"><span class="kalos-seam-core"></span></span>
             </span>
+            <!-- Corner projector lens - a small camera-style lens (same
+                 white-rim/blue-glass look as .hunt-dex-flap-lens on the
+                 Active Hunts cards) mounted at the shell's top-right,
+                 always visible whether the dex is open or closed. Sibling
+                 of .kalos-top rather than nested inside it, because
+                 .kalos-top has overflow:hidden and would clip the beam
+                 below; .kalos-dex itself has no such clipping, so the beam
+                 is free to rise past the shell's edge.
+                 Opening no longer swings the shell open at all (see
+                 setKalosOpen in script.js) - tapping this lens (or either
+                 shell half) just fades the screen content in directly,
+                 while a small hologram beam fires from this lens
+                 (CSS-KALOS-LENS-BEAM in style.css), like the model is
+                 being projected out of the lens rather than the case
+                 physically opening. -->
+            <button type="button" class="kalos-lens-corner" id="kalos-lens-corner" title="Open Living Dex" aria-label="Open Living Dex">
+              <span class="kalos-lens-corner-inner"></span>
+              <span class="kalos-lens-corner-beam-fx" aria-hidden="true">
+                <span class="kalos-lens-corner-beam"></span>
+                <span class="kalos-lens-corner-beam-ring"></span>
+              </span>
+            </button>
             <div class="kalos-screen-wrap" id="kalos-screen-wrap">
               <div class="kalos-screen">
                 <div class="kalos-screen-content dex-screen-content" id="kalos-screen-content" data-dex-view="grid">
@@ -419,6 +451,8 @@
                            dex3DMode state, just a compact icon button to match
                            the rest of this toolbar's buttons. -->
                       <button type="button" class="log-dex-grid-btn" id="btn-k-3d-toggle" title="3D View" aria-label="Toggle 3D model view" aria-pressed="false">🧊</button>
+                      <!-- Mobile counterpart of #btn-dex-anim-filter above. -->
+                      <button type="button" class="log-dex-grid-btn" id="btn-k-anim-filter" title="Animated Only" aria-label="Show only species with an animated 3D model" aria-pressed="false">🎬</button>
                       <button type="button" class="log-dex-grid-btn" id="btn-k-reset-filters" title="Reset Filters" aria-label="Reset all filters">⟲</button>
                     </div>
                   </div>
