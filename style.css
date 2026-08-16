@@ -4637,6 +4637,12 @@ display: none;
 opacity: 0.45;
 transition: opacity 0.2s ease;
 }
+/* Animated-only filter - see applyDexAnimatedFilter in script.js. Same true
+   hide as variant-hidden/evo-stage-hidden above, not a soft dim, since it's
+   meant to leave only chips worth tapping into 3D View for. */
+.dex-chip.anim-hidden {
+display: none;
+}
 /* ---------- Living Dex: Pokémon Center PC scene ---------- */
 .pc-scene {
 margin: 4px 0 22px;
@@ -4997,6 +5003,23 @@ border-color: var(--red-dark);
 background: var(--red);
 color: #fff;
 }
+/* Animated-only filter toggle - same filled "on" look as the 3D View toggle
+   right above it, since it's also a real pressed/unpressed state rather
+   than a panel-opener. */
+#btn-dex-anim-filter[aria-pressed="true"] {
+background: var(--red);
+border-color: var(--red-dark);
+color: #fff;
+}
+#btn-dex-anim-filter[aria-pressed="true"]:hover {
+color: #fff;
+border-color: var(--red-dark);
+}
+.kalos-filter-toolbar .log-dex-grid-btn#btn-k-anim-filter[aria-pressed="true"],
+.log-dex-grid-btn#btn-k-anim-filter[aria-pressed="true"] {
+background: var(--red);
+color: #fff;
+}
 /* Small affordance so it's obvious sprites now open the 3D viewer instead
    of toggling caught, without needing a full chip re-render - just a class
    flip on the grid (see toggleDex3DMode in script.js). */
@@ -5286,6 +5309,99 @@ background: linear-gradient(160deg, #554e49 0%, #2b2521 100%);
 transform: translateY(2px);
 box-shadow: inset 0 3px 4px rgba(0, 0, 0, 0.5);
 }
+/* CSS-KALOS-LENS-BEAM: top-right projector lens + its hologram beam.
+   Sits at .kalos-dex level (not inside .kalos-top - see index.html
+   comment) so the beam can rise past the shell's own edge instead of
+   being clipped. Same white-rim/blue-glass look as .hunt-dex-flap-lens
+   on the Active Hunts cards, just smaller, so the two read as the same
+   "camera lens" hardware language across the app. */
+.kalos-lens-corner {
+position: absolute;
+top: 14px;
+right: 14px;
+z-index: 8;
+width: 38px;
+height: 38px;
+padding: 3px;
+border-radius: 50%;
+background: #fdfdfb;
+border: 3px solid var(--line);
+box-shadow: 0 2px 0 rgba(0, 0, 0, 0.22);
+cursor: pointer;
+box-sizing: border-box;
+transition: transform 0.15s ease;
+}
+.kalos-lens-corner:hover {
+transform: scale(1.06);
+}
+.kalos-lens-corner:active {
+transform: scale(0.94);
+}
+.kalos-lens-corner-inner {
+display: block;
+width: 100%;
+height: 100%;
+border-radius: 50%;
+position: relative;
+overflow: hidden;
+background: radial-gradient(circle at 32% 26%, #eaf9ff 0%, #8ceefb 20%, #2ccfe8 58%, #0e2f78 100%);
+box-shadow: inset 0 -5px 6px rgba(0, 0, 0, 0.25);
+}
+.kalos-lens-corner-inner::after {
+content: "";
+position: absolute;
+top: 15%;
+left: 18%;
+width: 40%;
+height: 24%;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.88);
+transform: rotate(-20deg);
+pointer-events: none;
+}
+/* Beam-fx: hidden by default, and now specifically tied to a 3D model
+   actually being viewed (see open3DModelModal in script.js, which flips
+   data-model-active on #kalos-dex for exactly this) rather than firing
+   any time the shell is merely open - it's meant to read as "the lens is
+   currently projecting", so it should only be lit while something is. */
+.kalos-lens-corner-beam-fx {
+position: absolute;
+left: 50%;
+top: 100%;
+width: 140px;
+transform: translateX(-50%);
+pointer-events: none;
+opacity: 0;
+}
+.kalos-dex[data-open="true"][data-model-active="true"] .kalos-lens-corner-beam-fx {
+opacity: 1;
+}
+.kalos-lens-corner-beam {
+position: absolute;
+left: 50%;
+top: 0;
+width: 55%;
+height: 90px;
+transform: translateX(-50%);
+background: linear-gradient(to bottom,
+rgba(110, 225, 255, 0.6) 0%,
+rgba(110, 225, 255, 0.28) 35%,
+rgba(110, 225, 255, 0.08) 70%,
+rgba(110, 225, 255, 0) 100%);
+clip-path: polygon(42% 0%, 58% 0%, 100% 100%, 0% 100%);
+mix-blend-mode: screen;
+}
+.kalos-lens-corner-beam-ring {
+position: absolute;
+left: 50%;
+top: -2px;
+width: 20px;
+height: 6px;
+transform: translateX(-50%);
+border-radius: 50%;
+background: radial-gradient(ellipse at center, rgba(180, 245, 255, 0.95) 0%, rgba(120, 225, 255, 0.45) 50%, rgba(120, 225, 255, 0) 80%);
+filter: blur(1px);
+}
 /* The lens seam-ring is split in half and permanently welded onto each
    shell half (clipped to a half-circle by the half's own overflow:
    hidden), rather than living only on the floating .kalos-seam overlay.
@@ -5401,7 +5517,6 @@ display: flex;
 align-items: center;
 justify-content: center;
 pointer-events: none;
-transition: opacity 0.35s ease;
 }
 /* Seam outline — a large faint ring concentric with the chrome bezel,
    traced directly on the red shell. Reads as the arc where the case's top
@@ -5430,7 +5545,6 @@ box-shadow:
 0 0 10px 2px rgba(192, 192, 192, 0.55);
 z-index: 2;
 pointer-events: none;
-transition: opacity 0.35s ease;
 }
 /* Horizontal Light Bar & Metallic Trims — a full-bleed cyan light bar
    sandwiched between two thin brushed-aluminum rails, split into two
@@ -5572,7 +5686,6 @@ inset 0 -3px 7px rgba(0, 0, 0, 0.12);
 pointer-events: none;
 z-index: 5;
 opacity: 0;
-transition: opacity 0.35s ease;
 }
 .kalos-lens-top {
 bottom: 0;
@@ -5603,7 +5716,6 @@ display: flex;
 align-items: center;
 justify-content: center;
 flex-shrink: 0;
-transition: opacity 0.35s ease;
 z-index: 4;
 }
 .kalos-seam-ring::before {
@@ -5692,12 +5804,13 @@ opacity: 0;
    shared via --kalos-gap on .kalos-dex) so the interactable screen's
    edges line up with the strip's own edges instead of running past them
    out to the full shell width - the red fill then reads as a bezel
-   flanking the screen on both sides, matching the band above/below it. */
+   flanking the screen on both sides, matching the band above/below it.
+   No transition here any more - opening/closing is a plain instant
+   show/hide (see setKalosOpen in script.js), not an animated reveal. */
 margin: 0 var(--kalos-gap);
 flex: 0 1 auto;
 max-height: 0;
 overflow: hidden;
-transition: max-height 0.55s cubic-bezier(0.65, 0, 0.35, 1);
 background: var(--kalos-strip-cyan);
 position: relative;
 z-index: 1;
@@ -5717,7 +5830,6 @@ box-shadow: inset 0 0 24px rgba(0, 40, 55, 0.16);
 }
 .kalos-screen-content {
 opacity: 0;
-transition: opacity 0.3s ease 0.15s;
 }
 .kalos-dex[data-open="true"] .kalos-screen-content {
 opacity: 1;
@@ -10087,37 +10199,193 @@ display: none;
 /* Opened via open3DModelModal() (script.js) using the shared openModal()
    overlay helper, with 'modal-3d-viewer' as the extraClass - same
    .overlay/.modal chrome every other modal in this app uses, just wider
-   and taller to give the <model-viewer> room to breathe. */
+   and taller to give the <model-viewer> room to breathe.
+   Themed as a Pokédex "beaming up" a holographic scan of the species
+   rather than a plain viewer window: a cyan projector beam and emitter
+   ring rise from the bottom of the stage, a faint scanline sweep and grid
+   sit over the model like a live digitizer readout, and corner brackets
+   frame it like a scanner lock-on - all built from the .model3d-beam/
+   -beam-ring/-scanlines/-corner elements open3DModelModal adds to
+   .model3d-stage (script.js), layered under/over #model3d-viewer with
+   z-index rather than DOM order so the beam always sits behind the model
+   and the scanlines/brackets always sit in front of it, regardless of
+   where <model-viewer>'s own canvas ends up in the stacking context. */
 .modal.modal-3d-viewer {
+position: relative;
+overflow: hidden;
 max-width: 560px;
 width: 100%;
 padding: 20px;
-background: #14121f;
-border-color: var(--line);
+/* Translucent rather than a solid panel - lets the shell/background
+   behind the overlay show through faintly, like light actually being
+   projected into open space instead of a flat opaque card. Neutral dark
+   graphite rather than navy, so the cyan hologram lines read as the
+   accent colour instead of competing with a heavily blue-tinted panel. */
+background: linear-gradient(165deg, rgba(17, 20, 23, 0.6) 0%, rgba(7, 9, 11, 0.78) 100%);
+-webkit-backdrop-filter: blur(16px) saturate(150%);
+backdrop-filter: blur(16px) saturate(150%);
+border-color: rgba(120, 225, 255, 0.35);
+box-shadow:
+inset 0 1px 0 rgba(200, 245, 255, 0.08),
+0 0 0 1px rgba(120, 225, 255, 0.14),
+0 18px 60px rgba(0, 0, 0, 0.55),
+0 0 55px rgba(70, 200, 255, 0.16);
 }
+/* Whole-panel hologram texture - the same fine scanline sweep + HUD grid
+   language .model3d-scanlines/.model3d-stage::before already use inside
+   the stage, just spread across the entire popup (header and footer hint
+   included) so the whole window reads as one projected surface, not just
+   the model floating inside an ordinary card. Positioned above the
+   static-flow content (see painting-order note in script.js comments -
+   deliberate here, not a bug: mix-blend-mode: screen + very low opacity
+   only brightens what's underneath, same trick .model3d-scanlines uses
+   over the model itself, so text stays legible under the sweep. */
+.modal.modal-3d-viewer::before {
+content: "";
+position: absolute;
+inset: 0;
+background-image:
+repeating-linear-gradient(0deg, rgba(150, 235, 255, 0.05) 0px, rgba(150, 235, 255, 0.05) 1px, transparent 1px, transparent 3px),
+linear-gradient(rgba(120, 225, 255, 0.035) 1px, transparent 1px),
+linear-gradient(90deg, rgba(120, 225, 255, 0.035) 1px, transparent 1px);
+background-size: 100% 6px, 30px 30px, 30px 30px;
+mix-blend-mode: screen;
+pointer-events: none;
+animation: model3d-scan-move 1.6s linear infinite;
+z-index: 5;
+}
+/* A faint offset double-edge - like a slightly mistracked projection -
+   ghosting the panel's own border in a cool/warm split. Reads as
+   "unstable holographic image" without needing extra markup. */
+.modal.modal-3d-viewer::after {
+content: "";
+position: absolute;
+inset: 0;
+border-radius: inherit;
+box-shadow:
+1.5px 0 0 rgba(255, 90, 210, 0.14),
+-1.5px 0 0 rgba(90, 230, 255, 0.18);
+pointer-events: none;
+mix-blend-mode: screen;
+z-index: 6;
+}
+@media (prefers-reduced-motion: reduce) {
+.modal.modal-3d-viewer::before {
+animation: none;
+opacity: 0.6;
+}
+.model3d-hud-readout::before {
+animation: none;
+opacity: 0.85;
+}
+}
+/* Corner brackets framing the whole popup - larger, brighter siblings of
+   .model3d-corner (which only frames the inner stage) so the "scanner
+   lock-on" reads on the entire projected window, not just the model. */
+.model3d-outer-corner {
+position: absolute;
+width: 28px;
+height: 28px;
+border: 2px solid rgba(200, 245, 255, 0.9);
+filter: drop-shadow(0 0 4px rgba(120, 225, 255, 0.55));
+pointer-events: none;
+z-index: 7;
+}
+.model3d-outer-corner.tl { top: 8px; left: 8px; border-right: none; border-bottom: none; border-radius: 6px 0 0 0; }
+.model3d-outer-corner.tr { top: 8px; right: 8px; border-left: none; border-bottom: none; border-radius: 0 6px 0 0; }
+.model3d-outer-corner.bl { bottom: 8px; left: 8px; border-right: none; border-top: none; border-radius: 0 0 0 6px; }
+.model3d-outer-corner.br { bottom: 8px; right: 8px; border-left: none; border-top: none; border-radius: 0 0 6px 0; }
 .model3d-head {
+position: relative;
+z-index: 8;
 display: flex;
 align-items: center;
-justify-content: space-between;
+justify-content: center;
 gap: 12px;
 margin-bottom: 12px;
 }
 .model3d-head h3 {
 margin: 0;
-color: #fff;
+color: #eafcff;
+font-family: var(--mono);
+letter-spacing: 0.5px;
+text-shadow: 0 0 10px rgba(110, 225, 255, 0.55);
 }
 .model3d-shiny-tag {
 font-size: 12px;
 font-weight: 800;
 color: #ffd166;
 margin-left: 6px;
+font-family: var(--body, inherit);
 }
-.model3d-close {
+/* Dex-number readout pill in the header, styled like a HUD id tag rather
+   than plain text - reuses the same cyan glow language as the rest of
+   the hologram chrome. */
+.model3d-hud-id {
 flex: none;
-padding: 6px 12px;
-font-size: 15px;
-line-height: 1;
+font-family: var(--mono);
+font-size: 11px;
+letter-spacing: 1px;
+color: rgba(190, 245, 255, 0.9);
+background: rgba(120, 225, 255, 0.08);
+border: 1px solid rgba(120, 225, 255, 0.35);
+border-radius: 4px;
+padding: 3px 9px;
+white-space: nowrap;
+text-shadow: 0 0 6px rgba(110, 225, 255, 0.5);
 }
+/* Small live-readout tags anchored inside the stage corners - each has a
+   blinking status dot so they read as active telemetry rather than
+   static labels. */
+.model3d-hud-readout {
+position: absolute;
+z-index: 3;
+display: flex;
+align-items: center;
+gap: 5px;
+font-family: var(--mono);
+font-size: 10px;
+letter-spacing: 0.5px;
+color: rgba(170, 238, 255, 0.8);
+text-shadow: 0 0 5px rgba(110, 225, 255, 0.5);
+pointer-events: none;
+}
+.model3d-hud-readout::before {
+content: "";
+width: 5px;
+height: 5px;
+border-radius: 50%;
+flex: none;
+background: rgba(120, 225, 255, 0.95);
+box-shadow: 0 0 6px rgba(120, 225, 255, 0.9);
+animation: model3d-hud-blink 1.8s ease-in-out infinite;
+}
+.model3d-hud-readout.tl { top: 16px; left: 16px; }
+.model3d-hud-readout.br { bottom: 16px; right: 16px; flex-direction: row-reverse; }
+@keyframes model3d-hud-blink {
+0%, 100% { opacity: 1; }
+50% { opacity: 0.25; }
+}
+/* Vertical tick-mark rulers down the inner edges of the stage, like a
+   scanner depth gauge - minor ticks every 10px, brighter major ticks
+   every 50px, layered as two stacked repeating gradients. */
+.model3d-hud-ticks {
+position: absolute;
+top: 34px;
+bottom: 34px;
+width: 8px;
+z-index: 2;
+opacity: 0.55;
+pointer-events: none;
+background-image:
+repeating-linear-gradient(to bottom, rgba(160, 240, 255, 0.75) 0px, rgba(160, 240, 255, 0.75) 1px, transparent 1px, transparent 50px),
+repeating-linear-gradient(to bottom, rgba(120, 225, 255, 0.35) 0px, rgba(120, 225, 255, 0.35) 1px, transparent 1px, transparent 10px);
+}
+.model3d-hud-ticks.left { left: 10px; }
+.model3d-hud-ticks.right { right: 10px; }
+/* The "screen" the hologram plays on. Neutral dark graphite base (rather
+   than a solid navy) so the cyan beam/scanlines/grid read as glowing
+   light on a dark screen instead of a wash of dark blue. */
 .model3d-stage {
 position: relative;
 width: 100%;
@@ -10125,14 +10393,243 @@ aspect-ratio: 1 / 1;
 max-height: 62vh;
 border-radius: 16px;
 overflow: hidden;
-background: radial-gradient(circle at 50% 40%, #2a2540 0%, #14121f 75%);
-border: 2px solid var(--line);
+background:
+radial-gradient(ellipse 70% 55% at 50% 100%, rgba(70, 205, 255, 0.16) 0%, transparent 60%),
+linear-gradient(180deg, #0a0c0f 0%, #0b0d10 55%, #030405 100%);
+border: 2px solid rgba(120, 225, 255, 0.35);
+box-shadow: inset 0 0 46px rgba(70, 200, 255, 0.1);
+}
+/* Faint HUD grid behind everything else, same low-opacity cyan as the
+   beam/scanlines so it reads as one consistent light source rather than
+   a separately-colored layer. */
+.model3d-stage::before {
+content: "";
+position: absolute;
+inset: 0;
+background-image:
+linear-gradient(rgba(120, 225, 255, 0.05) 1px, transparent 1px),
+linear-gradient(90deg, rgba(120, 225, 255, 0.05) 1px, transparent 1px);
+background-size: 26px 26px;
+z-index: 0;
+pointer-events: none;
+}
+/* Wrapper that fades the beam+ring in as a pair once the shell "opens" -
+   see .model3d-stage.model3d-active below. Not put directly on .model3d-beam/
+   -beam-ring because those already run their own infinite pulse *animation*,
+   and a running CSS animation on a property always overrides a *transition*
+   on that same property, so toggling their opacity directly wouldn't fade
+   smoothly - it'd just snap. Fading this wrapper instead leaves their pulse
+   alone and still gets a smooth reveal. */
+.model3d-beam-fx {
+position: absolute;
+inset: 0;
+opacity: 0;
+transition: opacity 0.55s ease 0.05s;
+pointer-events: none;
+z-index: 1;
+}
+.model3d-stage.model3d-active .model3d-beam-fx {
+opacity: 1;
+}
+/* Projector beam: a soft trapezoid flaring from a narrow "emitter" at the
+   bottom up to the model, like a Pokédex scan-beam rather than a generic
+   spotlight. clip-path keeps the flare edges crisp instead of just fading
+   a full-width gradient out, which read as a vague glow rather than a beam
+   when tried without it. Pulses gently rather than looping a hard flicker,
+   so it doesn't fight for attention with the model's own idle animation. */
+.model3d-beam {
+position: absolute;
+left: 50%;
+bottom: 0;
+width: 72%;
+height: 96%;
+transform: translateX(-50%);
+background: linear-gradient(to top,
+rgba(110, 225, 255, 0.55) 0%,
+rgba(110, 225, 255, 0.26) 20%,
+rgba(110, 225, 255, 0.08) 55%,
+rgba(110, 225, 255, 0) 88%);
+clip-path: polygon(40% 100%, 60% 100%, 84% 0%, 16% 0%);
+mix-blend-mode: screen;
+animation: model3d-beam-pulse 2.6s ease-in-out infinite;
+}
+@keyframes model3d-beam-pulse {
+0%, 100% { opacity: 0.6; }
+50% { opacity: 1; }
+}
+/* The emitter ring at the beam's base - the "light source" the model is
+   being projected up from. Scales/brightens in the same rhythm as the
+   beam above so the two read as one effect, not two independent ones. */
+.model3d-beam-ring {
+position: absolute;
+left: 50%;
+bottom: 7%;
+width: 56%;
+height: 12px;
+transform: translateX(-50%);
+border-radius: 50%;
+background: radial-gradient(ellipse at center, rgba(140, 235, 255, 0.95) 0%, rgba(120, 225, 255, 0.4) 45%, rgba(120, 225, 255, 0) 78%);
+filter: blur(1px);
+animation: model3d-ring-pulse 2.6s ease-in-out infinite;
+}
+@keyframes model3d-ring-pulse {
+0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.65; }
+50% { transform: translateX(-50%) scaleX(1.18); opacity: 1; }
+}
+/* Real hologram lines: connects the ACTUAL corner lens on the mobile
+   Kalos shell (#kalos-lens-corner, which sits above/outside this modal
+   entirely) to this modal's own four corners, using live
+   getBoundingClientRect() coordinates written in by open3DModelModal
+   (script.js) rather than a static copy of a lens drawn inside the
+   stage - so the beam genuinely traces back to that physical lens
+   instead of a redundant decorative one. Appended straight to <body>,
+   so it needs its own fixed full-viewport layer above the .overlay
+   backdrop (z-index 50) to actually show over the dimmed shell behind
+   it. Faded in on the same beat as .model3d-beam-fx/.model3d-active. */
+.model3d-lens-lines-fixed {
+position: fixed;
+inset: 0;
+width: 100vw;
+height: 100vh;
+z-index: 200;
+pointer-events: none;
+opacity: 0;
+transition: opacity 0.55s ease 0.05s;
+}
+.model3d-lens-lines-fixed.model3d-lens-lines-active {
+opacity: 1;
+}
+.model3d-lens-line-fixed {
+stroke: rgba(140, 225, 255, 0.85);
+stroke-width: 1.5;
+stroke-linecap: round;
+filter: drop-shadow(0 0 3px rgba(110, 225, 255, 0.65));
+animation: model3d-lens-line-pulse 2.6s ease-in-out infinite;
+}
+.model3d-lens-line-fixed:nth-child(2) { animation-delay: 0.12s; }
+.model3d-lens-line-fixed:nth-child(3) { animation-delay: 0.24s; }
+.model3d-lens-line-fixed:nth-child(4) { animation-delay: 0.36s; }
+@keyframes model3d-lens-line-pulse {
+0%, 100% { opacity: 0.55; }
+50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+.model3d-lens-line-fixed {
+animation: none;
+opacity: 0.85;
+}
+}
+/* Fills the wedge between the lens lines (rather than leaving it as bare
+   space) so the projection reads as a solid hologram cone instead of a
+   few stray lines. Shape is a dynamic polygon (apex at the real lens,
+   base along wherever the lines currently terminate) written in as an
+   inline clip-path by updateLensLines (script.js), same live-geometry
+   approach as the lines themselves. A plain HTML div rather than
+   another SVG shape - clip-path + filter on the same element is
+   unreliable in some engines (see the lines' own history), and this
+   layer has no filter of its own to fight with. Sits just under the
+   lines (z-index) so the crisp glowing strokes still read on top of the
+   softer fill. */
+.model3d-lens-cone-fill {
+position: fixed;
+inset: 0;
+width: 100vw;
+height: 100vh;
+z-index: 199;
+pointer-events: none;
+opacity: 0;
+transition: opacity 0.55s ease 0.05s;
+}
+.model3d-lens-cone-fill.model3d-lens-lines-active {
+opacity: 1;
+}
+.model3d-lens-cone-fill::before {
+content: "";
+position: absolute;
+inset: 0;
+background:
+repeating-linear-gradient(100deg, rgba(170, 240, 255, 0.14) 0px, rgba(170, 240, 255, 0.14) 1px, transparent 1px, transparent 5px),
+repeating-linear-gradient(10deg, rgba(170, 240, 255, 0.08) 0px, rgba(170, 240, 255, 0.08) 1px, transparent 1px, transparent 12px),
+radial-gradient(ellipse 70% 100% at 50% 0%, rgba(120, 225, 255, 0.28) 0%, rgba(120, 225, 255, 0.08) 60%, rgba(120, 225, 255, 0) 100%);
+mix-blend-mode: screen;
+animation: model3d-lens-cone-shimmer 2.6s ease-in-out infinite;
+}
+@keyframes model3d-lens-cone-shimmer {
+0%, 100% { opacity: 0.75; }
+50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+.model3d-lens-cone-fill::before {
+animation: none;
+}
 }
 #model3d-viewer {
+position: relative;
 width: 100%;
 height: 100%;
+z-index: 3;
+opacity: 0;
+transform: scale(0.8) translateY(4%);
+transition: opacity 0.6s ease 0.35s, transform 0.6s cubic-bezier(.2, .8, .2, 1) 0.35s;
 --poster-color: transparent;
 }
+.model3d-stage.model3d-active #model3d-viewer {
+opacity: 1;
+transform: scale(1) translateY(0);
+}
+/* Scanline sweep over the whole stage, model included - screen blend mode
+   so it brightens rather than dims what's underneath, matching how a
+   digitizer readout usually gets portrayed rather than looking like a
+   dirty overlay. Held at opacity 0 until the shell/beam reveal finishes
+   (rather than sweeping over the closed shell too) so it reads as part of
+   the "hologram is live" moment, not stage furniture. */
+.model3d-scanlines {
+position: absolute;
+inset: 0;
+background-image: repeating-linear-gradient(0deg,
+rgba(150, 235, 255, 0.07) 0px,
+rgba(150, 235, 255, 0.07) 1px,
+transparent 1px,
+transparent 3px);
+background-size: 100% 6px;
+animation: model3d-scan-move 1.4s linear infinite;
+mix-blend-mode: screen;
+pointer-events: none;
+z-index: 4;
+opacity: 0;
+transition: opacity 0.5s ease 0.5s;
+}
+.model3d-stage.model3d-active .model3d-scanlines {
+opacity: 1;
+}
+@keyframes model3d-scan-move {
+from { background-position-y: 0; }
+to { background-position-y: -6px; }
+}
+/* Scanner-lock corner brackets framing the stage, same cyan as the
+   beam/grid so the whole thing reads as one light rather than mixing in
+   the app's red shell color here - this modal is meant to feel like a
+   separate "scan" moment, not more Pokédex-shell chrome. Always visible
+   (not tied to model3d-active) since they're the viewport's own framing,
+   not part of the beam-up effect happening inside it. */
+.model3d-corner {
+position: absolute;
+width: 22px;
+height: 22px;
+border: 2px solid rgba(190, 240, 255, 0.8);
+z-index: 5;
+pointer-events: none;
+}
+.model3d-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; border-radius: 4px 0 0 0; }
+.model3d-corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; border-radius: 0 4px 0 0; }
+.model3d-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; border-radius: 0 0 0 4px; }
+.model3d-corner.br { bottom: 10px; right: 10px; border-left: none; border-top: none; border-radius: 0 0 4px 0; }
+/* Held invisible until the shell/beam reveal so "Loading model…" doesn't
+   flash up over the closed shell before the intro even plays - see
+   model3d-active timing in open3DModelModal (script.js). Once the model's
+   own "load" listener fires, it's hidden outright via display:none
+   regardless of this transition, so there's no conflict between the two -
+   this only governs whether it's allowed to render at all yet. */
 .model3d-loading {
 position: absolute;
 inset: 0;
@@ -10141,18 +10638,78 @@ align-items: center;
 justify-content: center;
 padding: 24px;
 text-align: center;
-color: #cfc9e6;
-font-size: 13px;
-font-weight: 700;
-pointer-events: none;
+color: #d8f7ff;
 }
-.model3d-hint {
-margin: 10px 0 0;
-text-align: center;
-font-size: 11.5px;
-color: var(--ink-dim);
-color: #9c94bd;
+.model3d-stage.model3d-active .model3d-loading {
+opacity: 1;
+}
+/* Dex-entry readout below the stage: genus + height/weight stats on one
+   line, then flavor text underneath - styled like an actual in-game
+   Pokédex page rather than plain paragraph text. Filled in async by
+   fetchDexEntryData (script.js); starts with just the "Accessing
+   entry..." placeholder text from the initial markup. */
+.model3d-entry {
+margin-top: 12px;
+padding: 10px 14px;
+border-radius: 12px;
+background: rgba(120, 225, 255, 0.05);
+border: 1px solid rgba(120, 225, 255, 0.25);
+}
+.model3d-entry-top {
+display: flex;
+align-items: baseline;
+justify-content: space-between;
+gap: 10px;
+flex-wrap: wrap;
+}
+.model3d-entry-genus {
+font-family: var(--mono);
+font-size: 12px;
+font-weight: 700;
+letter-spacing: 0.5px;
+color: #9be9ff;
+text-transform: uppercase;
+}
+.model3d-entry-stats {
+display: flex;
+gap: 12px;
+flex: none;
+}
+.model3d-entry-stat {
+font-family: var(--mono);
+font-size: 11px;
+color: rgba(200, 240, 255, 0.85);
+white-space: nowrap;
+}
+.model3d-entry-stat-label {
+color: rgba(140, 220, 255, 0.65);
+margin-right: 4px;
+}
+.model3d-entry-text {
+margin: 8px 0 0;
+font-size: 13px;
+line-height: 1.5;
+color: rgba(224, 246, 255, 0.88);
+}
+/* Type badge row - just wraps the app's existing typeBadges() icons, no
+   extra chrome, so they read the same here as everywhere else in the app. */
+.model3d-entry-types {
+margin-top: 10px;
+display: flex;
+flex-wrap: wrap;
+gap: 6px;
+}
+/* "Evolves from ___" line - small and muted, sits between the type badges
+   and the flavor text like a secondary dex-entry detail rather than a
+   headline. Hidden by default (JS only unhides it once a value resolves,
+   since not every species has one). */
+.model3d-entry-evofrom {
+margin: 8px 0 0;
+font-family: var(--mono);
+font-size: 11px;
 letter-spacing: 0.3px;
+color: rgba(150, 220, 255, 0.7);
+font-style: italic;
 }
 @media (max-width: 640px) {
 .modal.modal-3d-viewer {
@@ -10162,3 +10719,12 @@ padding: 14px;
 max-height: 50vh;
 }
 }
+
+
+JS
+
+// of the screen instead of failing silently. Several past bugs in this file
+// (see comments near syncTabChrome and connectToCloud) were invisible on
+// mobile precisely because nothing surfaced the thrown error - this makes
+// the next one visible without needing a computer/dev tools. Safe to remove
+// once things are stable again.
