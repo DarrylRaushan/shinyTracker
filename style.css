@@ -8011,25 +8011,16 @@ box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
 .kalos-gen-tile-expanded .dex-species-panel {
 display: block;
 background-color: transparent;
+border-top: 2.5px dashed rgba(255, 255, 255, 0.85);
 /* Same fixed-height + internal scroll treatment as the desktop accordion
    panel above, sized down for the narrower mobile viewport this tile
    layout only ever renders in. */
 max-height: 65vh;
-/* touch-action: none - not pan-y, not pan-x pan-y. Both scroll axes on
-   this panel (vertical chip-list scroll AND horizontal gen-swipe) are
-   driven entirely by hand in JS now (see initKalosGenSwipe in script.js),
-   which is the only way both can genuinely start from anywhere on the
-   chip list: any value here that lets the *browser* handle an axis
-   natively (pan-y, or pan-x pan-y) means the browser can start moving
-   this panel's own scroll position on its own, at the same time our JS
-   might also be moving it by hand - two things driving the same scroll
-   position is exactly what made earlier attempts inconsistent. With
-   touch-action: none, the browser does nothing here on its own, so
-   there's only ever one thing driving the scroll for a touch that starts
-   on this panel. Areas outside the panel (the banner/header) are left
-   completely alone (still default touch-action) and keep working exactly
-   like the collapsed tiles' carousel - plain native scrolling. */
-touch-action: none;
+/* Gen-swipe (see initKalosGenSwipe in script.js) only ever starts a
+   drag from a touch on .kalos-gen-detail-banner, never from this panel,
+   so there's no competing axis here to hand-drive - plain native
+   vertical scrolling works as normal. */
+touch-action: pan-y;
 }
 /* Dot indicators below the carousel, one per generation - kept in sync
    with the centered tile via updateKalosDots() and hidden outright while
@@ -8062,52 +8053,324 @@ transform: scale(1.4);
 padding: 0;
 cursor: pointer;
 }
+/* No more flat dark panel behind the header controls - the region map
+   image shows straight through, and each control instead carries its own
+   small frosted-glass pill (see .kalos-gen-back / .kalos-gen-detail-info /
+   .kalos-gen-detail-progress-track / .dex-card-count below), so contrast
+   comes from the individual chips rather than one big grey wash. */
 .kalos-gen-detail-head {
 display: flex;
-align-items: center;
+flex-direction: column;
 gap: 10px;
 padding: 14px;
-background: linear-gradient(195deg, rgba(20, 15, 12, 0.2) 0%, rgba(20, 15, 12, 0.82) 100%);
+background: none;
 }
+.kalos-gen-detail-head-row {
+display: flex;
+align-items: center;
+gap: 8px;
+}
+/* Modern icon-only back button: a small round glass chip with a chevron,
+   instead of the old text-label rectangle. */
 .kalos-gen-back {
 font: inherit;
-font-family: var(--hud);
-font-weight: 700;
-font-size: 12.5px;
-padding: 7px 10px;
-border: 2px solid var(--line);
-border-radius: 10px;
-background: var(--bg-panel);
-box-shadow: 0 3px 0 rgba(43, 35, 32, 0.28);
+width: 32px;
+height: 32px;
+padding: 0;
+border: 1px solid rgba(255, 255, 255, 0.3);
+border-radius: 50%;
+background: rgba(20, 15, 12, 0.4);
+backdrop-filter: blur(8px);
+-webkit-backdrop-filter: blur(8px);
+color: #fff;
+box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 cursor: pointer;
 flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: background 0.15s ease, transform 0.1s ease;
+}
+.kalos-gen-back svg {
+width: 15px;
+height: 15px;
+}
+.kalos-gen-back:active {
+background: rgba(20, 15, 12, 0.6);
+transform: scale(0.9);
+}
+/* Badge + region/gen title now live together in one floating glass pill
+   (.kalos-gen-detail-info) so they read as a single modern chip rather
+   than sitting directly on the old dark bar. */
+.kalos-gen-detail-info {
+display: flex;
+align-items: center;
+gap: 8px;
+flex: 1;
+min-width: 0;
+padding: 4px 12px 4px 4px;
+border-radius: 999px;
+background: rgba(20, 15, 12, 0.4);
+backdrop-filter: blur(8px);
+-webkit-backdrop-filter: blur(8px);
+border: 1px solid rgba(255, 255, 255, 0.18);
+box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+/* Compact sizing for the region-ball badge when reused in this header
+   (the default size is tuned for the larger 56px desktop card - see
+   .kalos-gen-tile .dex-gen-badge above for the same pattern used on the
+   40px collapsed tile). The completion ring that used to wrap it is
+   hidden here - the progress bar below already communicates that. */
+.kalos-gen-detail-head-row .dex-gen-badge {
+width: 30px;
+height: 30px;
+font-size: 12px;
+flex-shrink: 0;
+}
+.kalos-gen-detail-head-row .dex-gen-badge-ring-svg {
+display: none;
+}
+.kalos-gen-detail-head-row .dex-gen-badge-check {
+width: 13px;
+height: 13px;
+right: -2px;
+bottom: -2px;
+}
+.kalos-gen-detail-head-row .dex-gen-badge-check svg {
+width: 8px;
+height: 8px;
 }
 .kalos-gen-detail-title {
 display: flex;
-align-items: baseline;
-gap: 8px;
+align-items: center;
+justify-content: flex-start;
+gap: 7px;
 flex-wrap: wrap;
+flex: 1;
+min-width: 0;
+}
+.kalos-gen-detail-title-row {
+display: flex;
+align-items: center;
+gap: 6px;
+min-width: 0;
 }
 .kalos-gen-detail-title .region {
 font-family: var(--hud);
 font-weight: 800;
-font-size: 15px;
+font-size: 18px;
 color: #fff;
 text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
+/* Modern gen tag: a small solid accent badge instead of the old
+   translucent white-on-dark pill, so it reads as a proper UI tag. */
 .kalos-gen-detail-title .gen-label {
-font-family: var(--mono);
-font-size: 10.5px;
-color: rgba(255, 255, 255, 0.8);
-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+font-family: var(--hud);
+font-weight: 800;
+font-size: 9.5px;
+letter-spacing: 0.4px;
+text-transform: uppercase;
+color: #fff;
+text-shadow: none;
+padding: 3px 8px;
+border-radius: 6px;
+background: linear-gradient(135deg, var(--blue, #30adff), #1c6fb3);
+box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+white-space: nowrap;
 }
-.kalos-gen-detail-title .dex-card-count {
+.kalos-gen-detail-head-spacer {
+display: none;
+}
+.kalos-gen-detail-progress-row {
+display: flex;
+align-items: center;
+gap: 8px;
+}
+/* Capsule progress track as its own glass chip (mirrors the back button /
+   info pill above) with room for the pokeball marker to overhang its
+   edge. */
+.kalos-gen-detail-progress-track {
+position: relative;
+flex: 1;
+min-width: 0;
+height: 11px;
+border-radius: 20px;
+background: rgba(20, 15, 12, 0.4);
+backdrop-filter: blur(8px);
+-webkit-backdrop-filter: blur(8px);
+border: 1px solid rgba(255, 255, 255, 0.18);
+overflow: visible;
+}
+.kalos-gen-detail-progress-fill {
+position: relative;
+height: 100%;
+border-radius: 20px;
+overflow: hidden;
+background: linear-gradient(90deg, #30adff, #7be0ef);
+transition: width 0.4s ease;
+}
+/* Soft traveling shimmer across the fill, so the bar reads as alive
+   rather than a flat static rectangle. */
+.kalos-gen-detail-progress-glow {
+position: absolute;
+inset: 0;
+width: 40%;
+background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+animation: kalos-gen-progress-shimmer 2.6s ease-in-out infinite;
+}
+@keyframes kalos-gen-progress-shimmer {
+0% { transform: translateX(-140%); }
+100% { transform: translateX(340%); }
+}
+/* A small gym-badge medal rides the leading edge of the fill, standing in
+   for a plain end-cap and tying the bar to the app's region theming. Each
+   generation gets its own shape + color (an original stylized design, not
+   a reproduction of the in-game badge art) so the marker changes as you
+   browse different regions. Structure: the element itself is the "rim"
+   (shape + edge color), ::before is an inset "face" layer (same shape,
+   scaled down, different tone) for a two-tone medal look, and ::after is
+   a soft glare on top. */
+.kalos-gen-detail-progress-marker {
+position: absolute;
+top: 50%;
+transform: translate(-50%, -50%);
+width: 17px;
+height: 17px;
+pointer-events: none;
+transition: left 0.4s ease;
+}
+.kalos-gen-detail-progress-marker-dot {
+position: relative;
+display: block;
+width: 140%;
+height: 140%;
+left: -20%;
+top: -20%;
+filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+/* Fallback shape/color if no region-specific rule matches. */
+clip-path: polygon(50% 0%, 100% 15%, 100% 60%, 50% 100%, 0% 60%, 0% 15%);
+background: linear-gradient(160deg, #f2f2f2, #b9b9b9 55%, #8a8a8a);
+}
+.kalos-gen-detail-progress-marker-dot::before {
+content: "";
+position: absolute;
+inset: 13%;
+clip-path: inherit;
+background: linear-gradient(160deg, #fff, #d8d8d8);
+}
+.kalos-gen-detail-progress-marker-dot::after {
+content: "";
+position: absolute;
+inset: 0;
+background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.9) 0%, transparent 42%);
+clip-path: inherit;
+}
+/* Gen 1 - Kanto: classic pentagon shield, boulder red/grey face. */
+.kalos-gen-tile-expanded[data-gen="1"] .kalos-gen-detail-progress-marker-dot {
+clip-path: polygon(50% 0%, 100% 15%, 100% 60%, 50% 100%, 0% 60%, 0% 15%);
+background: linear-gradient(160deg, #ff9d9d, var(--red) 55%, var(--red-dark));
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="1"] .kalos-gen-detail-progress-marker-dot::before {
+background: linear-gradient(160deg, #ffe9e0, #cfcac2 55%, #948c81);
+}
+/* Gen 2 - Johto: hexagon medal, zephyr yellow. */
+.kalos-gen-tile-expanded[data-gen="2"] .kalos-gen-detail-progress-marker-dot {
+clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+background: linear-gradient(160deg, #fff3b0, var(--yellow) 55%, var(--yellow-dark));
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="2"] .kalos-gen-detail-progress-marker-dot::before {
+background: linear-gradient(160deg, #fffbe0, #d8c25a 55%, #a9862a);
+}
+/* Gen 3 - Hoenn: emerald-cut stone facet, green. */
+.kalos-gen-tile-expanded[data-gen="3"] .kalos-gen-detail-progress-marker-dot {
+clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+background: linear-gradient(160deg, #b7f0c8, var(--green) 55%, var(--green-dark));
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="3"] .kalos-gen-detail-progress-marker-dot::before {
+background: linear-gradient(160deg, #eafff0, #7fcf9a 55%, #4c9d69);
+}
+/* Gen 4 - Sinnoh: diamond ice-crystal facet, blue. */
+.kalos-gen-tile-expanded[data-gen="4"] .kalos-gen-detail-progress-marker-dot {
+clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+background: linear-gradient(160deg, #bfe0ff, var(--blue) 55%, var(--blue-dark));
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="4"] .kalos-gen-detail-progress-marker-dot::before {
+background: linear-gradient(160deg, #f0f8ff, #8fbfe8 55%, #5a8fbf);
+}
+/* Gen 5 - Unova: circular medal, tri-tone segmented face. */
+.kalos-gen-tile-expanded[data-gen="5"] .kalos-gen-detail-progress-marker-dot {
+clip-path: circle(50% at 50% 50%);
+background: linear-gradient(160deg, #b7bfc9, #5c6572 55%, #262c36);
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="5"] .kalos-gen-detail-progress-marker-dot::before {
+background: conic-gradient(#e8ecef 0deg 120deg, #aeb6c0 120deg 240deg, #7d8794 240deg 360deg);
+}
+/* Gen 6 - Kalos: scalloped rosette, fashion teal/pink. */
+.kalos-gen-tile-expanded[data-gen="6"] .kalos-gen-detail-progress-marker-dot {
+clip-path: polygon(50.0% 0.0%, 63.0% 10.1%, 79.4% 9.5%, 84.0% 25.3%, 97.6% 34.5%, 92.0% 50.0%, 97.6% 65.5%, 84.0% 74.7%, 79.4% 90.5%, 63.0% 89.9%, 50.0% 100.0%, 37.0% 89.9%, 20.6% 90.5%, 16.0% 74.7%, 2.4% 65.5%, 8.0% 50.0%, 2.4% 34.5%, 16.0% 25.3%, 20.6% 9.5%, 37.0% 10.1%);
+background: linear-gradient(135deg, #57bfe0, #c95a92);
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="6"] .kalos-gen-detail-progress-marker-dot::before {
+background: linear-gradient(135deg, #eafcff, #e9b8cf);
+}
+/* Gen 7 - Alola: gentle sunburst medal, tropical orange. */
+.kalos-gen-tile-expanded[data-gen="7"] .kalos-gen-detail-progress-marker-dot {
+clip-path: polygon(50.0% 0.0%, 60.4% 11.4%, 75.0% 6.7%, 78.3% 21.7%, 93.3% 25.0%, 88.6% 39.6%, 100.0% 50.0%, 88.6% 60.4%, 93.3% 75.0%, 78.3% 78.3%, 75.0% 93.3%, 60.4% 88.6%, 50.0% 100.0%, 39.6% 88.6%, 25.0% 93.3%, 21.7% 78.3%, 6.7% 75.0%, 11.4% 60.4%, 0.0% 50.0%, 11.4% 39.6%, 6.7% 25.0%, 21.7% 21.7%, 25.0% 6.7%, 39.6% 11.4%);
+background: linear-gradient(160deg, #ffd7a3, #ff9d4d 55%, #b3540a);
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="7"] .kalos-gen-detail-progress-marker-dot::before {
+background: radial-gradient(circle, #fff3e0, #ffbf7a);
+}
+/* Gen 8 - Galar: crowned shield, knightly purple. */
+.kalos-gen-tile-expanded[data-gen="8"] .kalos-gen-detail-progress-marker-dot {
+clip-path: polygon(10% 25%, 20% 5%, 30% 20%, 50% 0%, 70% 20%, 80% 5%, 90% 25%, 90% 65%, 50% 100%, 10% 65%);
+background: linear-gradient(160deg, #cbb3f5, #8c5fe0 55%, #4a3184);
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="8"] .kalos-gen-detail-progress-marker-dot::before {
+background: linear-gradient(160deg, #f3ecff, #b79bea 55%, #7c5ab8);
+}
+/* Gen 9 - Paldea: notched academy crest, magenta/violet. */
+.kalos-gen-tile-expanded[data-gen="9"] .kalos-gen-detail-progress-marker-dot {
+clip-path: polygon(50% 0%, 100% 12%, 100% 55%, 60% 100%, 50% 80%, 40% 100%, 0% 55%, 0% 12%);
+background: linear-gradient(135deg, #eca0bd, #d1487a 45%, #7a3f9e);
+filter: drop-shadow(0.9px 0px 0 #fff4d6) drop-shadow(-0.9px 0px 0 #fff4d6) drop-shadow(0px 0.9px 0 #fff4d6) drop-shadow(0px -0.9px 0 #fff4d6) drop-shadow(0.9px 0.9px 0 #fff4d6) drop-shadow(-0.9px 0.9px 0 #fff4d6) drop-shadow(0.9px -0.9px 0 #fff4d6) drop-shadow(-0.9px -0.9px 0 #fff4d6) drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.kalos-gen-tile-expanded[data-gen="9"] .kalos-gen-detail-progress-marker-dot::before {
+background: linear-gradient(135deg, #fdeaf1, #e3a8c6);
+}
+.kalos-gen-detail-progress-pct {
 font-family: var(--mono);
-font-size: 11px;
-color: #ffd166;
-font-weight: 700;
-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-}}
+font-size: 16px;
+font-weight: 800;
+color: #fff;
+text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75), 0 0 1px rgba(0, 0, 0, 0.5);
+white-space: nowrap;
+flex-shrink: 0;
+letter-spacing: 0.2px;
+}
+.kalos-gen-detail-progress-row .dex-card-count {
+font-family: var(--mono);
+font-size: 12.5px;
+color: #fff;
+font-weight: 800;
+text-shadow: none;
+white-space: nowrap;
+flex-shrink: 0;
+background: rgba(20, 15, 12, 0.4);
+backdrop-filter: blur(8px);
+-webkit-backdrop-filter: blur(8px);
+border: 1px solid rgba(255, 255, 255, 0.18);
+border-radius: 999px;
+padding: 3px 10px;
+}
 .dex-grid {
 display: flex;
 flex-direction: column;
@@ -8211,6 +8474,35 @@ transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
 .dex-gen-badge-ring.is-complete .ring-fill {
 stroke: #c9971f;
 }
+/* Small checkmark badge that pops onto the corner of the region-ball ring
+   once a generation hits 100% caught - a quick "done" signal that doesn't
+   depend on reading the ring color or the count text. */
+.dex-gen-badge-check {
+display: none;
+position: absolute;
+right: -4px;
+bottom: -4px;
+width: 20px;
+height: 20px;
+border-radius: 50%;
+background: #c9971f;
+border: 2px solid var(--bg-panel-raised, #fff2b8);
+align-items: center;
+justify-content: center;
+z-index: 1;
+}
+.dex-gen-badge-ring.is-complete .dex-gen-badge-check {
+display: flex;
+}
+.dex-gen-badge-check svg {
+width: 11px;
+height: 11px;
+stroke: #fff;
+stroke-width: 3;
+fill: none;
+stroke-linecap: round;
+stroke-linejoin: round;
+}
 .dex-card-title {
 flex: 1;
 min-width: 0;
@@ -8236,6 +8528,35 @@ font-size: 15px;
 color: var(--red-dark);
 flex-shrink: 0;
 }
+/* Wraps the count + "X left" subtext so they stack tightly and align with
+   the percent chip beside them (see .dex-card-pct below). */
+.dex-card-count-wrap {
+display: flex;
+flex-direction: column;
+align-items: flex-end;
+flex-shrink: 0;
+gap: 1px;
+}
+.dex-card-remaining {
+font-family: var(--body);
+font-size: 10.5px;
+font-weight: 700;
+color: var(--ink-dim);
+}
+/* Percent chip mirrors the region-ball badge on the opposite side of the
+   header so the row doesn't feel lopsided toward the icon. Reuses the
+   screen green already used for readouts elsewhere. */
+.dex-card-pct {
+font-family: var(--mono);
+font-size: 12px;
+font-weight: 700;
+color: var(--green-dark);
+background: var(--screen);
+border: 2px solid var(--line);
+border-radius: 999px;
+padding: 3px 9px;
+flex-shrink: 0;
+}
 .dex-card.expanded .dex-chevron {
 transform: rotate(180deg);
 }
@@ -8254,6 +8575,27 @@ height: 100%;
 background: linear-gradient(90deg, var(--green), var(--yellow));
 border-radius: 999px;
 transition: width 0.3s ease;
+position: relative;
+}
+/* Small puck sitting right at the fill boundary, like a slider handle, so
+   the bar reads as "you are here" rather than a flat static fill. Hidden
+   at 0% so it doesn't awkwardly overlap the track's left edge. */
+.dex-card-progress .bar-fill::after {
+content: "";
+position: absolute;
+top: 50%;
+right: -1px;
+width: 14px;
+height: 14px;
+border-radius: 50%;
+background: #fff2cf;
+border: 2px solid var(--red-dark, #a80f0f);
+transform: translate(50%, -50%);
+transition: right 0.3s ease;
+}
+.dex-card-progress .bar-fill[style*="width:0%"]::after,
+.dex-card-progress .bar-fill[style*="width: 0%"]::after {
+display: none;
 }
 /* Shiny Living Dex: swap the plain green/gold fill for the same rainbow
    palette already used on caught chips in shiny mode (see
@@ -8281,6 +8623,28 @@ overflow-y: auto;
    rubber-bands/snaps back. Restricting touch panning to vertical-only
    makes any drag here register purely as up/down scroll. */
 touch-action: pan-y;
+/* Swap the native OS scrollbar for a slim custom one - the default
+   rendering shows small up/down arrow buttons ("dots") at each end of
+   the track, which read as stray UI elements sitting on top of the
+   dex art. This mirrors the thin, buttonless scrollbar already used on
+   .pc-screen-content. */
+scrollbar-width: thin;
+scrollbar-color: rgba(0, 0, 0, 0.35) transparent;
+}
+.dex-species-panel::-webkit-scrollbar {
+width: 6px;
+}
+.dex-species-panel::-webkit-scrollbar-track {
+background: transparent;
+}
+.dex-species-panel::-webkit-scrollbar-thumb {
+background: rgba(0, 0, 0, 0.35);
+border-radius: 3px;
+}
+.dex-species-panel::-webkit-scrollbar-button {
+display: none;
+height: 0;
+width: 0;
 }
 .dex-card.expanded .dex-species-panel {
 display: block;
@@ -8288,38 +8652,47 @@ display: block;
 .dex-grid.shiny-mode .dex-card[data-gen="1"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="1"] .dex-species-panel {
 background-image: url("images/dex-regions/gen1-kanto.webp");
+background-size: cover;
 }
 .dex-grid.shiny-mode .dex-card[data-gen="2"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="2"] .dex-species-panel {
 background-image: url("images/dex-regions/gen2-johto.jpg");
+background-size: cover;
 }
 .dex-grid.shiny-mode .dex-card[data-gen="3"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="3"] .dex-species-panel {
 background-image: url("images/dex-regions/gen3-hoenn.jpg");
+background-size: cover;
 }
 .dex-grid.shiny-mode .dex-card[data-gen="4"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="4"] .dex-species-panel {
 background-image: url("images/dex-regions/gen4-sinnoh.jpg");
+background-size: cover;
 }
 .dex-grid.shiny-mode .dex-card[data-gen="5"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="5"] .dex-species-panel {
 background-image: url("images/dex-regions/gen5-unova.jpg");
+background-size: cover;
 }
 .dex-grid.shiny-mode .dex-card[data-gen="6"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="6"] .dex-species-panel {
 background-image: url("images/dex-regions/gen6-kalos.jpg");
+background-size: cover;
 }
 .dex-grid.shiny-mode .dex-card[data-gen="7"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="7"] .dex-species-panel {
 background-image: url("images/dex-regions/gen7-alola.jpg");
+background-size: cover;
 }
 .dex-grid.shiny-mode .dex-card[data-gen="8"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="8"] .dex-species-panel {
 background-image: url("images/dex-regions/gen8-galar.jpg");
+background-size: cover;
 }
 .dex-grid.shiny-mode .dex-card[data-gen="9"] .dex-species-panel,
 .kalos-gen-grid.shiny-mode .dex-card[data-gen="9"] .dex-species-panel {
 background-image: url("images/dex-regions/gen9-paldea.jpg");
+background-size: cover;
 }
 /* CSS-11: minmax(0,1fr) instead of a bare 1fr - grid tracks otherwise — full rationale in NOTES.md */
 .dex-species-grid {
@@ -9589,17 +9962,42 @@ display: none;
 	background-position: center;
 	background-repeat: no-repeat;
 }
+/* The header is a solid "cover" band, deliberately a different flat
+   color per generation (see the [data-gen] rules below) - Living mode
+   never had a real map photo behind it, so instead of leaving it
+   see-through (which just blended into the page below) it gets its own
+   identity, like a book's spine color. */
 .kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded .kalos-gen-detail-head {
 	padding: 14px;
-	background: linear-gradient(195deg, rgba(20, 15, 12, 0.20) 0%, rgba(20, 15, 12, 0.82) 100%);
+	background: linear-gradient(165deg, #6b6258, #4a433c);
 }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="1"] .kalos-gen-detail-head { background: linear-gradient(165deg, var(--red), var(--red-dark)); }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="2"] .kalos-gen-detail-head { background: linear-gradient(165deg, var(--yellow), var(--yellow-dark)); }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="3"] .kalos-gen-detail-head { background: linear-gradient(165deg, var(--green), var(--green-dark)); }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="4"] .kalos-gen-detail-head { background: linear-gradient(165deg, var(--blue), var(--blue-dark)); }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="5"] .kalos-gen-detail-head { background: linear-gradient(165deg, #5c6572, #262c36); }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="6"] .kalos-gen-detail-head { background: linear-gradient(135deg, #57bfe0, #c95a92); }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="7"] .kalos-gen-detail-head { background: linear-gradient(165deg, #ff9d4d, #b3540a); }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="8"] .kalos-gen-detail-head { background: linear-gradient(165deg, #8c5fe0, #4a3184); }
+.kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded[data-gen="9"] .kalos-gen-detail-head { background: linear-gradient(135deg, #d1487a, #7a3f9e); }
+/* The species list is styled as a page of a paper Pokédex: warm
+   parchment instead of the flat grey both areas fell back to, a fine
+   dot-grid "paper" texture, a dashed tear-perforation where it meets
+   the cover band above, and three ring-binder holes down the left
+   margin. Shiny mode's per-region map photo (see the background-image
+   rules above) still layers on top of this same background-size: cover
+   is re-affirmed on those rules so the map itself is never affected by
+   the tiled texture used here. */
 .kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded .dex-species-panel {
 	display: block;
-	border-top: 2.5px dashed var(--line);
-	padding: 14px 18px 18px;
-	background-size: cover;
+	position: relative;
+	border-top: 3px dashed rgba(43, 35, 32, 0.4);
+	padding: 16px 16px 18px 18px;
+	background-color: var(--bg-panel-raised);
+	background-image: radial-gradient(rgba(43, 35, 32, 0.09) 1px, transparent 1.4px);
+	background-repeat: repeat;
+	background-size: 14px 14px;
 	background-position: center;
-	background-repeat: no-repeat;
 	max-height: 65vh;
 	overflow-y: auto;
 }
