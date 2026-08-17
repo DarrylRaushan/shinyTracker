@@ -5487,6 +5487,7 @@ defsHtml +
 '<circle class="ring-fill" cx="50" cy="50" r="' + GEN_BADGE_RING_R + '" stroke-dasharray="' + GEN_BADGE_RING_CIRC.toFixed(1) + '" style="' + fillStyle + '"></circle>' +
 '</svg>' +
 '<div class="dex-gen-badge">' + badgeInner + '</div>' +
+'<div class="dex-gen-badge-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L19 8"/></svg></div>' +
 '</div>'
 );
 }
@@ -5604,7 +5605,11 @@ buildDexGenBadgeHtml(g, pct) +
 '<div class="region">' + escapeHtml(g.region) + '</div>' +
 '<div class="gen-label">Generation ' + g.gen + '</div>' +
 '</div>' +
+'<div class="dex-card-count-wrap">' +
 '<div class="dex-card-count">' + genCaught + ' / ' + g.species.length + '</div>' +
+(genCaught < g.species.length ? '<div class="dex-card-remaining">' + (g.species.length - genCaught) + ' left</div>' : '') +
+'</div>' +
+'<div class="dex-card-pct">' + pct + '%</div>' +
 '<div class="dex-chevron">▾</div>' +
 '</div>' +
 '<div class="dex-card-progress"><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div></div>' +
@@ -5651,8 +5656,14 @@ if (!gen) return;
 var genCaught = kalosGenCaughtCount(gen, caught);
 var pct = Math.round((genCaught / gen.species.length) * 100);
 if (tile.classList.contains('kalos-gen-tile-expanded')) {
-var countEl = tile.querySelector('.kalos-gen-detail-title .dex-card-count');
+var countEl = tile.querySelector('.kalos-gen-detail-progress-row .dex-card-count');
 if (countEl) countEl.textContent = genCaught + ' / ' + gen.species.length;
+var expandedFillEl = tile.querySelector('.kalos-gen-detail-progress-fill');
+if (expandedFillEl) expandedFillEl.style.width = pct + '%';
+var headRingFillEl = tile.querySelector('.kalos-gen-detail-head-row .dex-gen-badge-ring .ring-fill');
+if (headRingFillEl) headRingFillEl.style.strokeDashoffset = genBadgeRingOffset(pct);
+var headRingEl = tile.querySelector('.kalos-gen-detail-head-row .dex-gen-badge-ring');
+if (headRingEl) headRingEl.classList.toggle('is-complete', pct === 100);
 } else {
 var tileCountEl = tile.querySelector('.kalos-gen-tile-count');
 if (tileCountEl) tileCountEl.textContent = genCaught + ' / ' + gen.species.length;
@@ -5837,14 +5848,42 @@ gbaCompletion +
 dsCompletion
 );
 }
+// Compact chevron used by the expanded gen header's back button (see
+// buildKalosTileExpandedHtml below) - swapped in for the old "◀ Back"
+// text so the button can be a small round icon-only chip instead of a
+// text-label rectangle.
+var KALOS_GEN_BACK_ICON = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>';
 function buildKalosTileExpandedHtml(g, caught, genCaught) {
+var pct = g.species.length ? Math.round((genCaught / g.species.length) * 100) : 0;
 return (
 '<div class="dex-card-banner kalos-gen-detail-banner">' +
 '<div class="kalos-gen-detail-head">' +
-'<button type="button" class="kalos-gen-back" aria-label="Back to generations">◀&#xFE0E; Back</button>' +
+'<div class="kalos-gen-detail-head-row">' +
+'<button type="button" class="kalos-gen-back" aria-label="Back to generations">' + KALOS_GEN_BACK_ICON + '</button>' +
+// Badge + region/gen title are merged into one floating glass pill
+// (.kalos-gen-detail-info) instead of sitting on the old dark bar.
+// Same region-ball badge used on the desktop dex cards (see
+// buildDexGenBadgeHtml) - its completion ring is hidden in this
+// header via CSS, since the progress bar below already covers that.
+'<div class="kalos-gen-detail-info">' +
+buildDexGenBadgeHtml(g, pct) +
 '<div class="kalos-gen-detail-title">' +
-'<div class="region">' + escapeHtml(g.region) + '</div>' +
-'<div class="gen-label">Generation ' + g.gen + '</div>' +
+'<span class="kalos-gen-detail-title-row">' +
+'<span class="region">' + escapeHtml(g.region) + '</span>' +
+'</span>' +
+'<span class="gen-label">Gen ' + g.gen + '</span>' +
+'</div>' +
+'</div>' +
+'</div>' +
+// Progress bar: shimmering gradient fill, a pokeball marker riding
+// its leading edge, and a live percentage - a bit more expressive
+// than a flat static bar while still reading at a glance.
+'<div class="kalos-gen-detail-progress-row">' +
+'<div class="kalos-gen-detail-progress-track">' +
+'<div class="kalos-gen-detail-progress-fill" style="width:' + pct + '%"><span class="kalos-gen-detail-progress-glow" aria-hidden="true"></span></div>' +
+'<div class="kalos-gen-detail-progress-marker" style="left:' + pct + '%" aria-hidden="true"><span class="kalos-gen-detail-progress-marker-dot"></span></div>' +
+'</div>' +
+'<span class="kalos-gen-detail-progress-pct">' + pct + '%</span>' +
 '<div class="dex-card-count">' + genCaught + ' / ' + g.species.length + '</div>' +
 '</div>' +
 '</div>' +
@@ -6586,199 +6625,175 @@ kalosCarouselIndex = kalosGenIndexOf(kalosOpenGen);
 renderKalosMobileDex(kalosCurrentCaughtMap());
 }
 // ---------- swipe between open gen tiles ----------
-// While a gen tile is expanded, the grid holds it plus its immediate
-// prev/next neighbors (buildKalosNeighborPanes) as full-bleed scroll-snap
-// panes. Touches on the banner/header above the species panel are left
-// completely alone - plain native horizontal scrolling, same mechanism
-// as the collapsed peek carousel (initKalosCarousel), works fine there
-// since nothing else in that area wants the touch.
+// Earlier version of this scrolled a 3-pane rail (this tile + rendered
+// neighbor panes) and had to fight the chip panel's own vertical scroll
+// for the same touch gesture - two different attempts at splitting that
+// by axis both broke in practice. This version sidesteps the conflict
+// instead of solving it: the drag can only ever START on
+// .kalos-gen-detail-banner (the header strip), which has nothing else
+// competing for that touch, so there's no two-axis area to arbitrate.
+// A touch that starts lower, on the chip grid itself, is left completely
+// alone and keeps its normal vertical scrolling.
 //
-// The species panel itself is different: it's a genuinely two-axis area
-// now (vertical to scroll the chip list, horizontal to swipe gens), and
-// two earlier attempts at this both broke because *something native* was
-// still allowed to move its scroll position at the same time our own
-// code was also trying to: first the panel's own vertical auto-scroll
-// competing with our horizontal drag, then (once we locked the panel to
-// pan-y) the banner's native scroll racing our hand-driven scrollLeft
-// whenever a gesture crossed from one into the other.
-//
-// So the panel's touch-action is now `none` (see style.css) - the
-// browser does nothing on its own for touches starting there, full stop.
-// initKalosGenSwipe() below is the only thing moving anything for those
-// touches: it reads the first bit of movement to decide horizontal vs.
-// vertical, then drives either grid.scrollLeft (gen swipe) or the
-// panel's own scrollTop (chip list) by hand for the rest of that
-// gesture, with a little momentum on release for the vertical case since
-// touch-action: none also switches off the panel's native scroll
-// momentum/inertia.
-var kalosGenScrollSettleTimer = null;
-var kalosGenVelocityX = 0; // px/ms left behind by a manual horizontal drag's last move, consumed once by the very next settle
-function scheduleKalosGenScrollSettle() {
-if (!kalosOpenGen) return;
-if (kalosGenScrollSettleTimer) clearTimeout(kalosGenScrollSettleTimer);
-kalosGenScrollSettleTimer = setTimeout(settleKalosGenScroll, 90);
-}
-// Once the person stops scrolling, finds whichever open-gen pane should
-// end up centered and animates the rest of the way there with Motion,
-// then commits the gen switch (if any) once that slide has visibly
-// landed. Always plays the slide - even a release that's already very
-// close to its resting spot gets a quick eased finish - rather than
-// only stepping in on a "missed" snap, which is what made fast swipes
-// look like they just clipped straight to the next gen instead of
-// sliding into it.
-function settleKalosGenScroll() {
-var grid = document.getElementById('kalos-gen-grid');
-if (!grid || !kalosOpenGen) return;
-var panes = Array.prototype.filter.call(grid.children, function(t) {
-return !t.hidden;
-});
-if (panes.length < 2) return;
-var closest = null;
-// A fast flick commits to the neighbor in that direction even if the
-// finger only travelled a short distance - same "short flick still
-// counts" idea as the Active Hunts/Shiny Log tab swipe (COMMIT_VELOCITY
-// there). Without this, a quick flick that didn't get far would just
-// fall back to "nearest by position" below and slide backward to where
-// it started, which reads as ignoring the flick entirely.
-var COMMIT_VELOCITY = 0.5; // px/ms
-if (Math.abs(kalosGenVelocityX) > COMMIT_VELOCITY) {
-var openIdx = -1;
-panes.forEach(function(t, i) { if (t.dataset.gen === String(kalosOpenGen)) openIdx = i; });
-// Negative velocityX = finger moving left = scrollLeft increasing =
-// advancing to the neighbor further along in DOM order (next gen).
-if (kalosGenVelocityX < 0) closest = panes[openIdx + 1] || null;
-else closest = panes[openIdx - 1] || null;
-}
-kalosGenVelocityX = 0; // consumed - don't let it leak into an unrelated later settle
-if (!closest) {
-// No strong flick (or nothing that way to flick to) - fall back to
-// whichever pane is nearest the grid's center right now.
-var gridRect = grid.getBoundingClientRect();
-var center = gridRect.left + gridRect.width / 2;
-var closestDist = Infinity;
-panes.forEach(function(t) {
-var r = t.getBoundingClientRect();
-var dist = Math.abs((r.left + r.width / 2) - center);
-if (dist < closestDist) { closestDist = dist; closest = t; }
-});
-}
-if (!closest) return;
-var target = closest.offsetLeft - (grid.clientWidth - closest.clientWidth) / 2;
-var landedOnNeighbor = closest.dataset.gen !== String(kalosOpenGen);
-function commit() {
-if (landedOnNeighbor) finalizeKalosGenSwitch(closest.dataset.gen);
-}
-if (Math.abs(grid.scrollLeft - target) <= 1) {
-grid.scrollLeft = target;
-commit();
-} else if (window.Motion && window.Motion.animate) {
-window.Motion.animate(grid.scrollLeft, target, {
-duration: 0.32,
-ease: [0.65, 0, 0.35, 1],
-onUpdate: function(v) { grid.scrollLeft = v; }
-}).finished.then(commit);
-} else {
-rafTweenValue(grid.scrollLeft, target, 0.32, function(v) { grid.scrollLeft = v; }, commit);
-}
-}
+// The whole expanded tile (header + chip grid together) is dragged as
+// one unit via a transform - no scroll position is touched at all. Only
+// on release, once we know whether the drag committed to a neighbor gen
+// or should spring back, does anything about *content* change: a
+// committed drag slides the old tile out, swaps kalosOpenGen and
+// re-renders, and slides the fresh tile in from the matching side. A tap
+// (no real movement) is left for the existing banner click handler to
+// collapse the tile as before.
+var kalosGenSwipeIgnoreClickUntil = 0;
 function initKalosGenSwipe() {
 var grid = document.getElementById('kalos-gen-grid');
 if (!grid) return;
-// Expanded generations are fixed map panels, not a second carousel. Closed
-// generations still use initKalosCarousel() and retain their normal swipe.
-return;
-grid.addEventListener('scroll', scheduleKalosGenScrollSettle, { passive: true });
 
-var DIRECTION_THRESHOLD = 8; // px moved before we decide horizontal vs vertical
-var MOMENTUM_MULTIPLIER = 120; // projects release velocity (px/ms) into a fling distance
-var startX = 0, startY = 0, lastX = 0, lastY = 0, lastT = 0;
-var velocityX = 0, velocityY = 0; // px/ms, smoothed over the last couple of samples
-var startScrollLeft = 0, startScrollTop = 0;
-var panel = null; // the .dex-species-panel this gesture started on, if any
-var decided = false; // have we classified this gesture yet?
-var axis = null; // 'x' (gen swipe) or 'y' (chip list scroll) once decided
+var DRAG_THRESHOLD = 8; // px moved before we decide horizontal vs vertical
+var COMMIT_DISTANCE = 70; // px of drag that counts as a deliberate swipe
+var COMMIT_VELOCITY = 0.5; // px/ms - a fast short flick also commits
+
+var startX = 0, startY = 0, lastX = 0, lastT = 0, velocityX = 0;
+var tile = null, dragging = false, decided = false, dx = 0;
 
 function onStart(e) {
 if (!kalosOpenGen) return;
 if (e.touches.length !== 1) return;
-panel = e.target.closest('.dex-species-panel');
-if (!panel) return; // touch started on the banner/header - leave it to native scrolling
+var banner = e.target.closest('.kalos-gen-detail-banner');
+if (!banner) return; // gesture must start on the header, not the chip grid
+tile = banner.closest('.kalos-gen-tile-expanded');
+if (!tile) return;
 var t = e.touches[0];
 startX = lastX = t.clientX;
-startY = lastY = t.clientY;
+startY = t.clientY;
 lastT = e.timeStamp;
 velocityX = 0;
-velocityY = 0;
-startScrollLeft = grid.scrollLeft;
-startScrollTop = panel.scrollTop;
+dx = 0;
+dragging = false;
 decided = false;
-axis = null;
 }
 
 function onMove(e) {
-if (!panel) return;
+if (!tile) return;
 if (e.touches.length !== 1) return;
 var t = e.touches[0];
-var dx = t.clientX - startX;
-var dy = t.clientY - startY;
+var moveDx = t.clientX - startX;
+var moveDy = t.clientY - startY;
 if (!decided) {
-if (Math.abs(dx) < DIRECTION_THRESHOLD && Math.abs(dy) < DIRECTION_THRESHOLD) return;
+if (Math.abs(moveDx) < DRAG_THRESHOLD && Math.abs(moveDy) < DRAG_THRESHOLD) return;
 decided = true;
-axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+if (Math.abs(moveDy) > Math.abs(moveDx)) { tile = null; return; }
+dragging = true;
 }
-e.preventDefault(); // touch-action: none on the panel means nothing native to fight here
+if (!dragging) return;
+e.preventDefault();
+var idx = kalosGenIndexOf(kalosOpenGen);
+// Soft resistance at the ends (Kanto has no prev, the last gen has no next)
+if ((idx <= 0 && moveDx > 0) || (idx >= GEN_DATA.length - 1 && moveDx < 0)) {
+moveDx *= 0.35;
+}
+dx = moveDx;
 var dt = e.timeStamp - lastT;
-if (axis === 'x') {
-grid.scrollLeft = startScrollLeft - dx;
 if (dt > 0) velocityX = (t.clientX - lastX) / dt;
-} else {
-var maxScrollTop = Math.max(0, panel.scrollHeight - panel.clientHeight);
-panel.scrollTop = Math.max(0, Math.min(maxScrollTop, startScrollTop - dy));
-if (dt > 0) velocityY = (t.clientY - lastY) / dt;
-}
 lastX = t.clientX;
-lastY = t.clientY;
 lastT = e.timeStamp;
+tile.style.transform = 'translateX(' + dx + 'px)';
 }
 
-// Simple deceleration for the chip list's vertical fling, since
-// touch-action: none also switched off the panel's native scroll
-// momentum - without this, releasing mid-flick would just stop dead
-// instead of coasting the way native scrolling (and every other
-// scrollable area in the app) does.
-function flingPanel(p, velocity) {
-var maxScrollTop = Math.max(0, p.scrollHeight - p.clientHeight);
-var target = p.scrollTop - velocity * MOMENTUM_MULTIPLIER;
-target = Math.max(0, Math.min(maxScrollTop, target));
-if (Math.abs(target - p.scrollTop) < 4) return;
+function springBack(el, from) {
 if (window.Motion && window.Motion.animate) {
-window.Motion.animate(p.scrollTop, target, {
-duration: 0.5,
-ease: 'easeOut',
-onUpdate: function(v) { p.scrollTop = v; }
-});
+window.Motion.animate(el, { x: [from, 0] }, { type: 'spring', bounce: 0.15, duration: 0.35 })
+.finished.then(function() { el.style.transform = ''; });
 } else {
-rafTweenValue(p.scrollTop, target, 0.5, function(v) { p.scrollTop = v; });
+el.style.transition = 'transform 0.25s cubic-bezier(.65,0,.35,1)';
+el.style.transform = 'translateX(0)';
+el.addEventListener('transitionend', function onT(ev) {
+if (ev.target !== el) return;
+el.removeEventListener('transitionend', onT);
+el.style.transition = '';
+el.style.transform = '';
+});
+}
+}
+
+// Slides the current tile the rest of the way off-screen, then - only
+// once it's actually gone - swaps kalosOpenGen and re-renders, then
+// slides the fresh tile in from the matching side. Content never
+// changes until the outgoing tile has visibly left, matching how a tap
+// on Back only collapses after its own animation too.
+function commitSwipe(el, dir, fromX) {
+var offW = el.getBoundingClientRect().width || 320;
+var exitX = dir > 0 ? -offW : offW;
+function afterExit() {
+var newIdx = kalosGenIndexOf(kalosOpenGen) + dir;
+var g = GEN_DATA[newIdx];
+if (!g) return;
+kalosOpenGen = String(g.gen);
+kalosCarouselIndex = kalosGenIndexOf(kalosOpenGen);
+renderKalosMobileDex(kalosCurrentCaughtMap());
+var freshTile = grid.querySelector('.kalos-gen-tile-expanded[data-gen="' + kalosOpenGen + '"]');
+if (!freshTile) return;
+var enterX = -exitX;
+freshTile.style.transform = 'translateX(' + enterX + 'px)';
+requestAnimationFrame(function() {
+if (window.Motion && window.Motion.animate) {
+window.Motion.animate(freshTile, { x: [enterX, 0] }, { type: 'spring', bounce: 0, duration: 0.35 })
+.finished.then(function() { freshTile.style.transform = ''; });
+} else {
+freshTile.style.transition = 'transform 0.3s cubic-bezier(.65,0,.35,1)';
+freshTile.style.transform = 'translateX(0)';
+freshTile.addEventListener('transitionend', function onT(ev) {
+if (ev.target !== freshTile) return;
+freshTile.removeEventListener('transitionend', onT);
+freshTile.style.transition = '';
+freshTile.style.transform = '';
+});
+}
+});
+}
+if (window.Motion && window.Motion.animate) {
+window.Motion.animate(el, { x: [fromX, exitX], opacity: [1, 0.4] }, { duration: 0.2, ease: 'easeIn' })
+.finished.then(afterExit);
+} else {
+el.style.transition = 'transform 0.18s ease-in, opacity 0.18s ease-in';
+el.style.transform = 'translateX(' + exitX + 'px)';
+el.style.opacity = '0.4';
+setTimeout(afterExit, 190);
 }
 }
 
 function onEnd() {
-if (decided && axis === 'x') {
-kalosGenVelocityX = velocityX;
-if (kalosGenScrollSettleTimer) clearTimeout(kalosGenScrollSettleTimer);
-settleKalosGenScroll();
-} else if (decided && axis === 'y' && panel) {
-flingPanel(panel, velocityY);
+if (!tile) return;
+if (!dragging) { tile = null; return; } // plain tap - let the banner click handler collapse as usual
+var committedTile = tile, fromX = dx;
+var idx = kalosGenIndexOf(kalosOpenGen);
+var dir = 0;
+if (Math.abs(dx) > COMMIT_DISTANCE || Math.abs(velocityX) > COMMIT_VELOCITY) {
+dir = dx < 0 ? 1 : -1; // dragged left = advance to next gen
 }
-panel = null;
+var targetIdx = idx + dir;
+if (dir !== 0 && targetIdx >= 0 && targetIdx < GEN_DATA.length) {
+kalosGenSwipeIgnoreClickUntil = Date.now() + 400;
+commitSwipe(committedTile, dir, fromX);
+} else {
+kalosGenSwipeIgnoreClickUntil = Date.now() + 400;
+springBack(committedTile, fromX);
+}
+tile = null;
+dragging = false;
 decided = false;
-axis = null;
+}
+
+function onCancel() {
+if (tile && dragging) springBack(tile, dx);
+tile = null;
+dragging = false;
+decided = false;
 }
 
 grid.addEventListener('touchstart', onStart, { passive: true });
 grid.addEventListener('touchmove', onMove, { passive: false });
 grid.addEventListener('touchend', onEnd, { passive: true });
-grid.addEventListener('touchcancel', onEnd, { passive: true });
+grid.addEventListener('touchcancel', onCancel, { passive: true });
 }
 // Shared by both the desktop #dex-grid and mobile #kalos-gen-grid click
 // handlers below: flips one species chip's caught state, saves, and
@@ -6878,6 +6893,10 @@ return;
 // too and don't need their own separate handler.
 var banner = e.target.closest('.kalos-gen-detail-banner');
 if (banner) {
+if (Date.now() < kalosGenSwipeIgnoreClickUntil) {
+kalosGenSwipeIgnoreClickUntil = 0;
+return;
+}
 collapseKalosTile();
 return;
 }
@@ -7149,6 +7168,18 @@ totalSpecies += gen.species.length;
 var pct = Math.round((genCaught / gen.species.length) * 100);
 var countEl = card.querySelector('.dex-card-count');
 if (countEl) countEl.textContent = genCaught + ' / ' + gen.species.length;
+var pctEl = card.querySelector('.dex-card-pct');
+if (pctEl) pctEl.textContent = pct + '%';
+var remainingEl = card.querySelector('.dex-card-remaining');
+var remaining = gen.species.length - genCaught;
+if (remainingEl) {
+if (remaining > 0) {
+remainingEl.textContent = remaining + ' left';
+remainingEl.style.display = '';
+} else {
+remainingEl.style.display = 'none';
+}
+}
 var barEl = card.querySelector('.dex-card-progress .bar-fill');
 if (barEl) barEl.style.width = pct + '%';
 var ringFillEl = card.querySelector('.dex-gen-badge-ring .ring-fill');
@@ -8940,4 +8971,3 @@ container.appendChild(s);
 
 // Populate the interface from local state immediately. Cloud sync can return
 // an identical payload and intentionally skip its later render pass, so this
-// initial render is required for a valid saved tracker to appear on first load.
