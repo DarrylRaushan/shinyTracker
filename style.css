@@ -6957,11 +6957,28 @@ aspect-ratio: 0.9 / 1;
 height: auto;
 padding: 16px 7px 11px;
 border: 1px solid #a8afb1;
-border-radius: 7px 7px 10px 10px;
+border-radius: 7px 3px 12px 5px;
 background:
 linear-gradient(90deg, rgba(255,255,255,0.78), transparent 13% 87%, rgba(89,99,102,0.2)),
 linear-gradient(160deg, #f5f7f5 0%, #dce2df 60%, #bfc8c5 100%);
-clip-path: polygon(0 0, 100% 0, 100% 92%, 84% 100%, 15% 100%, 0 92%);
+/* Matches the real cart's silhouette more closely: sharp top-left,
+   a small chamfered notch top-right, a properly rounded bottom-right
+   corner (built from several line segments since clip-path can't
+   mix straight cuts with an arc directly), and a longer diagonal
+   chamfer at bottom-left. */
+clip-path: polygon(
+0% 0%,
+93% 0%,
+100% 7%,
+100% 85%,
+99% 90%,
+97% 94%,
+94% 97%,
+90% 99%,
+85% 100%,
+28% 100%,
+0% 82%
+);
 box-shadow:
 0 5px 0 #a4acab,
 0 10px 14px rgba(21,29,31,0.25),
@@ -7271,75 +7288,6 @@ inset: 14px 3px 12px;
 background: linear-gradient(180deg, transparent 42%, rgba(0,0,0,0.6) 100%);
 }
 .kalos-gen-tile[data-cart="ds"] .kalos-cart-product-code {
-bottom: 3px;
-}
-
-/* Nintendo 3DS: pale-grey case, square inlaid faceplate and the small lower
-   left keyway/side shoulder characteristic of Nintendo 3DS cards. */
-.kalos-gen-tile[data-cart="3ds"] {
-flex: 0 0 61%;
-aspect-ratio: 0.98 / 1;
-padding: 14px 7px 9px;
-border: 1px solid #b8c0c1;
-border-radius: 5px 5px 9px 9px;
-background:
-linear-gradient(90deg, rgba(255,255,255,0.8), transparent 11% 88%, rgba(102,112,114,0.18)),
-linear-gradient(180deg, #f4f6f4, #dfe5e2 62%, #ccd4d1);
-clip-path: none;
-box-shadow: 0 4px 0 #adb7b6, 0 9px 13px rgba(24,31,32,0.22), inset 1px 1px 0 rgba(255,255,255,0.92), inset -2px -2px 3px rgba(75,87,89,0.18);
-}
-.kalos-gen-tile[data-cart="3ds"]::before {
-content: "NINTENDO 3DS™";
-top: 15px;
-left: 10%;
-right: 10%;
-height: 11px;
-display: flex;
-align-items: center;
-justify-content: center;
-font-family: var(--body);
-font-size: clamp(4.8px, 1.55vw, 7px);
-font-weight: 900;
-letter-spacing: 0;
-color: #c22131;
-text-shadow: -28px 0 0 #2d3232, 0 1px 0 rgba(255,255,255,0.8);
-background: rgba(255,255,255,0.88);
-border-radius: 2px 2px 0 0;
-z-index: 4;
-}
-.kalos-gen-tile[data-cart="3ds"]::after {
-content: "";
-left: 10%;
-bottom: 3px;
-width: 20%;
-height: 5px;
-transform: none;
-background: #9da7a5;
-border-radius: 0 0 4px 4px;
-box-shadow: inset 0 1px 1px rgba(255,255,255,0.5);
-z-index: 4;
-}
-.kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker {
-width: 86%;
-height: 86%;
-margin-top: 0;
-padding: 13px 4px 13px;
-border: 1px solid #b4bcbb;
-border-radius: 3px 3px 5px 5px;
-background: #fbfbf8;
-box-shadow: inset 0 0 0 1px rgba(255,255,255,0.92), 0 1px 2px rgba(0,0,0,0.2);
-}
-.kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker.has-boxart .kalos-gen-tile-boxart {
-inset: 14px 3px 12px;
-width: calc(100% - 6px);
-height: calc(100% - 26px);
-object-fit: cover;
-}
-.kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker.has-boxart::after {
-inset: 14px 3px 12px;
-background: linear-gradient(180deg, transparent 38%, rgba(0,0,0,0.58) 100%);
-}
-.kalos-gen-tile[data-cart="3ds"] .kalos-cart-product-code {
 bottom: 3px;
 }
 
@@ -8178,6 +8126,108 @@ background: linear-gradient(135deg, var(--blue, #30adff), #1c6fb3);
 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 white-space: nowrap;
 }
+/* Completion star row - sits after the Gen tag and is pushed to the far
+   right of the (flex:1) title pill via margin-left:auto, filling the
+   space that otherwise sat empty next to "Gen N". Unfilled stars are
+   rendered hollow (no fill, thin stroke only) so they read as clearly
+   blank rather than just a dim copy of the filled ones. */
+/* Completion tier row - 5 gems always shown (mirrors the old star row's
+   layout/positioning), pushed to the far right of the (flex:1) title
+   pill via margin-left:auto. Unfilled gems are hollow outlines; each
+   lights up in its own tier color once that threshold is reached. */
+/* Completion tier row - forced onto its own full-width line under the
+   region title (flex-basis:100% inside the flex-wrap title container),
+   with the gems spread edge-to-edge via space-between instead of
+   clustered at one end. Sized up to actually fill that line, but kept
+   short enough that it doesn't add any extra height to the wrapped
+   line/header above/below it. */
+.dex-completion-tiers {
+display: flex;
+align-items: center;
+justify-content: space-between;
+flex-basis: 100%;
+width: 100%;
+}
+.dex-completion-tier {
+display: flex;
+align-items: center;
+justify-content: center;
+width: 17px;
+height: 17px;
+flex: 1;
+max-width: 22px;
+}
+.dex-completion-tier svg {
+width: 100%;
+height: 100%;
+fill: none;
+stroke: rgba(255, 255, 255, 0.55);
+stroke-width: 1.3px;
+stroke-linejoin: round;
+}
+.dex-completion-tier.is-filled svg {
+stroke: none;
+filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+}
+.dex-completion-tier-bronze svg { fill: #c97c3d; }
+.dex-completion-tier-silver svg { fill: #c9d3dc; }
+.dex-completion-tier-gold svg { fill: #ffd166; }
+.dex-completion-tier-platinum svg { fill: #b9c9c6; }
+.dex-completion-tier-diamond svg { fill: #7be0ef; }
+/* Badge-set regions (Kanto, Johto, ...) swap the generic 5-tier gem row
+   for their own real 8-badge row (see buildKantoBadgeRowHtml /
+   buildJohtoBadgeRowHtml in script.js). Each badge SVG carries its true
+   colors baked in - default/unreached state desaturates it to a grey
+   silhouette via CSS filter, reached badges just drop the filter to
+   reveal the real artwork. Shared generic class across regions so this
+   block only needs to exist once. Sized/spaced identically to
+   .dex-completion-tiers so swapping in doesn't shift layout. */
+.kalos-badge-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+flex-basis: 100%;
+width: 100%;
+}
+.kalos-badge {
+display: flex;
+align-items: center;
+justify-content: center;
+width: 17px;
+height: 17px;
+flex: 1;
+max-width: 22px;
+}
+.kalos-badge svg {
+width: 100%;
+height: 100%;
+filter: grayscale(1) brightness(0.6) opacity(0.55);
+transition: filter 0.4s ease;
+}
+.kalos-badge.is-filled svg {
+filter: none;
+}
+.kalos-badge.is-filled {
+filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+}
+/* Galar's single wheel badge (see buildGalarBadgeHtml in script.js) -
+   lives in the header pill as a sibling of .kalos-gen-detail-title,
+   margin-left: auto pushes it to the pill's far right edge, level with
+   the region name / Gen pill instead of sitting in a row below them. */
+.kalos-galar-badge {
+margin-left: auto;
+flex-shrink: 0;
+width: 30px;
+height: 30px;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.kalos-galar-badge svg {
+width: 100%;
+height: 100%;
+filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
 .kalos-gen-detail-head-spacer {
 display: none;
 }
@@ -8827,6 +8877,35 @@ transform-origin: 50% 65%;
 .dex-chip.dex-chip-stage-boost-mid .dex-chip-sprite img {
 transform: scale(2.6);
 transform-origin: 50% 65%;
+}
+/* Paldea-only sprite downsize: gen 9 sprites read noticeably larger than
+   the other gen boxes at the shared scale above, so this scopes a smaller
+   set of scale values to just .dex-card[data-gen="9"] without touching
+   any other generation's sprite sizing. */
+.dex-card[data-gen="9"] .dex-chip-sprite img {
+transform: scale(1.05);
+}
+.dex-card[data-gen="9"] .dex-chip.dex-chip-stage-boost .dex-chip-sprite img {
+transform: scale(1.32);
+transform-origin: 50% 65%;
+}
+.dex-card[data-gen="9"] .dex-chip.dex-chip-stage-boost-mid .dex-chip-sprite img {
+transform: scale(1.7);
+transform-origin: 50% 65%;
+}
+/* Final-evo only (3+-stage lines) bumped up a step past the shared basic
+   scale above - dex-chip-stage-boost-final is an additional class added
+   in script.js (applyEvoStageBoosts) only for final-stage species, layered
+   on top of dex-chip-stage-boost so basics keep the normal size. */
+.dex-card[data-gen="9"] .dex-chip.dex-chip-stage-boost-final .dex-chip-sprite img {
+transform: scale(2.1);
+transform-origin: 50% 65%;
+}
+/* Smaller Paldea sprites would otherwise float near the top of the box
+   (inherited flex-start alignment), leaving a gap above the name - anchor
+   them to the bottom of the sprite area instead, right above the name. */
+.dex-card[data-gen="9"] .dex-chip-sprite {
+align-items: flex-end;
 }
 .dex-chip-sprite .fallback-letter {
 font-family: var(--hud);
@@ -10493,6 +10572,19 @@ display: none;
   border: 1px solid #c1cbcd;
   border-radius: 3px 3px 0 7px;
   background: #ffffff;
+}
+/* Grid items default to an automatic minimum size based on their own
+   content (min-height: auto), which lets the nowrap brand/info-bar text
+   demand more than its 18% row share at small card sizes. Since the
+   label's total height is fixed (100% of the sticker) and clips overflow,
+   that extra demand doesn't grow the label - it silently pushes the last
+   row (product code) below the visible box instead. Zeroing the auto
+   minimum on every row forces each track to honor its percentage exactly,
+   so the clamp()'d font sizes actually get to shrink as designed instead
+   of the last row disappearing. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-label > * {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-inset-art {
