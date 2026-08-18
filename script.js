@@ -1647,7 +1647,7 @@ species: [
 ]
 }, {
 gen: 8,
-region: "Galar / Hisui",
+region: "Galar",
 species: [
 [810, "Grookey"],
 [811, "Thwackey"],
@@ -1883,7 +1883,7 @@ var REGION_BALLS = {
 "Unova": "ball_unova_quickball.png",
 "Kalos": "ball_kalos_timerball.png",
 "Alola": "ball_alola_beastball.png",
-"Galar / Hisui": "ball_galar_dynamaxball.png",
+"Galar": "ball_galar_dynamaxball.png",
 "Paldea": "ball_paldea_premierball.png"
 };
 var SPECIES_INFO = {
@@ -3052,7 +3052,11 @@ var staticFallback =
 (gen === 7) ? [base + 'sun-moon/shiny/' + slug + '.png', base + 'ultra-sun-ultra-moon/shiny/' + slug + '.png'] : [base + 'home/shiny/' + slug + '.png'];
 return animated.concat(staticFallback);
 }
-if (gen === 9) return [base + 'home/shiny/' + slug + '.png'];
+if (gen === 9) {
+var sdSlug9 = showdownSlug(name);
+var animated9 = sdSlug9 ? ['https://play.pokemonshowdown.com/sprites/ani-shiny/' + sdSlug9 + '.gif'] : [];
+return animated9.concat([base + 'home/shiny/' + slug + '.png']);
+}
 // gen 1-5, and unknown/undated Pokemon: try pokemondb's Black/White 2
 // animated shiny sprite first (the set requested), then Black/White,
 // then the static Black/White shiny. Showdown's "ani-shiny" set (which
@@ -3109,7 +3113,32 @@ if (!slug) return [];
 var pixelSlug = pokespriteSlug(name);
 var pixel = 'https://cdn.jsdelivr.net/gh/msikma/pokesprite@master/pokemon-gen8/' + (shiny ? 'shiny' : 'regular') + '/' + pixelSlug + '.png';
 var home = 'https://img.pokemondb.net/sprites/home/' + (shiny ? 'shiny' : 'normal') + '/' + slug + '.png';
-return [pixel, home];
+var sdSlug = showdownSlug(name);
+// PokeSprite's "pokemon-gen8" set predates Scarlet/Violet, so every
+// Paldean-dex species 404s on `pixel` above and used to fall straight
+// through to the big static 3D HOME render. Pokemon Showdown hosts its
+// own small Pokedex box-icon set (sprites/dex, sprites/dex-shiny) that
+// covers the whole dex including Gen 9 - same compact "box sprite"
+// look as the pixel set above, just not hand-drawn pixel art - so it's
+// slotted in here as a same-style second attempt before giving up and
+// falling back to the big 3D render.
+//
+// BUT: Showdown's "dex-shiny" folder isn't actually recolored for
+// newer species - its Gen 8/9 files are the same asset as the
+// non-shiny "dex" set (verified by matching file sizes on Showdown's
+// own sprite index), so including it as a shiny fallback was silently
+// showing normal colors on the Shiny Living Dex whenever the pixel
+// sprite 404'd (every Gen 9 species). Only used for the non-shiny
+// request, where it's accurate. When shiny is requested, skip straight
+// from the pixel attempt to Showdown's separate "home-shiny" set
+// (genuinely recolored, unlike dex-shiny) before the pokemondb HOME
+// fallback.
+if (shiny) {
+var showdownHomeShiny = sdSlug ? ['https://play.pokemonshowdown.com/sprites/home-shiny/' + sdSlug + '.png'] : [];
+return [pixel].concat(showdownHomeShiny, [home]);
+}
+var showdownBoxIcon = sdSlug ? ['https://play.pokemonshowdown.com/sprites/dex/' + sdSlug + '.png'] : [];
+return [pixel].concat(showdownBoxIcon, [home]);
 }
 // Live "evolves from" lookup via PokeAPI, used for the catch confirmation
 // card. This app doesn't carry a hand-built evolution chain table (that's
@@ -3413,6 +3442,7 @@ if (info.stage >= 1 && !info.isFinal) {
 chip.classList.add('dex-chip-stage-boost-mid'); // middle evo
 } else {
 chip.classList.add('dex-chip-stage-boost'); // basic, or 3+-stage final
+if (info.isFinal) chip.classList.add('dex-chip-stage-boost-final'); // final only, layered on top - lets CSS target finals without touching basics
 }
 });
 });
@@ -5853,6 +5883,294 @@ dsCompletion
 // text so the button can be a small round icon-only chip instead of a
 // text-label rectangle.
 var KALOS_GEN_BACK_ICON = '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>';
+// Single gem glyph reused for every completion tier pip below - only the
+// fill color changes, via CSS class per tier when reached; unfilled pips
+// render hollow (no fill, thin stroke) same treatment the star row used.
+// Named after mainline Pokémon version colors, fitting since Diamond -
+// the top tier - lands right on the Sinnoh box at 100%.
+var DEX_TIER_ICON_PATH = 'M12 2 4.5 9l2 4.5L12 22l5.5-8.5 2-4.5z';
+var DEX_TIERS_ASC = [
+{ min: 25, key: 'bronze', label: 'Bronze' },
+{ min: 50, key: 'silver', label: 'Silver' },
+{ min: 75, key: 'gold', label: 'Gold' },
+{ min: 90, key: 'platinum', label: 'Platinum' },
+{ min: 100, key: 'diamond', label: 'Diamond' }
+];
+// Completion tier row: all 5 tier gems always shown (like the old star
+// row), each lighting up in its own color once that threshold is
+// reached - shown next to the Gen tag in the mobile Kalos header (see
+// buildKalosTileExpandedHtml).
+// The 8 real Kanto gym badges, shown as a fixed 8-slot row on Kanto's
+// expanded gen header instead of the generic tier-gem row. Colors are
+// baked directly into each SVG (not swapped via CSS class) since badges
+// like Rainbow and Earth are multi-color themselves - the "unreached"
+// grey silhouette look comes purely from a CSS grayscale filter
+// (.kalos-badge svg, see style.css), dropped once earned.
+var KANTO_BADGES_ASC = [
+{ min: 13, key: 'boulder', label: 'Boulder Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 20,8 17.5,20 6.5,20 4,8" fill="#7d8492"/><polygon points="12,2 20,8 12,12" fill="#9aa1ad"/><polygon points="12,12 20,8 17.5,20 12,20" fill="#5f6672"/></svg>' },
+{ min: 25, key: 'cascade', label: 'Cascade Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2C12 2 5.5 11 5.5 15.5A6.5 6.5 0 0 0 18.5 15.5C18.5 11 12 2 12 2Z" fill="#4fb3e8"/><ellipse cx="9.5" cy="14" rx="2" ry="3" fill="#a8e0fb" opacity="0.8"/></svg>' },
+{ min: 38, key: 'thunder', label: 'Thunder Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 18,5 21,12 18,19 12,22 6,19 3,12 6,5" fill="#f2a93c"/><polygon points="12,2 18,5 12,12 6,5" fill="#f7c46a"/><polygon points="12,12 18,5 21,12 18,19 12,22 6,19 3,12" fill="#d98a1e"/></svg>' },
+{ min: 50, key: 'rainbow', label: 'Rainbow Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><ellipse cx="12" cy="6" rx="3.2" ry="4.5" fill="#e85c4a"/><ellipse cx="12" cy="6" rx="3.2" ry="4.5" fill="#f0923c" transform="rotate(60 12 12)"/><ellipse cx="12" cy="6" rx="3.2" ry="4.5" fill="#f5d949" transform="rotate(120 12 12)"/><ellipse cx="12" cy="6" rx="3.2" ry="4.5" fill="#6cc067" transform="rotate(180 12 12)"/><ellipse cx="12" cy="6" rx="3.2" ry="4.5" fill="#4fa7e0" transform="rotate(240 12 12)"/><ellipse cx="12" cy="6" rx="3.2" ry="4.5" fill="#a875d1" transform="rotate(300 12 12)"/><circle cx="12" cy="12" r="3" fill="#fdf6e3" stroke="#d9a520" stroke-width="0.6"/></svg>' },
+{ min: 63, key: 'soul', label: 'Soul Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.5 3.5 12.5C1 10.2 1.3 6.3 4.2 4.5C6.4 3.1 9.3 3.6 11 5.6L12 6.8L13 5.6C14.7 3.6 17.6 3.1 19.8 4.5C22.7 6.3 23 10.2 20.5 12.5Z" fill="#f27fae" stroke="#d15a8c" stroke-width="0.6"/></svg>' },
+{ min: 75, key: 'marsh', label: 'Marsh Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#f4c430"/><circle cx="12" cy="12" r="10" fill="none" stroke="#d9a520" stroke-width="1.4"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#fff3c4" stroke-width="1"/></svg>' },
+{ min: 88, key: 'volcano', label: 'Volcano Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2C9 6 6 9.5 6 14A6 6 0 0 0 18 14C18 11 16.5 9.5 15.5 8C15.7 10 14.5 11 13.5 10.5C14.5 7 12 4 12 2Z" fill="#e8482c"/><path d="M12 21A4 4 0 0 1 8 17C8 15.3 9 14 10 13.3C10 14.8 11 15.5 12 15C11.8 13.3 13 12 13 12C14.2 13 16 14.8 16 17A4 4 0 0 1 12 21Z" fill="#f2a93c"/></svg>' },
+{ min: 100, key: 'earth', label: 'Earth Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 12C12 12 12 4 6 4C6 10 9 12 12 12Z" fill="#4a9e52"/><path d="M12 12C12 12 12 4 18 4C18 10 15 12 12 12Z" fill="#5cb464"/><path d="M12 12C12 12 12 20 6 20C6 14 9 12 12 12Z" fill="#3d8544"/><path d="M12 12C12 12 12 20 18 20C18 14 15 12 12 12Z" fill="#4a9e52"/><circle cx="12" cy="12" r="1.6" fill="#2f6a35"/></svg>' }
+];
+// Kanto's row equivalent of buildDexCompletionTierRowHtml: fixed 8
+// badge slots, always all shown, each one revealed (filter removed)
+// once its 1/8th completion threshold is reached.
+function buildKantoBadgeRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < KANTO_BADGES_ASC.length; i++) {
+var badge = KANTO_BADGES_ASC[i];
+var reached = pct >= badge.min;
+iconsHtml += '<span class="kalos-badge' + (reached ? ' is-filled' : '') + '" title="' + badge.label + '">' + badge.svg + '</span>';
+}
+return '<span class="kalos-badge-row" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
+// The 8 real Johto gym badges, same fixed-8-slot treatment as Kanto's
+// row above - see the comment on KANTO_BADGES_ASC for how the
+// grey-silhouette / revealed states work.
+var JOHTO_BADGES_ASC = [
+{ min: 13, key: 'zephyr', label: 'Zephyr Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 20,7 20,17 12,22 4,17 4,7" fill="#cbd0d6"/><polygon points="12,2 20,7 12,12 4,7" fill="#e8ecef"/><polygon points="12,12 20,7 20,17 12,22" fill="#9aa1ab"/></svg>' },
+{ min: 25, key: 'hive', label: 'Hive Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="13" r="9" fill="#d94a3a"/><line x1="12" y1="4.5" x2="12" y2="21.5" stroke="#1a1a1a" stroke-width="1.2"/><circle cx="8.5" cy="10" r="1.4" fill="#1a1a1a"/><circle cx="8" cy="15.5" r="1.4" fill="#1a1a1a"/><circle cx="15.5" cy="10" r="1.4" fill="#1a1a1a"/><circle cx="16" cy="15.5" r="1.4" fill="#1a1a1a"/><circle cx="12" cy="5.3" r="2.3" fill="#1a1a1a"/></svg>' },
+{ min: 38, key: 'plain', label: 'Plain Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 22,12 12,22 2,12" fill="#f2d33c"/><polygon points="12,2 22,12 12,12" fill="#f7e26a"/><polygon points="12,12 22,12 12,22 2,12" fill="#d9b81e"/></svg>' },
+{ min: 50, key: 'fog', label: 'Fog Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#3f5fa8"/><path d="M12 5C10 8 8 9 8 12C8 14.2 9.8 16 12 16C13.1 16 14 15.1 14 14C14 12.9 13.1 12 12 12C11.4 12 11 12.4 11 13" fill="none" stroke="#e8ecf5" stroke-width="1.6" stroke-linecap="round"/><path d="M12 19L12 16" stroke="#e8ecf5" stroke-width="1.6" stroke-linecap="round"/><path d="M9 8L7 6" stroke="#e8ecf5" stroke-width="1.4" stroke-linecap="round"/><path d="M15 8L17 6" stroke="#e8ecf5" stroke-width="1.4" stroke-linecap="round"/></svg>' },
+{ min: 63, key: 'storm', label: 'Storm Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 21,9 17.5,20 6.5,20 3,9" fill="#c98a3d"/><polygon points="12,2 21,9 12,12" fill="#e0a85e"/><polygon points="12,12 21,9 17.5,20 12,20" fill="#a5691f"/><circle cx="12" cy="14" r="2" fill="#4a2e0f"/></svg>' },
+{ min: 75, key: 'mineral', label: 'Mineral Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="8,2 16,2 22,8 22,16 16,22 8,22 2,16 2,8" fill="#b7bcc4"/><polygon points="8,2 16,2 22,8 12,12" fill="#dfe2e6"/><polygon points="12,12 22,8 22,16 16,22 8,22 2,16" fill="#8b909a"/></svg>' },
+{ min: 88, key: 'glacier', label: 'Glacier Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 20,7 20,17 12,22 4,17 4,7" fill="#6fc3ec"/><g stroke="#eaf8ff" stroke-width="1.3" stroke-linecap="round"><line x1="12" y1="6" x2="12" y2="18"/><line x1="7" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="7" y2="15"/></g></svg>' },
+{ min: 100, key: 'rising', label: 'Rising Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 14,10 22,10 15.5,14.5 18,22 12,17.2 6,22 8.5,14.5 2,10 10,10" fill="#8a1f1f"/><circle cx="12" cy="12" r="3.2" fill="#1a1a1a"/></svg>' }
+];
+function buildJohtoBadgeRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < JOHTO_BADGES_ASC.length; i++) {
+var badge = JOHTO_BADGES_ASC[i];
+var reached = pct >= badge.min;
+iconsHtml += '<span class="kalos-badge' + (reached ? ' is-filled' : '') + '" title="' + badge.label + '">' + badge.svg + '</span>';
+}
+return '<span class="kalos-badge-row" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
+// The 8 real Hoenn gym badges, same fixed-8-slot treatment as Kanto's
+// and Johto's rows above.
+var HOENN_BADGES_ASC = [
+{ min: 13, key: 'stone', label: 'Stone Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="4,10 10,4 16,8 20,14 14,20 8,16" fill="#d9822b"/><polygon points="4,10 10,4 10,12" fill="#e8a855"/><polygon points="10,4 16,8 10,12" fill="#c46f1e"/><polygon points="10,12 16,8 20,14 14,20 8,16" fill="#a85f1e"/></svg>' },
+{ min: 25, key: 'knuckle', label: 'Knuckle Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="9" width="12" height="8" rx="2" fill="#4a7fd1"/><rect x="3" y="9" width="12" height="3" rx="1.5" fill="#7fa8ea"/><circle cx="17" cy="13" r="5" fill="#e8a83c"/><circle cx="17" cy="13" r="2.2" fill="#f5cf7a"/></svg>' },
+{ min: 38, key: 'dynamo', label: 'Dynamo Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#3f8a48"/><circle cx="12" cy="12" r="7" fill="#5cb464"/><circle cx="12" cy="12" r="4" fill="#3f8a48"/><circle cx="12" cy="12" r="1.8" fill="#eaf5ea"/></svg>' },
+{ min: 50, key: 'heat', label: 'Heat Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2C11 6 14 7 16 6C15 9 18 10 20 8C19 13 15 16 11 15C7 14 5 10 7 6C8 8 9 6 9 4C9.5 3 10.5 2 12 2Z" fill="#e8622c"/><path d="M10 22C7 20 6 17 8 14C9 16 11 17 12 15C13 17 15 16 16 14C17 17 15 20 12 22C11.3 22.3 10.7 22.3 10 22Z" fill="#f2923c"/></svg>' },
+{ min: 63, key: 'balance', label: 'Balance Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="9" y="10.5" width="7" height="2.5" rx="1.2" fill="#7a6c98" transform="rotate(-25 12.5 11.75)"/><circle cx="7" cy="13" r="5" fill="#8a7ca8"/><circle cx="17" cy="9" r="5" fill="#6a5c88"/><circle cx="7" cy="13" r="2" fill="#cfc4e0"/><circle cx="17" cy="9" r="2" fill="#b7a8d1"/></svg>' },
+{ min: 75, key: 'feather', label: 'Feather Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 20C4 20 5 8 12 4C19 8 20 20 20 20C16 17 13 17 12 20C11 17 8 17 4 20Z" fill="#7fb8e8"/><path d="M12 4C12 4 12 14 12 20" stroke="#eaf4fc" stroke-width="1" opacity="0.6"/></svg>' },
+{ min: 88, key: 'mind', label: 'Mind Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 20.5 3.5 12.5C1 10.2 1.3 6.3 4.2 4.5C6.4 3.1 9.3 3.6 11 5.6L12 6.8L13 5.6C14.7 3.6 17.6 3.1 19.8 4.5C22.7 6.3 23 10.2 20.5 12.5Z" fill="#f2789c"/><circle cx="12" cy="10" r="2.6" fill="#f2b23c"/></svg>' },
+{ min: 100, key: 'rain', label: 'Rain Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="8,4 14,16 2,16" fill="#4fa7e0"/><polygon points="16,8 21,18 11,18" fill="#a8d8f5"/><circle cx="6" cy="13" r="1" fill="#eaf6fd"/></svg>' }
+];
+function buildHoennBadgeRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < HOENN_BADGES_ASC.length; i++) {
+var badge = HOENN_BADGES_ASC[i];
+var reached = pct >= badge.min;
+iconsHtml += '<span class="kalos-badge' + (reached ? ' is-filled' : '') + '" title="' + badge.label + '">' + badge.svg + '</span>';
+}
+return '<span class="kalos-badge-row" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
+// The 8 real Sinnoh gym badges, same fixed-8-slot treatment as the
+// rows above.
+var SINNOH_BADGES_ASC = [
+{ min: 13, key: 'coal', label: 'Coal Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="7,3 17,3 22,12 17,21 7,21 2,12" fill="#5a6672"/><polygon points="7,3 17,3 22,12 12,12" fill="#7a8794"/><polygon points="12,12 22,12 17,21 7,21 2,12" fill="#414b56"/><polygon points="9,9 15,9 17,12 15,15 9,15 7,12" fill="#2e353d"/></svg>' },
+{ min: 25, key: 'forest', label: 'Forest Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,3 20,20 15,20 12,13 9,20 4,20" fill="#5cb85c"/><polygon points="12,3 16,12 12,10 8,12" fill="#8fd47f"/></svg>' },
+{ min: 38, key: 'cobble', label: 'Cobble Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 22,12 12,22 2,12" fill="#e8a13c"/><rect x="7" y="7" width="4" height="4" fill="#f5c778"/><rect x="13" y="7" width="4" height="4" fill="#d98a1e"/><rect x="7" y="13" width="4" height="4" fill="#d98a1e"/><rect x="13" y="13" width="4" height="4" fill="#f5c778"/></svg>' },
+{ min: 50, key: 'fen', label: 'Fen Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#2ea6a6"/><path d="M2 12A10 10 0 0 0 22 12" fill="#1c7373"/><path d="M4 12C6 10 8 14 10 12C12 10 14 14 16 12C18 10 20 14 22 12" stroke="#bfeaea" stroke-width="1" fill="none" opacity="0.5"/></svg>' },
+{ min: 63, key: 'relic', label: 'Relic Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="12" y1="12" x2="6" y2="6" stroke="#5a4a8a" stroke-width="2"/><line x1="12" y1="12" x2="18" y2="6" stroke="#5a4a8a" stroke-width="2"/><line x1="12" y1="12" x2="12" y2="19" stroke="#5a4a8a" stroke-width="2"/><circle cx="6" cy="6" r="3.4" fill="#7a5cc4"/><circle cx="18" cy="6" r="3.4" fill="#7a5cc4"/><circle cx="12" cy="19" r="3.4" fill="#7a5cc4"/><circle cx="12" cy="12" r="2.2" fill="#5a4a8a"/></svg>' },
+{ min: 75, key: 'mine', label: 'Mine Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 22,9 22,15 12,22 2,15 2,9" fill="#c26a3c"/><polygon points="12,2 22,9 12,13 2,9" fill="#e0885a"/><polygon points="12,13 22,9 22,15 12,22" fill="#a5522a"/><polygon points="12,13 2,9 2,15 12,22" fill="#8f4522"/></svg>' },
+{ min: 88, key: 'icicle', label: 'Icicle Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="2,20 6,10 9,15 12,6 15,15 18,10 22,20" fill="#6fc3ec"/><polygon points="12,6 15,15 12,13 9,15" fill="#bfe8fb"/></svg>' },
+{ min: 100, key: 'beacon', label: 'Beacon Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8" r="6" fill="#e8a83c"/><circle cx="12" cy="8" r="2.6" fill="#5a4a3a"/><polygon points="12,14 20,21 4,21" fill="#4a4038"/></svg>' }
+];
+function buildSinnohBadgeRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < SINNOH_BADGES_ASC.length; i++) {
+var badge = SINNOH_BADGES_ASC[i];
+var reached = pct >= badge.min;
+iconsHtml += '<span class="kalos-badge' + (reached ? ' is-filled' : '') + '" title="' + badge.label + '">' + badge.svg + '</span>';
+}
+return '<span class="kalos-badge-row" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
+// The 8 real Unova gym badges, same fixed-8-slot treatment as the
+// rows above.
+var UNOVA_BADGES_ASC = [
+{ min: 13, key: 'trio', label: 'Trio Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 20,12 12,23 4,12" fill="#c9a227"/><polygon points="12,4 17,12 12,20 7,12" fill="#8a6e14"/><circle cx="12" cy="8" r="2.2" fill="#4fa7e0"/><circle cx="12" cy="12.3" r="2.2" fill="#e0568a"/><circle cx="12" cy="16.6" r="2.2" fill="#5cb85c"/></svg>' },
+{ min: 25, key: 'basic', label: 'Basic Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="4" y="1" width="16" height="22" rx="2" fill="#c9a227"/><rect x="7" y="4" width="10" height="16" fill="#5a2740"/><rect x="7" y="4" width="10" height="3" fill="#7a3a58"/><rect x="7" y="10" width="10" height="1.5" fill="#c9a227"/><rect x="7" y="14.5" width="10" height="1.5" fill="#c9a227"/></svg>' },
+{ min: 38, key: 'insect', label: 'Insect Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2C18 4 20 10 16 16C14 19 12 22 12 22C12 22 10 19 8 16C4 10 6 4 12 2Z" fill="#c9a227"/><path d="M12 5C16 6.5 17 10.5 14.5 14.5C13.5 16.2 12 18 12 18C12 18 10.5 16.2 9.5 14.5C7 10.5 8 6.5 12 5Z" fill="#8fd47f"/><path d="M12 5C12 5 12 12 12 18" stroke="#5cb85c" stroke-width="1" opacity="0.6"/></svg>' },
+{ min: 50, key: 'bolt', label: 'Bolt Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="14,1 5,13 10,13 8,23 19,10 13,10" fill="#c9a227"/><polygon points="13,4 7,13 11,13 9.5,19 17,10 12.5,10" fill="#f5c23c"/><polygon points="13,4 9.5,10.5 12.5,10.5" fill="#f2793c"/></svg>' },
+{ min: 63, key: 'quake', label: 'Quake Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8 23V8A4 4 0 0 1 16 8V23Z" fill="#c9a227"/><path d="M9.5 23V8A2.5 2.5 0 0 1 14.5 8V23Z" fill="#7a4a2a"/><circle cx="12" cy="16" r="2" fill="#5cb85c"/></svg>' },
+{ min: 75, key: 'jet', label: 'Jet Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 1C15 3 17 8 16 13C15 18 12 22 12 22L11 15C10 10 9 5 12 1Z" fill="#c9a227"/><path d="M12 4C14 6 15 9.5 14 13C13.3 16 12 19 12 19L11.3 14C10.6 10.5 10.3 7 12 4Z" fill="#3fb8c9"/><path d="M8 15L12 12L11 17L7 19Z" fill="#3fb8c9"/></svg>' },
+{ min: 88, key: 'freeze', label: 'Freeze Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 20,14 15,14 15,23 9,23 9,14 4,14" fill="#c9a227"/><polygon points="12,5 17,14 13.5,14 13.5,20 10.5,20 10.5,14 7,14" fill="#dfeefc"/><polygon points="12,5 15,12 12,10.5 9,12" fill="#6fc3ec"/></svg>' },
+{ min: 100, key: 'legend', label: 'Legend Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 15,9 23,9 16.5,14 19,22 12,17 5,22 7.5,14 1,9 9,9" fill="#c9a227"/><polygon points="12,5 14,10.5 20,10.5 15,14 17,20 12,16.5 7,20 9,14 4,10.5 10,10.5" fill="#2b2b2b"/><circle cx="12" cy="12" r="2.3" fill="#c0392b"/></svg>' }
+];
+function buildUnovaBadgeRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < UNOVA_BADGES_ASC.length; i++) {
+var badge = UNOVA_BADGES_ASC[i];
+var reached = pct >= badge.min;
+iconsHtml += '<span class="kalos-badge' + (reached ? ' is-filled' : '') + '" title="' + badge.label + '">' + badge.svg + '</span>';
+}
+return '<span class="kalos-badge-row" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
+// The 8 real Kalos gym badges, same fixed-8-slot treatment as the rows
+// above. (Note: unrelated to the "kalos-badge"/"buildKalosTile..."
+// naming used throughout this file for the tile-grid system itself -
+// that naming predates this region-specific badge row and just means
+// "the expandable region tile", not the Kalos region.)
+var KALOS_BADGES_ASC = [
+{ min: 13, key: 'bug', label: 'Bug Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><ellipse cx="12" cy="14" rx="7" ry="8" fill="#8a5a4a"/><path d="M12 3C9 3 7 5 7 7L9 9C10 7.5 11 7 12 7C13 7 14 7.5 15 9L17 7C17 5 15 3 12 3Z" fill="#5a4a3a"/><ellipse cx="9" cy="7" rx="2" ry="1.4" fill="#6a8a3a"/><ellipse cx="15" cy="7" rx="2" ry="1.4" fill="#6a8a3a"/><ellipse cx="9" cy="13" rx="2.2" ry="4" fill="#5a3a2a"/><ellipse cx="15" cy="13" rx="2.2" ry="4" fill="#5a3a2a"/><line x1="12" y1="8" x2="12" y2="21" stroke="#5a3a2a" stroke-width="1"/></svg>' },
+{ min: 25, key: 'cliff', label: 'Cliff Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="12" y="2" width="7" height="7" fill="#9aa1ab"/><rect x="9" y="7" width="7" height="7" fill="#6a4a34"/><rect x="6" y="12" width="7" height="7" fill="#8a6a4a"/><rect x="3" y="17" width="7" height="5" fill="#5a3a24"/></svg>' },
+{ min: 38, key: 'rumble', label: 'Rumble Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="3,4 15,4 15,10 9,10 9,14 3,14" fill="#9aa1ab"/><polygon points="10,8 22,8 22,17 18,20 10,20" fill="#e03c3c"/><path d="M13 11L13 17L16 14Z" fill="#e8b23c"/><rect x="18.5" y="10" width="1.4" height="6" fill="#f5d778"/><rect x="20.3" y="10" width="1.4" height="6" fill="#f5d778"/></svg>' },
+{ min: 50, key: 'plant', label: 'Plant Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2C18 6 20 12 12 22C4 12 6 6 12 2Z" fill="#2e8a6a"/><path d="M12 4C16.5 7 18 12 12 19C6 12 7.5 7 12 4Z" fill="#1c6b4f"/><path d="M12 10V17M12 10C11 9 9.5 8.5 8.5 9M12 10C13 9 14.5 8.5 15.5 9M12 12C11 11.5 10 11.5 9.5 12" stroke="#c9a227" stroke-width="0.8" fill="none"/><circle cx="15.5" cy="9.5" r="1.3" fill="#a8d8f5"/></svg>' },
+{ min: 63, key: 'voltage', label: 'Voltage Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,2 18,10 14,10 20,20 8,12 12,12" fill="#e8b23c"/><polygon points="12,2 6,10 10,10 4,20 16,12 12,12" fill="#c9922a"/><polygon points="9,10 15,10 12,15" fill="#f5d778"/></svg>' },
+{ min: 75, key: 'fairy', label: 'Fairy Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M2 16C2 16 6 9 12 9C18 9 22 16 22 16C18 14 15 14 12 17C9 14 6 14 2 16Z" fill="#e8b23c"/><path d="M4 15C4 15 7 10.5 12 10.5C17 10.5 20 15 20 15C17 13.5 15 13.5 12 16C9 13.5 7 13.5 4 15Z" fill="#f5c2d9"/><circle cx="12" cy="12.5" r="1.4" fill="#fff" opacity="0.8"/></svg>' },
+{ min: 88, key: 'psychic', label: 'Psychic Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 8C6 4 10 2 13 4C16 6 14 10 11 9C9 8.3 10 6 12 6.5C14 7 13 10 10 10C6 10 4 15 8 18C11 20.3 16 19 17 15" fill="none" stroke="#e8b23c" stroke-width="2.4" stroke-linecap="round"/><circle cx="6" cy="8" r="2" fill="#7a4a9a"/><circle cx="17" cy="15" r="2" fill="#7a4a9a"/><circle cx="8" cy="18" r="1.6" fill="#9a6ac4"/></svg>' },
+{ min: 100, key: 'iceberg', label: 'Iceberg Badge', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="8,2 16,2 22,12 16,22 8,22 2,12" fill="#e8b23c"/><polygon points="9,4 15,4 20,12 15,20 9,20 4,12" fill="#eaf4e0"/><polygon points="12,9 15,15 9,15" fill="#4a7ab8"/><polygon points="12,9 13.5,12 10.5,12" fill="#8fc3ea"/></svg>' }
+];
+function buildKalosBadgeRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < KALOS_BADGES_ASC.length; i++) {
+var badge = KALOS_BADGES_ASC[i];
+var reached = pct >= badge.min;
+iconsHtml += '<span class="kalos-badge' + (reached ? ' is-filled' : '') + '" title="' + badge.label + '">' + badge.svg + '</span>';
+}
+return '<span class="kalos-badge-row" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
+// Galar doesn't get its own 8-slot badge row like the other regions -
+// its 8 gym badges are shown as one circular wheel of pie wedges
+// (matching the real in-game emblem), placed up in the header pill
+// instead of the diamond tier row below the title (see the g.region
+// === 'Galar' branches in buildKalosTileExpandedHtml, which both
+// suppress the row and inject this wheel). Wedge order runs clockwise
+// from the top, following the actual Sword/Shield gym order: Milo
+// (Grass), Nessa (Water), Kabu (Fire), Allister (Ghost), Opal (Fairy),
+// Gordie (Rock), Piers (Dark), Raihan (Dragon). Each wedge is grey
+// until its 1/8th completion threshold is reached, then flips to its
+// real type color - computed directly here (not via a CSS filter like
+// the other regions' badges) since all 8 wedges live in one shared SVG.
+var GALAR_WEDGES_ASC = [
+{ min: 13, key: 'grass', label: 'Grass Badge (Milo)', color: '#4a9e48' },
+{ min: 25, key: 'water', label: 'Water Badge (Nessa)', color: '#3aa0c9' },
+{ min: 38, key: 'fire', label: 'Fire Badge (Kabu)', color: '#e8622c' },
+{ min: 50, key: 'ghost', label: 'Ghost Badge (Allister)', color: '#7a5cc4' },
+{ min: 63, key: 'fairy', label: 'Fairy Badge (Opal)', color: '#e88ab0' },
+{ min: 75, key: 'rock', label: 'Rock Badge (Gordie)', color: '#9aa1ab' },
+{ min: 88, key: 'dark', label: 'Dark Badge (Piers)', color: '#201f28' },
+{ min: 100, key: 'dragon', label: 'Dragon Badge (Raihan)', color: '#2a3a7a' }
+];
+// Precomputed 45-degree wedge arcs around center (16,16) radius 14,
+// starting at 12 o'clock and sweeping clockwise - index N is the Nth
+// gym in GALAR_WEDGES_ASC. Each edge bows out via a quadratic curve
+// (same rotational direction on every edge) instead of a straight
+// radial line, so neighboring wedges nest into each other like the
+// real badge case's puzzle-piece wheel instead of reading as a flat
+// pie-chart fill. Adjacent wedges share the exact same curve (just
+// walked in opposite directions), so they still tile perfectly.
+var GALAR_WEDGE_PATHS = [
+'M16,16 Q17.8,8 16,2 A14,14 0 0,1 25.899,6.101 Q22.93,11.616 16,16 Z',
+'M16,16 Q22.93,11.616 25.899,6.101 A14,14 0 0,1 30,16 Q24,17.8 16,16 Z',
+'M16,16 Q24,17.8 30,16 A14,14 0 0,1 25.899,25.899 Q20.384,22.93 16,16 Z',
+'M16,16 Q20.384,22.93 25.899,25.899 A14,14 0 0,1 16,30 Q14.2,24 16,16 Z',
+'M16,16 Q14.2,24 16,30 A14,14 0 0,1 6.101,25.899 Q9.07,20.384 16,16 Z',
+'M16,16 Q9.07,20.384 6.101,25.899 A14,14 0 0,1 2,16 Q8,14.2 16,16 Z',
+'M16,16 Q8,14.2 2,16 A14,14 0 0,1 6.101,6.101 Q11.616,9.07 16,16 Z',
+'M16,16 Q11.616,9.07 6.101,6.101 A14,14 0 0,1 16,2 Q17.8,8 16,16 Z'
+];
+// One small glyph per wedge (grass/water/fire/ghost/fairy/rock/dark/
+// dragon, same order as GALAR_WEDGES_ASC), authored in a local -3..3
+// box centered on its own origin. {f}/{a} are swapped for the actual
+// fill/accent color at render time so the same markup can serve both
+// the "earned" (bright) and "not yet earned" (dim) look.
+var GALAR_WEDGE_ICONS = [
+'<path d="M0,-2.6 C1.7,-1.6 1.9,0.7 0,2.6 C-1.9,0.7 -1.7,-1.6 0,-2.6 Z" fill="{f}"/><path d="M0,-1.8 L0,2.2" stroke="{a}" stroke-width="0.35" fill="none"/>',
+'<path d="M0,-2.8 C1.7,-0.9 1.6,1.1 0,2.6 C-1.6,1.1 -1.7,-0.9 0,-2.8 Z" fill="{f}"/>',
+'<path d="M0,-2.8 C1.4,-1.2 1.7,0.4 0.8,1.5 C1.2,0.7 0.7,0.1 0.3,0.5 C0.2,1.3 -0.4,1.7 -0.9,1.1 C-1.6,0.2 -1.3,-1.2 0,-2.8 Z" fill="{f}"/>',
+'<path d="M-1.9,-1 C-1.9,-2.6 1.9,-2.6 1.9,-1 L1.9,1.6 C1.5,0.9 1,1.6 0.6,0.9 C0.2,1.6 -0.2,1.6 -0.6,0.9 C-1,1.6 -1.5,0.9 -1.9,1.6 Z" fill="{f}"/><circle cx="-0.7" cy="-0.9" r="0.35" fill="{a}"/><circle cx="0.7" cy="-0.9" r="0.35" fill="{a}"/>',
+'<path d="M0,-0.6 C-0.9,-2.4 -2.6,-1.6 -2.6,0.1 C-2.6,1.6 -1,2.2 0,3 C1,2.2 2.6,1.6 2.6,0.1 C2.6,-1.6 0.9,-2.4 0,-0.6 Z" fill="{f}"/>',
+'<path d="M-2.2,1.8 L-0.6,-1.4 L0.4,0.2 L1.1,-2.4 L2.4,1.8 Z" fill="{f}"/>',
+'<path d="M1.3,-2.5 A2.6,2.6 0 1 0 1.3,2.5 A2,2 0 1 1 1.3,-2.5 Z" fill="{f}"/>',
+'<path d="M-2.4,1.8 C-2,0 -1.1,-2.2 0,-1.2 C1.1,-2.2 2,0 2.4,1.8 C1.2,0.6 0.6,0.6 0,1.6 C-0.6,0.6 -1.2,0.6 -2.4,1.8 Z" fill="{f}"/>'
+];
+// Where each wedge's icon gets translated to (its centroid), same
+// index order as GALAR_WEDGE_PATHS/GALAR_WEDGE_ICONS.
+var GALAR_WEDGE_ICON_POS = [
+{ x: 19.061, y: 8.609 }, { x: 23.391, y: 12.939 }, { x: 23.391, y: 19.061 }, { x: 19.061, y: 23.391 },
+{ x: 12.939, y: 23.391 }, { x: 8.609, y: 19.061 }, { x: 8.609, y: 12.939 }, { x: 12.939, y: 8.609 }
+];
+function buildGalarBadgeHtml(pct) {
+var wedgesHtml = '';
+for (var i = 0; i < GALAR_WEDGES_ASC.length; i++) {
+var w = GALAR_WEDGES_ASC[i];
+var reached = pct >= w.min;
+var fill = reached ? w.color : '#6b6b66';
+var iconFill = reached ? '#ffffff' : 'rgba(255,255,255,0.28)';
+var iconAccent = reached ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.15)';
+var iconSvg = GALAR_WEDGE_ICONS[i].split('{f}').join(iconFill).split('{a}').join(iconAccent);
+var pos = GALAR_WEDGE_ICON_POS[i];
+wedgesHtml += '<path d="' + GALAR_WEDGE_PATHS[i] + '" fill="' + fill + '" stroke="#8a6e14" stroke-width="0.6"><title>' + w.label + '</title></path>' +
+'<g transform="translate(' + pos.x + ',' + pos.y + ')" opacity="' + (reached ? '0.95' : '0.5') + '" pointer-events="none">' + iconSvg + '</g>';
+}
+return '<span class="kalos-galar-badge" role="img" aria-label="Galar badge completion ' + pct + ' percent"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' + wedgesHtml + '<circle cx="16" cy="16" r="15.2" fill="none" stroke="#c9a227" stroke-width="1.6"/><circle cx="16" cy="16" r="4" fill="#c9a227" stroke="#8a6e14" stroke-width="0.6"/></svg></span>';
+}
+// Alola has no gym badges - trial captains and kahunas take their
+// place - so this row uses 8 Z-Crystals instead, picked and ordered to
+// roughly track the real trial/kahuna sequence: Ilima (Normal), Hala
+// (Fighting), Lana (Water), Kiawe (Fire), Mallow (Grass), Olivia
+// (Rock), Sophocles (Electric), Acerola (Ghost). Same fixed-8-slot
+// treatment as the badge rows above.
+var ALOLA_BADGES_ASC = [
+{ min: 13, key: 'normalium', label: 'Normalium Z', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 6,12 12,23" fill="#b8b8ae"/><polygon points="12,1 18,12 12,23" fill="#7a7a70"/><polygon points="12,1 18,12 12,23 6,12" fill="none" stroke="#f5eeda" stroke-width="1.1" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#4a4a42" stroke-width="1.2"/><circle cx="12" cy="12" r="1.1" fill="#4a4a42"/></svg>' },
+{ min: 25, key: 'fightinium', label: 'Fightinium Z', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 6,12 12,23" fill="#e8a852"/><polygon points="12,1 18,12 12,23" fill="#a8681e"/><polygon points="12,1 18,12 12,23 6,12" fill="none" stroke="#f5eeda" stroke-width="1.1" stroke-linejoin="round"/><circle cx="12" cy="11" r="3" fill="#5a3a14"/><rect x="10" y="13" width="4" height="3" rx="1" fill="#5a3a14"/></svg>' },
+{ min: 38, key: 'waterium', label: 'Waterium Z', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 6,12 12,23" fill="#5fcbea"/><polygon points="12,1 18,12 12,23" fill="#2a7a9c"/><polygon points="12,1 18,12 12,23 6,12" fill="none" stroke="#f5eeda" stroke-width="1.1" stroke-linejoin="round"/><path d="M12 8C12 8 9 12 9 14A3 3 0 0 0 15 14C15 12 12 8 12 8Z" fill="#0f4a5e"/></svg>' },
+{ min: 50, key: 'firium', label: 'Firium Z', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 6,12 12,23" fill="#f06f5a"/><polygon points="12,1 18,12 12,23" fill="#a52e1c"/><polygon points="12,1 18,12 12,23 6,12" fill="none" stroke="#f5eeda" stroke-width="1.1" stroke-linejoin="round"/><path d="M12 8C10 10 9.5 12 11 13.5C10 12 11 10.5 12.5 11C11.5 12.5 13 14 14.5 12.5C15.5 11 14 9.5 12 8Z" fill="#5c150a"/></svg>' },
+{ min: 63, key: 'grassium', label: 'Grassium Z', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 6,12 12,23" fill="#7fd479"/><polygon points="12,1 18,12 12,23" fill="#357a34"/><polygon points="12,1 18,12 12,23 6,12" fill="none" stroke="#f5eeda" stroke-width="1.1" stroke-linejoin="round"/><path d="M12 8C15 9 16 12 13.5 14.5C11 17 8 16 8 13C8 10 10 8.5 12 8Z" fill="#1e4a1e"/></svg>' },
+{ min: 75, key: 'rockium', label: 'Rockium Z', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 6,12 12,23" fill="#bcae8c"/><polygon points="12,1 18,12 12,23" fill="#6a5a3e"/><polygon points="12,1 18,12 12,23 6,12" fill="none" stroke="#f5eeda" stroke-width="1.1" stroke-linejoin="round"/><polygon points="9,9 13,8 15,11 13,14 9,13" fill="#3e3424"/></svg>' },
+{ min: 88, key: 'electriam', label: 'Electriam Z', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 6,12 12,23" fill="#f0e05a"/><polygon points="12,1 18,12 12,23" fill="#a89818"/><polygon points="12,1 18,12 12,23 6,12" fill="none" stroke="#f5eeda" stroke-width="1.1" stroke-linejoin="round"/><polygon points="13,7 9,13 11.5,13 10.5,17 15,11 12.5,11" fill="#4a3e0a"/></svg>' },
+{ min: 100, key: 'ghostium', label: 'Ghostium Z', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polygon points="12,1 6,12 12,23" fill="#d29fde"/><polygon points="12,1 18,12 12,23" fill="#86489c"/><polygon points="12,1 18,12 12,23 6,12" fill="none" stroke="#f5eeda" stroke-width="1.1" stroke-linejoin="round"/><path d="M12 8A4 4 0 1 1 8.5 13.5" fill="none" stroke="#3e1e4a" stroke-width="1.4" stroke-linecap="round"/><circle cx="8.5" cy="13.5" r="1" fill="#3e1e4a"/></svg>' }
+];
+function buildAlolaBadgeRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < ALOLA_BADGES_ASC.length; i++) {
+var badge = ALOLA_BADGES_ASC[i];
+var reached = pct >= badge.min;
+iconsHtml += '<span class="kalos-badge' + (reached ? ' is-filled' : '') + '" title="' + badge.label + '">' + badge.svg + '</span>';
+}
+return '<span class="kalos-badge-row" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
+// The 8 real Paldea gym badges, same fixed-8-slot grey-silhouette /
+// revealed treatment as the rows above. Ascending order follows the
+// game's actual gym route: Bug (Katy), Grass (Brassius), Electric
+// (Iono), Water (Kofu), Normal (Larry), Ghost (Ryme), Psychic (Tulip),
+// Ice (Grusha).
+var PALDEA_BADGES_ASC = [
+{ min: 13, key: 'bug', label: 'Bug Badge (Katy)', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#7c8a1e"/><path d="M12,4 C16.5,4 19,7.5 19,11.5 C19,16 15.5,19.5 12,20.5 C8.5,19.5 5,16 5,11.5 C5,7.5 7.5,4 12,4 Z" fill="#A8B820"/><line x1="12" y1="4" x2="12" y2="20.5" stroke="#7c8a1e" stroke-width="1.1"/><ellipse cx="9" cy="10" rx="1.3" ry="1.8" fill="#7c8a1e"/><ellipse cx="15" cy="10" rx="1.3" ry="1.8" fill="#7c8a1e"/></svg>' },
+{ min: 25, key: 'grass', label: 'Grass Badge (Brassius)', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#eef1e6"/><path d="M9,20 C8,13 9,7 11,3 C12,8 12,14 11,20 Z" fill="#78C850"/><path d="M12,20 C11.5,12 13,6 16,2.5 C16,9 15,15 13.5,20 Z" fill="#5aa83c"/><path d="M9,20 C6,15 5,10 6.5,5 C8.5,10 9,15 9,20 Z" fill="#8fd66a"/></svg>' },
+{ min: 38, key: 'electric', label: 'Electric Badge (Iono)', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#eef1e6"/><polygon points="13,3 6,13.5 11,13.5 9.5,21 18,10 12.5,10" fill="#F8D030"/><polygon points="13,3 9.5,11.5 12.5,11.5" fill="#fdeb9a"/></svg>' },
+{ min: 50, key: 'water', label: 'Water Badge (Kofu)', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#eef1e6"/><path d="M12,3 C16,8.5 18.5,12.4 18.5,15.3 C18.5,19 15.6,21.5 12,21.5 C8.4,21.5 5.5,19 5.5,15.3 C5.5,12.4 8,8.5 12,3 Z" fill="#6890F0"/><path d="M12,3 C15,7 17,10.2 17.7,12.8 C15.6,12 13.6,12.6 12.6,14.3 C11.6,16 12.1,17.9 13.6,19 C13.1,19.2 12.6,19.3 12,19.3 C9,19.3 7,17.1 7,14.3 C7,11.6 9,8.2 12,3 Z" fill="#89a9f5" opacity="0.55"/></svg>' },
+{ min: 63, key: 'normal', label: 'Normal Badge (Larry)', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#eef1e6"/><polygon points="12,3.5 19,7.75 19,16.25 12,20.5 5,16.25 5,7.75" fill="#4fd6cf" stroke="#2fada6" stroke-width="1"/><polygon points="12,10.4 13.6,12 12,13.6 10.4,12" fill="#eef1e6"/><polygon points="12,5.7 13.3,7 12,8.3 10.7,7" fill="#eef1e6"/><polygon points="17,10.7 18.3,12 17,13.3 15.7,12" fill="#eef1e6"/><polygon points="12,15.7 13.3,17 12,18.3 10.7,17" fill="#eef1e6"/><polygon points="7,10.7 8.3,12 7,13.3 5.7,12" fill="#eef1e6"/></svg>' },
+{ min: 75, key: 'ghost', label: 'Ghost Badge (Ryme)', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#eef1e6"/><path d="M6,19 L6,11 C6,6.5 8.7,3.5 12,3.5 C15.3,3.5 18,6.5 18,11 L18,19 C17,17.7 16,19.3 15,18 C14,16.7 13,19.3 12,18 C11,16.7 10,19.3 9,18 C8,16.7 7,17.7 6,19 Z" fill="#705898"/><circle cx="9.3" cy="10.5" r="1.5" fill="#eef1e6"/><circle cx="14.7" cy="10.5" r="1.5" fill="#eef1e6"/></svg>' },
+{ min: 88, key: 'psychic', label: 'Psychic Badge (Tulip)', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#eef1e6"/><polygon points="12,4 13.7,9.06 18.93,8 15.4,12 18.93,16 13.7,14.94 12,20 10.3,14.94 5.07,16 8.6,12 5.07,8 10.3,9.06" fill="#F85888"/><circle cx="12" cy="12" r="2" fill="#fdd7e4"/></svg>' },
+{ min: 100, key: 'ice', label: 'Ice Badge (Grusha)', svg: '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#eef1e6"/><circle cx="12" cy="12" r="7.6" fill="none" stroke="#b9c6cc" stroke-width="2.8"/><circle cx="12" cy="12" r="7.6" fill="none" stroke="#98D8D8" stroke-width="1.1"/></svg>' }
+];
+function buildPaldeaBadgeRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < PALDEA_BADGES_ASC.length; i++) {
+var badge = PALDEA_BADGES_ASC[i];
+var reached = pct >= badge.min;
+iconsHtml += '<span class="kalos-badge' + (reached ? ' is-filled' : '') + '" title="' + badge.label + '">' + badge.svg + '</span>';
+}
+return '<span class="kalos-badge-row" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
+function buildDexCompletionTierRowHtml(pct) {
+var iconsHtml = '';
+for (var i = 0; i < DEX_TIERS_ASC.length; i++) {
+var tier = DEX_TIERS_ASC[i];
+var reached = pct >= tier.min;
+iconsHtml += '<span class="dex-completion-tier' + (reached ? ' is-filled dex-completion-tier-' + tier.key : '') + '" title="' + tier.label + ' tier"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + DEX_TIER_ICON_PATH + '"/></svg></span>';
+}
+return '<span class="dex-completion-tiers" role="img" aria-label="Completion ' + pct + ' percent">' + iconsHtml + '</span>';
+}
 function buildKalosTileExpandedHtml(g, caught, genCaught) {
 var pct = g.species.length ? Math.round((genCaught / g.species.length) * 100) : 0;
 return (
@@ -5869,10 +6187,16 @@ return (
 buildDexGenBadgeHtml(g, pct) +
 '<div class="kalos-gen-detail-title">' +
 '<span class="kalos-gen-detail-title-row">' +
-'<span class="region">' + escapeHtml(g.region) + '</span>' +
+'<span class="region">' + escapeHtml(g.region === 'Sinnoh' ? 'Sinnoh / Hisui' : g.region) + '</span>' +
 '</span>' +
 '<span class="gen-label">Gen ' + g.gen + '</span>' +
+(g.region === 'Kanto' ? buildKantoBadgeRowHtml(pct) : g.region === 'Johto' ? buildJohtoBadgeRowHtml(pct) : g.region === 'Hoenn' ? buildHoennBadgeRowHtml(pct) : g.region === 'Sinnoh' ? buildSinnohBadgeRowHtml(pct) : g.region === 'Unova' ? buildUnovaBadgeRowHtml(pct) : g.region === 'Kalos' ? buildKalosBadgeRowHtml(pct) : g.region === 'Alola' ? buildAlolaBadgeRowHtml(pct) : g.region === 'Paldea' ? buildPaldeaBadgeRowHtml(pct) : g.region === 'Galar' ? '' : buildDexCompletionTierRowHtml(pct)) +
 '</div>' +
+// Galar has no per-region badge row (see buildGalarBadgeHtml above) -
+// its single wheel badge sits here instead, as a sibling of the title
+// block so margin-left: auto (see .kalos-galar-badge in style.css) can
+// push it to the far right of the header pill, level with the title.
+(g.region === 'Galar' ? buildGalarBadgeHtml(pct) : '') +
 '</div>' +
 '</div>' +
 // Progress bar: shimmering gradient fill, a pokeball marker riding
@@ -7964,12 +8288,12 @@ charmChk.checked = !!prefs.shinyCharm;
 function syncSelectVisual(select, visual) {
 visual.textContent = select.value;
 }
-// Game field gets its own sync: box-art thumbnail(s) from
-// gameBoxArtMarkup() alongside the text, instead of plain text.
+// Game field gets its own sync function (kept distinct from
+// syncSelectVisual in case the two diverge again later), but no longer
+// shows box-art thumbnails on the Start Hunt modal - just the plain
+// text value, same as the Method field.
 function syncGameSelectVisual(select, visual) {
-visual.innerHTML =
-'<span class="hunt-radar-game-visual-icons">' + gameBoxArtMarkup(select.value) + '</span>' +
-'<span class="hunt-radar-game-visual-text">' + escapeHtml(select.value) + '</span>';
+visual.textContent = select.value;
 }
 syncGameSelectVisual(gameSel, gameVisual);
 syncSelectVisual(methodSel, methodVisual);
@@ -8970,4 +9294,3 @@ container.appendChild(s);
 
 
 // Populate the interface from local state immediately. Cloud sync can return
-// an identical payload and intentionally skip its later render pass, so this
