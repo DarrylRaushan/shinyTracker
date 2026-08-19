@@ -6697,15 +6697,37 @@ flex: 0 0 auto;
 display: flex;
 align-items: center;
 justify-content: center;
-gap: 4px;
+gap: 5px;
 background: #E60012;
-padding: 4px 5px;
+padding: 4px 8px;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-icon-box {
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+background: transparent;
+border-radius: 3px;
+padding: 0;
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text {
+display: flex;
+flex-direction: column;
+line-height: 1;
+min-width: 0;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text-top {
 font-family: var(--body);
-font-weight: 800;
-font-size: 6px;
-letter-spacing: 0.3px;
+font-weight: 600;
+letter-spacing: 0.15px;
+text-transform: uppercase;
+color: #fff;
+white-space: nowrap;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text-bottom {
+font-family: var(--body);
+font-weight: 900;
+letter-spacing: 0.15px;
 text-transform: uppercase;
 color: #fff;
 white-space: nowrap;
@@ -6716,6 +6738,8 @@ white-space: nowrap;
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-art {
 position: relative;
 flex: 1 1 auto;
+align-self: stretch;
+width: 100%;
 display: flex;
 flex-direction: column;
 align-items: center;
@@ -6961,24 +6985,11 @@ border-radius: 7px 3px 12px 5px;
 background:
 linear-gradient(90deg, rgba(255,255,255,0.78), transparent 13% 87%, rgba(89,99,102,0.2)),
 linear-gradient(160deg, #f5f7f5 0%, #dce2df 60%, #bfc8c5 100%);
-/* Matches the real cart's silhouette more closely: sharp top-left,
-   a small chamfered notch top-right, a properly rounded bottom-right
-   corner (built from several line segments since clip-path can't
-   mix straight cuts with an arc directly), and a longer diagonal
-   chamfer at bottom-left. */
-clip-path: polygon(
-0% 0%,
-93% 0%,
-100% 7%,
-100% 85%,
-99% 90%,
-97% 94%,
-94% 97%,
-90% 99%,
-85% 100%,
-28% 100%,
-0% 82%
-);
+/* Plain rounded-rect shell - the old clip-path chamfer silhouette
+   (several straight line segments faking an arc, plus a long diagonal
+   bottom-left chamfer) rendered as random-looking jagged cuts at this
+   tile's small carousel size, so it's dropped in favor of the same
+   clean border-radius corners the opened/cartridge 3DS shell uses. */
 box-shadow:
 0 5px 0 #a4acab,
 0 10px 14px rgba(21,29,31,0.25),
@@ -7084,18 +7095,20 @@ border-radius: 3px 3px 6px 6px;
 box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 1px 2px rgba(0,0,0,0.45);
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-header {
-gap: 3px;
-padding: 3px 3px;
+gap: 2px;
+padding: 3px 6px;
 background: linear-gradient(90deg, #e60012, #ff3040);
 box-shadow: inset 0 -1px 0 rgba(0,0,0,0.25);
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-header-icon {
-width: 10px;
-height: 10px;
+width: 13px;
+height: 13px;
 }
-.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text {
-font-size: clamp(4px, 1.35vw, 5.5px);
-letter-spacing: 0.16px;
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text-top {
+font-size: clamp(4.5px, 1.5vw, 5.8px);
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text-bottom {
+font-size: clamp(7px, 2.3vw, 9px);
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-art {
 padding: 5px 4px 13px;
@@ -7294,51 +7307,75 @@ bottom: 3px;
 /* Nintendo Switch: compact rounded dark card, wide white label, red branded
    top band and black lower product-code strip — directly echoing the reference. */
 .kalos-gen-tile[data-cart="switch"] {
-flex: 0 0 49%;
-aspect-ratio: 0.8 / 1;
-padding: 5px 5px 7px;
-border: 2px solid #2b2d2f;
-border-radius: 13px 13px 11px 11px;
+flex: 0 0 46%;
+aspect-ratio: 0.74 / 1;
+padding: 8px 5px 10px;
+border: 2px solid #16181a !important;
+border-radius: 13px;
 background:
-linear-gradient(90deg, rgba(255,255,255,0.16), transparent 12% 88%, rgba(0,0,0,0.38)),
-linear-gradient(160deg, #4b4e51, #26282a 52%, #1d1f20);
+linear-gradient(90deg, rgba(255,255,255,0.16), transparent 10% 88%, rgba(0,0,0,0.38)),
+linear-gradient(160deg, #444446 0%, #242527 32%, #171719 100%) !important;
 clip-path: none;
-box-shadow: 0 4px 0 #1a1c1d, 0 9px 12px rgba(0,0,0,0.35), inset 1px 1px 0 rgba(255,255,255,0.16), inset -2px -2px 4px rgba(0,0,0,0.45);
+box-shadow: 0 4px 0 #111214, 0 9px 12px rgba(0,0,0,0.4), inset 1px 1px 0 rgba(255,255,255,0.16), inset -2px -2px 4px rgba(0,0,0,0.5);
 }
+/* Real Switch cartridges have a small pull tab centered on the TOP edge
+   (for popping the card out of the console), not the bottom - previous
+   version had a bottom trapezoid notch reminiscent of a DS/GBA cart. */
 .kalos-gen-tile[data-cart="switch"]::before {
 content: "";
-top: auto;
+top: 2px;
 left: 50%;
-bottom: 2px;
+bottom: auto;
 right: auto;
-width: 22px;
-height: 6px;
+width: 33.333%;
+height: 8px;
 transform: translateX(-50%);
-background: #111314;
-clip-path: polygon(0 0, 100% 0, 68% 100%, 32% 100%);
-box-shadow: none;
-z-index: 3;
+background: #1b1c1e;
+border: none;
+border-radius: 2px;
+clip-path: none;
+box-shadow: inset 0 2px 3px rgba(0,0,0,0.65), inset 0 -1px 0 rgba(255,255,255,0.08), 0 1px 0 rgba(255,255,255,0.06);
+z-index: 0;
 }
+/* Lower connector notch - a downward-pointing triangle tab, matching the
+   DS cartridge's bottom keyway shape. */
 .kalos-gen-tile[data-cart="switch"]::after {
-content: none;
+content: "";
+position: absolute;
+left: 50%;
+bottom: -3px;
+top: auto;
+right: auto;
+width: 18px;
+height: 10px;
+transform: translateX(-50%);
+background: #000;
+border-radius: 0;
+box-shadow: none;
+clip-path: polygon(50% 100%, 0 0, 100% 0);
+z-index: 1;
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-gen-tile-sticker {
-width: 86%;
+width: 100%;
 height: 88%;
 margin-top: 0;
 border: 2px solid #1a1b1c;
-border-radius: 5px 5px 3px 3px;
+border-radius: 8px 8px 6px 6px;
 background: #f8f8f6;
+overflow: hidden;
 box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6), 0 1px 2px rgba(0,0,0,0.45);
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-header {
-min-height: 21%;
-padding: 3px 3px;
+min-height: 27%;
+margin-top: 0;
+padding: 5px 6px 3px;
 background: #e60012;
+width: 100%;
+box-sizing: border-box;
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-header-icon {
-width: 11px;
-height: 11px;
+width: 19px;
+height: 19px;
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-header-text {
 font-size: clamp(4.4px, 1.45vw, 6px);
@@ -7347,6 +7384,23 @@ letter-spacing: 0.1px;
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-art {
 padding: 4px 3px 13px;
 background: linear-gradient(180deg, #ffffff 0%, #f7f7f5 100%);
+}
+/* Box-art mode: the white art band becomes a full-bleed photo (see
+   GEN_BOX_ART/switchBoxArt in script.js) instead of holding the region
+   badge/name + rating chip - same idea as the GBA/DS/3DS has-boxart
+   sticker, just scoped to this one band instead of the whole face. */
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-art.has-boxart {
+padding: 0;
+gap: 0;
+background: #000;
+overflow: hidden;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-boxart {
+position: absolute;
+inset: 0;
+width: 100%;
+height: 100%;
+object-fit: cover;
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-region {
 font-size: clamp(5.5px, 1.75vw, 7.5px);
@@ -7363,9 +7417,12 @@ width: 11px;
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-footer {
 min-height: 13%;
-font-size: clamp(3.6px, 1.1vw, 4.6px);
+font-size: clamp(5.2px, 1.6vw, 6.4px);
 letter-spacing: 0.26px;
 padding: 2px 1px;
+width: 100%;
+box-sizing: border-box;
+margin-bottom: 0;
 }
 
 /* GBA proportion correction -------------------------------------------------------
@@ -8699,93 +8756,19 @@ width: 0;
 .dex-card.expanded .dex-species-panel {
 display: block;
 }
-.dex-grid.shiny-mode .dex-card[data-gen="1"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="1"] .dex-species-panel {
-background-image: url("images/dex-regions/gen1-kanto.webp");
-background-size: cover;
-}
-.dex-grid.shiny-mode .dex-card[data-gen="2"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="2"] .dex-species-panel {
-background-image: url("images/dex-regions/gen2-johto.jpg");
-background-size: cover;
-}
-.dex-grid.shiny-mode .dex-card[data-gen="3"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="3"] .dex-species-panel {
-background-image: url("images/dex-regions/gen3-hoenn.jpg");
-background-size: cover;
-}
-.dex-grid.shiny-mode .dex-card[data-gen="4"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="4"] .dex-species-panel {
-background-image: url("images/dex-regions/gen4-sinnoh.jpg");
-background-size: cover;
-}
-.dex-grid.shiny-mode .dex-card[data-gen="5"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="5"] .dex-species-panel {
-background-image: url("images/dex-regions/gen5-unova.jpg");
-background-size: cover;
-}
-.dex-grid.shiny-mode .dex-card[data-gen="6"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="6"] .dex-species-panel {
-background-image: url("images/dex-regions/gen6-kalos.jpg");
-background-size: cover;
-}
-.dex-grid.shiny-mode .dex-card[data-gen="7"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="7"] .dex-species-panel {
-background-image: url("images/dex-regions/gen7-alola.jpg");
-background-size: cover;
-}
-.dex-grid.shiny-mode .dex-card[data-gen="8"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="8"] .dex-species-panel {
-background-image: url("images/dex-regions/gen8-galar.jpg");
-background-size: cover;
-}
-.dex-grid.shiny-mode .dex-card[data-gen="9"] .dex-species-panel,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="9"] .dex-species-panel {
-background-image: url("images/dex-regions/gen9-paldea.jpg");
-background-size: cover;
-}
+/* Shiny mode's per-region species-panel photo backgrounds were removed
+   here - Shiny Living Dex now falls back to the same plain parchment
+   background (see the data-open-presentation="region-map" rule further
+   down) that normal Living Dex already uses, instead of a distinct
+   per-gen map photo. */
 /* CSS-11: minmax(0,1fr) instead of a bare 1fr - grid tracks otherwise — full rationale in NOTES.md */
 .dex-species-grid {
 display: grid;
 grid-template-columns: repeat(6, minmax(0, 1fr));
 gap: 8px;
 }
-.dex-grid.shiny-mode .dex-card[data-gen="1"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="1"] .dex-card-banner {
-background-image: url("images/dex-banners/gen1-kantobanner.jpg");
-}
-.dex-grid.shiny-mode .dex-card[data-gen="2"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="2"] .dex-card-banner {
-background-image: url("images/dex-banners/gen2-johto.jpg");
-}
-.dex-grid.shiny-mode .dex-card[data-gen="3"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="3"] .dex-card-banner {
-background-image: url("images/dex-banners/gen3-hoennbanner.jpg");
-}
-.dex-grid.shiny-mode .dex-card[data-gen="4"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="4"] .dex-card-banner {
-background-image: url("images/dex-banners/gen4-sinnoh.jpg");
-}
-.dex-grid.shiny-mode .dex-card[data-gen="5"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="5"] .dex-card-banner {
-background-image: url("images/dex-banners/gen5-unova.jpg");
-}
-.dex-grid.shiny-mode .dex-card[data-gen="6"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="6"] .dex-card-banner {
-background-image: url("images/dex-banners/gen6-kalos.jpg");
-}
-.dex-grid.shiny-mode .dex-card[data-gen="7"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="7"] .dex-card-banner {
-background-image: url("images/dex-banners/gen7-alola.jpg");
-}
-.dex-grid.shiny-mode .dex-card[data-gen="8"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="8"] .dex-card-banner {
-background-image: url("images/dex-banners/gen8-galar.jpg");
-}
-.dex-grid.shiny-mode .dex-card[data-gen="9"] .dex-card-banner,
-.kalos-gen-grid.shiny-mode .dex-card[data-gen="9"] .dex-card-banner {
-background-image: url("images/dex-banners/gen9-paldea.jpg");
-}
+/* Shiny mode's per-region card-banner photo backgrounds were removed
+   here for the same reason as the species-panel block above. */
 /* CSS-15: species cells - sprite-forward square "box" card instead of a
    horizontal name pill, tinted by primary type via the --type-rgb custom
    property set inline per-chip (see buildDexChipsHtml in script.js), and
@@ -10063,10 +10046,9 @@ display: none;
    parchment instead of the flat grey both areas fell back to, a fine
    dot-grid "paper" texture, a dashed tear-perforation where it meets
    the cover band above, and three ring-binder holes down the left
-   margin. Shiny mode's per-region map photo (see the background-image
-   rules above) still layers on top of this same background-size: cover
-   is re-affirmed on those rules so the map itself is never affected by
-   the tiled texture used here. */
+   margin. Shiny Living Dex now uses this exact same parchment
+   background instead of a distinct per-region map photo (see the
+   removed .shiny-mode background-image rules note above). */
 .kalos-gen-grid[data-open-presentation="region-map"] .kalos-gen-tile-expanded .dex-species-panel {
 	display: block;
 	position: relative;
@@ -10272,7 +10254,7 @@ display: none;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] .kalos-3ds-label {
 	display: grid;
-	grid-template-rows: 24% 60% 16%;
+	grid-template-rows: 14% 72% 14%;
 	width: 100%;
 	height: 100%;
 	box-sizing: border-box;
@@ -10314,21 +10296,6 @@ display: none;
 	font-weight: 900;
 	letter-spacing: -0.5px;
 	color: #e04a39;
-}
-.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark i {
-	position: absolute;
-	display: block;
-	width: 3px;
-	height: 3px;
-	border: 1px solid #4d585b;
-	box-sizing: border-box;
-	background: #fff;
-	top: 0;
-	left: 3px;
-}
-.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark i + i {
-	top: 5px;
-	left: 0;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-inset-art {
 	position: relative;
@@ -10478,18 +10445,41 @@ display: none;
   padding: 0 8px;
   border-bottom: 1px solid #d5dcde;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: clamp(7px, 2.1vw, 11px);
+  font-size: clamp(8px, 2.6vw, 13px);
   font-weight: 700;
   letter-spacing: .1px;
   color: #23292b;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark {
+  position: relative;
   gap: 0;
+  padding-left: 0.42em;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 1.7em;
-  font-weight: 800;
-  letter-spacing: -1px;
-  color: #d94232;
+  font-size: 1.4em;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.5px;
+  color: #171b1f;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-three {
+  color: #d9271e;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark i {
+  position: absolute;
+  left: 0;
+  display: block;
+  width: 0.34em;
+  height: 0.34em;
+  border: 1.4px solid #171b1f;
+  background: transparent;
+  box-sizing: border-box;
+  border-radius: 1px;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark i:first-child {
+  top: calc(50% - 0.36em);
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-mark i:last-child {
+  top: calc(50% + 0.02em);
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-inset-art {
   margin: 3px 5px 2px;
@@ -10497,7 +10487,18 @@ display: none;
   background: #dce5e7;
   box-shadow: 0 0 0 1px rgba(255,255,255,.72) inset, 0 1px 2px rgba(65,78,82,.18);
 }
-.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-boxart { object-fit: cover; object-position: center; filter: saturate(1.1) contrast(1.04); }
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-boxart {
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(1.1) contrast(1.04);
+  /* The source art has a soft dark shadow baked in right at its edge,
+     which reads as a smudge/outline against the pale cartridge shell.
+     Scaling the image up pushes that edge band outside the visible
+     box (clipped by .kalos-3ds-inset-art's overflow: hidden) while
+     the art still fills the cell edge-to-edge, no border/gap added. */
+  transform: scale(1.1);
+  transform-origin: center;
+}
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-product-code {
   padding-bottom: 1px;
   border-top: 1px solid #d5dcde;
@@ -10511,7 +10512,7 @@ display: none;
   top: auto;
   bottom: -43px;
   width: 175px;
-  opacity: .96;
+  opacity: 1;
 }
 @media (max-width: 600px) {
   .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] { flex-basis: 70%; }
@@ -10564,11 +10565,13 @@ display: none;
   border: 1px solid #aeb8ba;
   border-radius: 5px 5px 0 9px;
   background: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.95), 0 1px 2px rgba(61,77,81,.18);
+  box-shadow: none;
 }
 
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-label {
-  grid-template-rows: 18% 50% 18% 14%;
+  /* Brand row trimmed to 6% (and that space handed to the artwork) so
+     the "NINTENDO 3DS" strip stays thin and the boxart gets more room. */
+  grid-template-rows: 6% 62% 18% 14%;
   border: 1px solid #c1cbcd;
   border-radius: 3px 3px 0 7px;
   background: #ffffff;
@@ -10595,7 +10598,11 @@ display: none;
 }
 
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] > .kalos-ds-completion {
-  top: -41px;
+  /* Was matching the DS shells' -46px header offset, but that's tuned
+     for the small collapsed carousel tile - on this larger expanded
+     3DS cartridge it pushed the pill high enough to clip into the
+     container's top edge. Pulled down closer to the cartridge. */
+  top: -42px;
   bottom: auto;
 }
 
@@ -10625,6 +10632,14 @@ display: none;
   border-top: 1px solid #d5dcde;
   border-bottom: 1px solid #d5dcde;
   background: #fff;
+}
+/* Removed per request: the "Nintendo / The Pokémon Company" + CE info bar
+   between the boxart and the product code. Its row was already dropped
+   from .kalos-3ds-label's grid-template-rows above; this display:none
+   uses the higher [data-cart="3ds"]-qualified selector to make sure it
+   wins over the rule directly above. */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] .kalos-3ds-info-bar {
+  display: none;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-nintendo {
   display: flex;
@@ -10670,7 +10685,7 @@ display: none;
 
 /* Same floating-bar position fix as 3DS, applied to the Switch cards (gen 8-9). */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="switch"] > .kalos-ds-completion {
-  top: -41px;
+  top: -46px;
   bottom: auto;
 }
 
@@ -10679,7 +10694,7 @@ display: none;
    width - was coming out too short to fit a region name. Give it a fixed,
    wider width here instead, independent of the tile underneath it. */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="switch"] > .kalos-ds-completion {
-  width: 190px;
+  width: 165px;
 }
 
 
@@ -11368,4 +11383,4 @@ padding: 14px;
 .model3d-stage {
 max-height: 50vh;
 }
-}
+}}
