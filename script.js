@@ -5733,8 +5733,9 @@ return '';
 }
 // Optional real box-art photo for a generation's cartridge-shell Living
 // Dex tile (gens 1-7 - GBA/DS/3DS styles, see kalosCartStyleForGen
-// above; gens 8-9 use the Switch-shell layout instead and aren't
-// covered by this), layered behind the badge/label instead of the
+// above - plus gen 8, whose Switch-shell tile also swaps its whole
+// white art band for this photo, see buildKalosTileCollapsedHtml's
+// switch branch), layered behind the badge/label instead of the
 // plain gold/sunburst swirl sticker. Filenames are looked up as-is
 // under images/game-symbols/ (include the extension, any image type
 // works). Placeholder filenames below are guesses - rename each to
@@ -5747,7 +5748,8 @@ var GEN_BOX_ART = {
 4: "platinum.jpg",              // Sinnoh — Pokémon Platinum cover artwork
 5: "black.jpg",                 // Unova — Pokémon Black cover artwork
 6: "x.jpg",   // Kalos
-7: "usum.png"         // Alola
+7: "USUM.webp",       // Alola
+8: "gen8.jpg"     // Galar
 };
 function buildKalosTileCollapsedHtml(g, genCaught) {
 var pct = Math.round((genCaught / g.species.length) * 100);
@@ -5777,25 +5779,39 @@ switchHudBall +
 '<span class="kalos-ds-region">' + escapeHtml(g.region) + '</span>' +
 '<span class="kalos-ds-progress"><strong>' + pct + '%</strong><small>' + genCaught + ' / ' + g.species.length + '</small></span>' +
 '</div>';
-return (
-'<div class="kalos-gen-tile-sticker">' +
-'<div class="kalos-switch-header">' +
-'<svg class="kalos-switch-header-icon" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true">' +
-'<rect x="2" y="3" width="7" height="18" rx="3.5" fill="#fff"/>' +
-'<circle cx="5.5" cy="7.2" r="1" fill="#E60012"/>' +
-'<rect x="15" y="3" width="7" height="18" rx="3.5" fill="#fff"/>' +
-'<circle cx="18.5" cy="8" r="1.3" fill="#E60012"/>' +
-'</svg>' +
-'<span class="kalos-switch-header-text">Nintendo Switch</span>' +
-'</div>' +
-'<div class="kalos-switch-art">' +
-buildDexGenBadgeHtml(g, pct) +
+// The white "art" band used to hold the region badge/name plus a small
+// rating-style corner badge; now it's handed over to the real box-art
+// photo (see GEN_BOX_ART) instead, same has-boxart pattern the GBA/DS/
+// 3DS shells already use. Falls back to the old badge/region/rating
+// markup if a gen has no photo set in GEN_BOX_ART.
+var switchBoxArt = GEN_BOX_ART[g.gen];
+var switchArtInner = switchBoxArt ?
+('<img class="kalos-switch-boxart" src="images/game-symbols/' + switchBoxArt + '" alt="" onerror="this.remove()">') :
+(buildDexGenBadgeHtml(g, pct) +
 '<div class="kalos-switch-region">' + escapeHtml(g.region) + '</div>' +
 '<div class="kalos-switch-publisher">Shiny Tracker</div>' +
 '<div class="kalos-switch-rating">' +
 '<span class="kalos-switch-rating-letter">E</span>' +
 '<span class="kalos-switch-rating-sub">Everyone</span>' +
+'</div>');
+return (
+'<div class="kalos-gen-tile-sticker">' +
+'<div class="kalos-switch-header">' +
+'<span class="kalos-switch-header-icon-box">' +
+'<svg class="kalos-switch-header-icon" viewBox="0 0 24 24" aria-hidden="true">' +
+'<rect x="4.5" y="4" width="6.5" height="16" rx="3" fill="none" stroke="#fff" stroke-width="1.4"/>' +
+'<circle cx="7.75" cy="8" r="1" fill="#fff"/>' +
+'<rect x="13" y="4" width="6.5" height="16" rx="3" fill="#fff"/>' +
+'<circle cx="16.25" cy="16" r="1" fill="#e60012"/>' +
+'</svg>' +
+'</span>' +
+'<span class="kalos-switch-header-text">' +
+'<span class="kalos-switch-header-text-top">Nintendo</span>' +
+'<span class="kalos-switch-header-text-bottom">Switch</span>' +
+'</span>' +
 '</div>' +
+'<div class="kalos-switch-art' + (switchBoxArt ? ' has-boxart' : '') + '">' +
+switchArtInner +
 '</div>' +
 '<div class="kalos-switch-footer">LA-H-TRK-0' + g.gen + '-USA</div>' +
 '</div>' +
@@ -5845,7 +5861,7 @@ var dsBottomTriangle = cartStyleForBoxArt === 'ds' ?
 '<span class="kalos-ds-bottom-triangle" aria-hidden="true"></span>' : '';
 var threeDsLabel = cartStyleForBoxArt === '3ds' ? (
 '<div class="kalos-3ds-label">' +
-'<div class="kalos-3ds-brand">NINTENDO <span class="kalos-3ds-mark"><i></i><i></i>3DS</span><sup>™</sup></div>' +
+'<div class="kalos-3ds-brand">NINTENDO <span class="kalos-3ds-mark"><i></i><i></i><span class="kalos-3ds-three">3</span>DS</span><sup>™</sup></div>' +
 '<div class="kalos-3ds-inset-art">' +
 (boxArt ? '<img class="kalos-3ds-boxart" src="images/game-symbols/' + boxArt + '" alt="" onerror="this.remove()">' : '') +
 '</div>' +
@@ -9290,7 +9306,10 @@ s.style.left = (Math.random() * 100) + '%';
 s.style.top = (TOP_CLEAR_PERCENT + Math.random() * usableRange) + '%';
 s.style.animationDelay = (Math.random() * 4) + 's';
 container.appendChild(s);
-}})
+}})();
 
 
 // Populate the interface from local state immediately. Cloud sync can return
+// later and repaint once the first snapshot arrives.
+renderAll();
+syncFromCloud();
