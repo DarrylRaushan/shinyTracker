@@ -16,7 +16,7 @@
          custom element, no build step/React needed, so it drops straight
          into this vanilla page the same way the sprite <img>s do. -->
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=3ds-notch-1">
+    <link rel="stylesheet" href="style.css?v=ds-shell-sides-2">
   </head>
   <body>
     <div id="stars"></div>
@@ -279,7 +279,7 @@
                    of toggling it caught. See dex3DMode in script.js. -->
               <div class="pc-key pc-key-fn">
                 <span class="pc-key-label">3D</span>
-                <button class="ghost" id="btn-dex-3d-toggle" type="button" aria-pressed="false" title="Toggle 3D model view">🧊 3D View</button>
+                <button class="ghost" id="btn-dex-3d-toggle" type="button" aria-pressed="false" title="Toggle 3D model view">3D View</button>
               </div>
               <!-- Animated-only filter: hides any chip whose 3D model (for the
                    currently active Living/Shiny mode) has no baked animation
@@ -420,39 +420,60 @@
                           <div class="dex-select-option" data-value="Fairy"><span class="type-swatch" style="background:#EE99AC"></span>Fairy</div>
                         </div>
                       </div>
+                      <!-- Form + Stage merged into one wrap/panel: tapping
+                           the button opens a single panel with two labeled
+                           groups (Form's 5 options, Stage's 4), each still
+                           single-select within its own group. Still driven
+                           by the same two independent state objects
+                           (dexVariantFilter / dexEvoStageFilter) - only the
+                           button/panel markup is combined, not the state.
+                           Panel opens on a "pick" step (Form vs Stage,
+                           same idea as tapping into the 3D/Anim panel),
+                           then a tap there swaps in that category's real
+                           options via data-step on #k-variant-panel - only
+                           the active .k-variant-step is display:contents
+                           (see style.css), so its options become direct
+                           grid items same as before. Stage options still
+                           carry "evo-stage-option" so script.js can tell
+                           the two groups' values apart in the one shared
+                           delegated click handler. -->
                       <div class="dex-select-wrap" id="k-variant-wrap">
-                        <button type="button" class="log-dex-grid-btn" id="btn-k-variant" title="Form">Form ▾</button>
-                        <div class="dex-select-panel" id="k-variant-panel">
-                          <div class="dex-select-option" data-value="Original">Original</div>
-                          <div class="dex-select-option" data-value="Alolan">Alolan</div>
-                          <div class="dex-select-option" data-value="Galarian">Galarian</div>
-                          <div class="dex-select-option" data-value="Hisuian">Hisuian</div>
-                          <div class="dex-select-option" data-value="Paldean">Paldean</div>
+                        <button type="button" class="log-dex-grid-btn" id="btn-k-variant" title="Form / Stage">Form/Stage ▾</button>
+                        <div class="dex-select-panel" id="k-variant-panel" data-step="pick">
+                          <div class="k-variant-step k-variant-step-pick">
+                            <div class="dex-select-option" data-step-target="form">Form</div>
+                            <div class="dex-select-option" data-step-target="stage">Stage</div>
+                          </div>
+                          <div class="k-variant-step k-variant-step-form">
+                            <div class="dex-select-option" data-value="Original">Original</div>
+                            <div class="dex-select-option" data-value="Alolan">Alolan</div>
+                            <div class="dex-select-option" data-value="Galarian">Galarian</div>
+                            <div class="dex-select-option" data-value="Hisuian">Hisuian</div>
+                            <div class="dex-select-option" data-value="Paldean">Paldean</div>
+                            <div class="dex-select-option k-variant-back" data-step-target="pick">◀ Back</div>
+                          </div>
+                          <div class="k-variant-step k-variant-step-stage">
+                            <div class="dex-select-option evo-stage-option" data-value="base">Base</div>
+                            <div class="dex-select-option evo-stage-option" data-value="middle">Middle</div>
+                            <div class="dex-select-option evo-stage-option" data-value="final">Final</div>
+                            <div class="dex-select-option evo-stage-option" data-value="single">Single-stage</div>
+                            <div class="dex-select-option k-variant-back" data-step-target="pick">◀ Back</div>
+                          </div>
                         </div>
                       </div>
-                      <!-- Evo-stage filter: new, no desktop counterpart yet.
-                           Single-select (like Sort/Type/Form) - tapping an
-                           option sets it as the sole active bucket and
-                           closes the panel. Backed by dexEvoStageFilter +
-                           applyDexEvoStageFilter() in script.js, which reads
-                           {stage, isFinal} per species from
-                           fetchEvoChainInfo's cache (fetching + caching to
-                           localStorage on first use per species). -->
-                      <div class="dex-select-wrap" id="k-evo-wrap">
-                        <button type="button" class="log-dex-grid-btn" id="btn-k-evo" title="Evolution Stage">Stage ▾</button>
-                        <div class="dex-select-panel k-evo-panel" id="k-evo-panel">
-                          <div class="dex-select-option" data-value="base">Base</div>
-                          <div class="dex-select-option" data-value="middle">Middle</div>
-                          <div class="dex-select-option" data-value="final">Final</div>
-                          <div class="dex-select-option" data-value="single">Single-stage</div>
+                      <!-- 3D View + Animated Only merged into one wrap: the
+                           button just opens a small panel with both as
+                           separate, independent toggles (neither closes the
+                           panel on tap) instead of two standalone icon
+                           buttons. Same dex3DMode/dexAnimatedOnlyFilter
+                           state as before - see script.js. -->
+                      <div class="dex-select-wrap" id="k-3d-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-k-3d-toggle" title="3D View Options" aria-label="3D view options" aria-pressed="false">3D View</button>
+                        <div class="dex-select-panel" id="k-3d-panel">
+                          <div class="dex-select-option" id="k-3d-toggle-option" role="button" aria-pressed="false">🧊 3D View</div>
+                          <div class="dex-select-option" id="k-anim-toggle-option" role="button" aria-pressed="false">🎬 Animated Only</div>
                         </div>
                       </div>
-                      <!-- Mobile counterpart of #btn-dex-3d-toggle above: same
-                           dex3DMode state, just a compact icon button to match
-                           the rest of this toolbar's buttons. -->
-                      <button type="button" class="log-dex-grid-btn" id="btn-k-3d-toggle" title="3D View" aria-label="Toggle 3D model view" aria-pressed="false">🧊</button>
-                      <!-- Mobile counterpart of #btn-dex-anim-filter above. -->
-                      <button type="button" class="log-dex-grid-btn" id="btn-k-anim-filter" title="Animated Only" aria-label="Show only species with an animated 3D model" aria-pressed="false">🎬</button>
                       <button type="button" class="log-dex-grid-btn" id="btn-k-reset-filters" title="Reset Filters" aria-label="Reset all filters">⟲</button>
                     </div>
                   </div>
@@ -511,6 +532,6 @@
       }
     </script>
     <!-- Motion is loaded in the document head and powers the mobile carousel. -->
-    <script src="script.js?v=firebase-state-sync-20"></script>
+    <script src="script.js?v=ds-3ds-container-1"></script>
   </body>
 </html>
