@@ -4998,14 +4998,20 @@ color: #fff;
 color: #fff;
 border-color: var(--red-dark);
 }
-.kalos-filter-toolbar .log-dex-grid-btn#btn-k-3d-toggle[aria-pressed="true"],
-.log-dex-grid-btn#btn-k-3d-toggle[aria-pressed="true"] {
+/* #btn-k-3d-toggle is now a panel-opener (3D View + Animated Only live
+   inside #k-3d-panel as two independent toggle rows), so it takes the
+   same .active-when-anything-inside-is-on treatment as #btn-k-variant
+   instead of reacting to its own aria-pressed. The two rows themselves
+   just pick up the standard reskin-full .dex-select-option.active tint
+   already defined above - no dedicated red styling needed for them. */
+.kalos-filter-toolbar .log-dex-grid-btn#btn-k-3d-toggle.active,
+.log-dex-grid-btn#btn-k-3d-toggle.active {
 background: var(--red);
 color: #fff;
 }
-/* Animated-only filter toggle - same filled "on" look as the 3D View toggle
-   right above it, since it's also a real pressed/unpressed state rather
-   than a panel-opener. */
+/* Animated-only filter toggle (desktop) - same filled "on" look as the 3D
+   View toggle right above it, since it's also a real pressed/unpressed
+   state rather than a panel-opener. */
 #btn-dex-anim-filter[aria-pressed="true"] {
 background: var(--red);
 border-color: var(--red-dark);
@@ -5014,11 +5020,6 @@ color: #fff;
 #btn-dex-anim-filter[aria-pressed="true"]:hover {
 color: #fff;
 border-color: var(--red-dark);
-}
-.kalos-filter-toolbar .log-dex-grid-btn#btn-k-anim-filter[aria-pressed="true"],
-.log-dex-grid-btn#btn-k-anim-filter[aria-pressed="true"] {
-background: var(--red);
-color: #fff;
 }
 /* Small affordance so it's obvious sprites now open the 3D viewer instead
    of toggling caught, without needing a full chip re-render - just a class
@@ -5981,33 +5982,50 @@ color: #fff;
 left: auto;
 right: 0;
 }
+/* Search's floating popover (mobile Kalos toolbar, non-reskinned state) -
+   brought in line with the same translucent cyan-gradient pill + scanner-
+   lens glyph the reskin-search full-width version uses, instead of the
+   plain flat cream .log-key-input box it inherited by default. */
 .k-search-panel {
 min-width: 220px;
 padding: 8px;
+position: relative;
+}
+.k-search-panel::before {
+content: "⌕";
+position: absolute;
+left: 21px;
+top: 50%;
+transform: translateY(-50%);
+font-family: var(--mono);
+font-size: 15px;
+color: var(--blue);
+opacity: 0.55;
+pointer-events: none;
+z-index: 1;
 }
 .k-search-panel .log-key-input {
 width: 100%;
+padding: 7px 12px 7px 26px;
+border-radius: 999px;
+background: linear-gradient(180deg, rgba(217, 252, 255, 0.55) 0%, rgba(140, 238, 251, 0.32) 100%);
+border: 1px dashed rgba(20, 120, 132, 0.4);
+box-shadow: inset 0 1px 3px rgba(0, 70, 90, 0.12);
+color: var(--blue-dark);
+font-family: var(--mono);
+letter-spacing: 0.2px;
+transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-/* Evo-stage panel: multi-select toggle chips (Base/Middle/Final/
-   Single-stage all independently on/off), unlike Sort/Type's single-value
-   swap - laid out in a single slim row, wide enough that even the long
-   "Single-stage" label never wraps. */
-.k-evo-panel {
-grid-template-columns: repeat(4, 1fr);
-gap: 4px;
-min-width: 340px;
-left: 50%;
-transform: translateX(-50%);
+.k-search-panel .log-key-input::placeholder {
+color: rgba(42, 58, 160, 0.5);
+font-family: var(--mono);
 }
-.dex-select-wrap.open .k-evo-panel {
-display: grid;
-}
-.k-evo-panel .dex-select-option {
-padding: 4px 4px;
-font-size: 11px;
-justify-content: center;
-text-align: center;
-white-space: nowrap;
+.k-search-panel .log-key-input:focus {
+outline: none;
+background: linear-gradient(180deg, rgba(217, 252, 255, 0.75) 0%, rgba(140, 238, 251, 0.5) 100%);
+border-color: var(--blue);
+border-style: solid;
+box-shadow: inset 0 1px 3px rgba(0, 70, 90, 0.12), 0 0 0 3px rgba(42, 58, 160, 0.15);
 }
 /* --- Toolbar "reskin-in-place" mode -----------------------------------
    Tapping Sort/Type/Form/Stage (or Search) no longer drops a floating
@@ -6124,28 +6142,64 @@ scroll-snap-align: none;
 scroll-snap-align: start;
 scroll-snap-stop: always;
 }
-/* Form and Stage are both single-select now (one tap sets the active
-   option and closes the panel, same as Sort/Type), so neither needs a
-   Done pill any more - they use the same default pill grid, which fits
-   their handful of options (5 and 4 respectively) inside the 6-slot 3x2
-   grid on its own.
-   Each also needs its own explicit grid-template-rows (not just the base
-   rule's grid-auto-rows) - #kalos-filter-toolbar itself never declares a
-   grid-template-rows (only grid-auto-rows), so the base rule's
-   "grid-row: 1 / -1" has no explicit outer row track to resolve "-1"
-   against and collapses the panel's own box to a single row of height.
-   With only 3 or 4 options that's invisible (they fit on one row), but
-   Form's 5 and Stage's 4 need two, so the second row was rendering
-   outside the box's actual painted background/blur - declaring the row
-   template here (same fix Type already uses) gives the box a real,
-   unambiguous 2-row height instead of depending on that outer collapse. */
-.kalos-filter-toolbar.reskin-full #k-variant-wrap.expanded #k-variant-panel {
+/* Form and Stage now share one wrap/panel (#k-variant-wrap), opened the
+   same way the 3D/Anim panel is: tapping the button first shows a small
+   "pick" step (Form vs Stage), and tapping one of those swaps in that
+   category's real single-select options. Only one .k-variant-step is
+   ever visible at a time - toggled via data-step on #k-variant-panel
+   (see script.js) - and the active one is display:contents so its own
+   .dex-select-option children become direct grid items of the panel,
+   the same trick .dex-select-wrap.expanded already uses one level up.
+   Each step needs its own explicit grid-template-columns/rows (not just
+   the base rule's 3-col/24px auto grid) since they hold different
+   option counts: the pick step is 2 big side-by-side options, Form is 5
+   options (2 rows of 3), Stage is 4 (also 2 rows of 3). Declaring the
+   row template per step (same fix Type/the old combined panel used)
+   gives the box a real, unambiguous height instead of depending on the
+   outer "grid-row: 1 / -1" collapse. */
+.k-variant-step {
+display: none;
+}
+#k-variant-panel[data-step="pick"] .k-variant-step-pick,
+#k-variant-panel[data-step="form"] .k-variant-step-form,
+#k-variant-panel[data-step="stage"] .k-variant-step-stage {
+display: contents;
+}
+.kalos-filter-toolbar.reskin-full #k-variant-wrap.expanded #k-variant-panel[data-step="pick"] {
+grid-template-columns: repeat(2, 1fr);
+grid-template-rows: 24px;
+}
+.kalos-filter-toolbar.reskin-full #k-variant-wrap.expanded #k-variant-panel[data-step="form"],
+.kalos-filter-toolbar.reskin-full #k-variant-wrap.expanded #k-variant-panel[data-step="stage"] {
 grid-template-columns: repeat(3, 1fr);
 grid-template-rows: repeat(2, 24px);
 }
-.kalos-filter-toolbar.reskin-full #k-evo-wrap.expanded #k-evo-panel {
-grid-template-columns: repeat(3, 1fr);
+/* Back tile inside the Form/Stage sub-steps: returns #k-variant-panel to
+   its "pick" step (same generic data-step-target handling script.js
+   already uses for the Form/Stage pick buttons) without closing the
+   panel or touching either filter's state, so a filter chosen on one
+   side survives while the other side is picked next. Styled muted/
+   dashed so it doesn't read as another filter chip. */
+.k-variant-back {
+color: var(--ink-dim);
+border-style: dashed;
+opacity: 0.8;
+}
+.k-variant-back:hover {
+opacity: 1;
+}
+/* 3D View + Animated Only share one wrap/panel (#k-3d-wrap) too, but as
+   two independent full-width toggle rows rather than a 3-column pill
+   grid - each tap flips its own state without closing the panel, so
+   both can be turned on together. */
+.kalos-filter-toolbar.reskin-full #k-3d-wrap.expanded #k-3d-panel {
+grid-template-columns: 1fr;
 grid-template-rows: repeat(2, 24px);
+}
+.kalos-filter-toolbar.reskin-full #k-3d-wrap.expanded #k-3d-panel .dex-select-option {
+grid-column: 1 / -1;
+justify-content: flex-start;
+padding-left: 8px;
 }
 /* Search is now the same as every other reskin: opening it takes over the
    whole toolbar (not just row 2) as one single, full-width pill, so no
@@ -6153,7 +6207,7 @@ grid-template-rows: repeat(2, 24px);
 .kalos-filter-toolbar.reskin-search #k-sort-wrap,
 .kalos-filter-toolbar.reskin-search #k-type-wrap,
 .kalos-filter-toolbar.reskin-search #k-variant-wrap,
-.kalos-filter-toolbar.reskin-search #k-evo-wrap,
+.kalos-filter-toolbar.reskin-search #k-3d-wrap,
 .kalos-filter-toolbar.reskin-search #btn-k-reset-filters {
 display: none;
 }
@@ -6165,7 +6219,7 @@ display: none;
 }
 .kalos-filter-toolbar.reskin-search #k-search-panel {
 display: block;
-position: static;
+position: relative;
 grid-column: 1 / -1;
 grid-row: 1 / -1;
 width: 100%;
@@ -6176,30 +6230,61 @@ border: none;
 box-shadow: none;
 background: transparent;
 }
-/* Same translucent-pill chrome as every other toolbar control, instead of
-   the log-style cream box .log-key-input normally is - and 16px, not the
-   toolbar's usual 9-12px text, since anything smaller makes iOS Safari
-   zoom the whole page in the moment this input gets focused. There's no
-   CSS way to opt out of that zoom other than crossing the 16px line. */
+/* Leading "scanner lens" glyph, styled off the same HUD mono font/blue
+   used by the Pokedex chrome elsewhere (dex-handheld-lens, pc-key
+   labels) instead of the input just sitting bare. Purely decorative -
+   pointer-events: none so it never steals the tap/click meant for the
+   input underneath. */
+.kalos-filter-toolbar.reskin-search #k-search-panel::before {
+content: "⌕";
+position: absolute;
+left: 13px;
+top: 50%;
+transform: translateY(-50%);
+font-family: var(--mono);
+font-size: 16px;
+color: var(--blue);
+opacity: 0.55;
+pointer-events: none;
+z-index: 1;
+transition: opacity 0.15s ease;
+}
+.kalos-filter-toolbar.reskin-search #k-search-panel:focus-within::before {
+opacity: 0.85;
+}
+/* Same translucent cyan-gradient pill chrome as every other reskin-full
+   toolbar button (Type/Form-Stage/3D), dashed like a HUD readout instead
+   of the flat cream .log-key-input box it inherits by default - brings
+   the search bar in line with the rest of the Pokedex-scanner theme
+   rather than looking like a plain generic input. 16px text (not the
+   toolbar's usual 9-12px) is still required: anything smaller makes iOS
+   Safari zoom the whole page in the moment this input gets focused, and
+   there's no CSS way to opt out of that other than crossing the 16px
+   line. */
 .kalos-filter-toolbar.reskin-search #k-search-panel .log-key-input {
 width: 100%;
 height: 100%;
-padding: 0 14px;
+padding: 0 14px 0 34px;
 border-radius: 999px;
-background: rgba(255, 255, 255, 0.45);
-border: 1px solid rgba(42, 58, 160, 0.22);
-box-shadow: inset 0 1px 3px rgba(0, 70, 90, 0.1);
+background: linear-gradient(180deg, rgba(217, 252, 255, 0.55) 0%, rgba(140, 238, 251, 0.32) 100%);
+border: 1px dashed rgba(20, 120, 132, 0.4);
+box-shadow: inset 0 1px 3px rgba(0, 70, 90, 0.12);
 color: var(--blue-dark);
+font-family: var(--mono);
 font-size: 16px;
-transition: background 0.15s ease, border-color 0.15s ease;
+letter-spacing: 0.2px;
+transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .kalos-filter-toolbar.reskin-search #k-search-panel .log-key-input::placeholder {
 color: rgba(42, 58, 160, 0.5);
+font-family: var(--mono);
 }
 .kalos-filter-toolbar.reskin-search #k-search-panel .log-key-input:focus {
 outline: none;
-background: rgba(255, 255, 255, 0.65);
+background: linear-gradient(180deg, rgba(217, 252, 255, 0.75) 0%, rgba(140, 238, 251, 0.5) 100%);
 border-color: var(--blue);
+border-style: solid;
+box-shadow: inset 0 1px 3px rgba(0, 70, 90, 0.12), 0 0 0 3px rgba(42, 58, 160, 0.15);
 }
 
 .kalos-mode-toggle {
@@ -7401,6 +7486,7 @@ inset: 0;
 width: 100%;
 height: 100%;
 object-fit: cover;
+object-position: center center;
 }
 .kalos-gen-tile[data-cart="switch"] .kalos-switch-region {
 font-size: clamp(5.5px, 1.75vw, 7.5px);
@@ -9723,12 +9809,12 @@ display: none;
    nearly all of the available DS body instead of leaving a heavy lower band. */
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
-	padding: 5px 3px 3px;
+	padding: 5px 12px 3px;
 }
 .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
-	width: 88%;
-	height: 88%;
-	padding: 2px;
+	width: 99%;
+	height: 99%;
+	padding: 1px;
 	border: 1px solid #050607;
 	border-radius: 4px;
 	background: #0a0b0c;
@@ -9834,7 +9920,7 @@ display: none;
 /* Give the DS shell a slightly deeper lower section than its top section. */
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
-	padding-bottom: 16px;
+	padding-bottom: 9px;
 }
 
 /* Compact the DS completion header without changing the cartridge body. */
@@ -9969,7 +10055,7 @@ display: none;
    last-in-cascade padding-top for these tiles, so it's the one that wins. */
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
-	padding-top: 12px;
+	padding-top: 7px;
 }
 
 /* Fill the complete DS inset face with the assigned artwork. */
@@ -9984,6 +10070,16 @@ display: none;
 }
 .kalos-gen-tile[data-gen="5"] .kalos-gen-tile-sticker.has-ds-reference-photo::after {
 	background-image: url("images/game-symbols/black.jpg");
+}
+
+/* The two rules above are leftover from before GEN_BOX_ART existed: this
+   ::after sits at z-index 6, directly on top of the real, dynamic
+   .kalos-gen-tile-boxart <img> (z-index 2) - so no matter what
+   GEN_BOX_ART[4]/[5] point to (or whether those old hardcoded files
+   even still exist), this hardcoded overlay was always what actually
+   showed. Turning it off here lets the real image underneath be seen. */
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo::after {
+	display: none !important;
 }
 
 /* Cartridge renderer lock ---------------------------------------------------------
@@ -10151,9 +10247,11 @@ display: none;
 	pointer-events: none;
 }
 
-/* DS triangle position: sit slightly closer to the lower shell edge. */
+/* Smaller DS triangle, pushed further down below the shell edge. */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] > .kalos-ds-bottom-triangle {
-	bottom: 6px;
+	bottom: -2px;
+	width: 12px;
+	height: 5px;
 }
 
 /* Remove the retired DS shell pseudo-element from the artwork face. The lower
@@ -10209,17 +10307,15 @@ display: none;
 	aspect-ratio: 0.91 / 1;
 	box-sizing: border-box;
 	position: relative;
-	padding: 5px;
-	border: 2px solid #b7c3c7;
-	border-radius: 7px 7px 14px 14px;
-	background:
-		linear-gradient(100deg, rgba(255,255,255,0.72) 0%, transparent 14% 86%, rgba(101,119,124,0.20) 100%),
-		linear-gradient(180deg, #f7fbfc 0%, #dce8eb 58%, #c6d3d6 100%);
+	padding: 16px;
+	border: 1px solid #d9dbdb;
+	border-radius: 9px 9px 14px 14px;
+	background: linear-gradient(180deg, #ffffff 0%, #f6f6f6 55%, #eceded 100%);
 	box-shadow:
-		0 4px 0 #9eafb3,
-		0 8px 12px rgba(23,38,42,0.24),
-		inset 1px 1px 0 rgba(255,255,255,0.96),
-		inset -1px -2px 3px rgba(77,98,104,0.18);
+		0 4px 0 #dcdddd,
+		0 8px 12px rgba(23,38,42,0.16),
+		inset 1px 1px 0 rgba(255,255,255,0.95),
+		inset -1px -2px 3px rgba(190,192,192,0.25);
 	overflow: visible;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"]::before {
@@ -10230,16 +10326,16 @@ display: none;
 	content: "";
 	display: block;
 	position: absolute;
-	right: -4px;
-	top: 15px;
-	width: 5px;
-	height: 17px;
-	border: 1px solid #aebcc0;
-	border-left: 0;
-	border-radius: 0 3px 3px 0;
-	background: linear-gradient(90deg, #c2d0d3, #eef6f7);
+	right: 9%;
+	top: -6px;
+	width: 16%;
+	height: 8px;
+	border: 1px solid #d9dbdb;
+	border-bottom: 0;
+	border-radius: 4px 4px 0 0;
+	background: linear-gradient(180deg, #ffffff, #eceded);
 	box-shadow: none;
-	z-index: 2;
+	z-index: 0;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker {
 	width: 100%;
@@ -10254,12 +10350,15 @@ display: none;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] .kalos-3ds-label {
 	display: grid;
-	grid-template-rows: 14% 72% 14%;
+	/* Brand strip (top) and product-code strip (bottom) removed - the
+	   label is now a single row so the inset-art box gets the whole
+	   card face. */
+	grid-template-rows: 100%;
 	width: 100%;
-	height: 100%;
+	height: auto;
 	box-sizing: border-box;
 	overflow: hidden;
-	border: 1.5px solid #b8c4c8;
+	border: 1px solid #d9dbdb;
 	border-radius: 3px 3px 7px 7px;
 	background: #fff;
 	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.94);
@@ -10309,7 +10408,12 @@ display: none;
 	display: block;
 	width: 100%;
 	height: 100%;
-	object-fit: cover;
+	/* Was "cover", which cropped the image to fill the box - now that
+	   the art box takes up the whole label (brand/product-code strips
+	   removed) that cropped off too much of the artwork. "contain"
+	   shows the full image, letterboxed if its aspect ratio doesn't
+	   match the box. */
+	object-fit: contain;
 	object-position: center;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-product-code {
@@ -10433,7 +10537,7 @@ display: none;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker { border-radius: 3px 3px 10px 10px; }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-label {
-  grid-template-rows: 18% 50% 18% 14%;
+  grid-template-rows: 100%;
   border: 1px solid #b7c2c5;
   border-radius: 3px 3px 8px 8px;
   background: #fff;
@@ -10488,16 +10592,18 @@ display: none;
   box-shadow: 0 0 0 1px rgba(255,255,255,.72) inset, 0 1px 2px rgba(65,78,82,.18);
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-boxart {
-  object-fit: cover;
+  /* Was "cover" + a 1.1x zoom to push a shadow baked into the source
+     art past the edge of the box - but with the brand/product-code
+     strips gone this box is now the whole label, so that zoom was
+     cropping visible parts of the artwork instead. Now width is 100%
+     and height is auto, so the image sets its own height based on its
+     real aspect ratio - no cropping, and (since every ancestor box
+     above is height:auto too) no leftover letterbox space either. */
+  width: 100%;
+  height: auto;
+  object-fit: contain;
   object-position: center;
   filter: saturate(1.1) contrast(1.04);
-  /* The source art has a soft dark shadow baked in right at its edge,
-     which reads as a smudge/outline against the pale cartridge shell.
-     Scaling the image up pushes that edge band outside the visible
-     box (clipped by .kalos-3ds-inset-art's overflow: hidden) while
-     the art still fills the cell edge-to-edge, no border/gap added. */
-  transform: scale(1.1);
-  transform-origin: center;
 }
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-product-code {
   padding-bottom: 1px;
@@ -10525,55 +10631,73 @@ display: none;
    a separate shape sitting next to it. */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] {
   flex: 0 0 65%;
-  aspect-ratio: 0.95 / 1;
-  padding: 7px;
-  border: 1px solid #aeb8ba;
-  border-radius: 6px 0 6px 6px;
+  /* The parent .kalos-gen-grid uses align-items: stretch, which would
+     otherwise force this tile back to the row's full cross-axis height
+     - overriding the auto/content-driven height below. Opting out of
+     stretch keeps the card's height tied to the image it contains. */
+  align-self: flex-start;
+  /* Was a fixed near-square aspect-ratio, which left big empty bars
+     above/below wide box-art images once they were shown uncropped
+     (object-fit: contain). Letting height be driven by the image's own
+     aspect ratio instead means the card hugs the artwork exactly - no
+     crop, no leftover space. */
+  padding: 10px;
+  border: 1px solid #d9dbdb;
+  border-radius: 0 0 0 14px;
   background:
-    linear-gradient(90deg, rgba(255,255,255,.82) 0%, transparent 10% 90%, rgba(102,116,120,.16) 100%),
-    linear-gradient(155deg, #ffffff 0%, #f1f5f5 38%, #d7e0e1 100%) !important;
+    linear-gradient(180deg, #ffffff 0%, #f6f6f6 55%, #eceded 100%) !important;
   box-shadow:
-    0 4px 0 #aab7b9,
-    0 8px 12px rgba(23,38,42,.24),
-    inset 1px 1px 0 rgba(255,255,255,.98),
-    inset -1px -2px 3px rgba(77,98,104,.18);
+    0 4px 0 #dcdddd,
+    0 8px 12px rgba(23,38,42,.16),
+    inset 1px 1px 0 rgba(255,255,255,.95),
+    inset -1px -2px 3px rgba(190,192,192,.25);
 }
 
-/* The top-right retention tab, flush against the now-sharp corner. */
+/* The retention tab, poking out from the right edge like on the
+   reference cartridge (not the top edge, which threw off the top/bottom
+   shell balance by sticking up past the card's own border). */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"]::after {
   content: "";
   display: block;
   position: absolute;
-  top: 1px;
+  top: 0;
   bottom: auto;
-  right: -7px;
+  right: -9px;
   left: auto;
-  width: 7px;
-  height: 20px;
-  border: 1px solid #aeb8ba;
+  width: 9px;
+  /* Was 16%, sized against the tile's own height - but the tile no
+     longer has a fixed/definite height (it hugs the image now), so a
+     percentage here would resolve to 0. Fixed px keeps the tab the
+     same visual size it always was. */
+  height: 32px;
+  border: 1px solid #d9dbdb;
   border-left: 0;
-  border-radius: 0 3px 3px 0;
-  background: linear-gradient(90deg, #f1f5f5 0%, #ffffff 55%, #e6edef 100%);
-  box-shadow: 0 1px 0 rgba(255,255,255,.9) inset, 1px 1px 1px rgba(83,101,105,.18);
-  z-index: 3;
+  border-top: 0;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f6f6 55%, #eceded 100%);
+  box-shadow: none;
+  z-index: 0;
 }
 
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="3ds"] .kalos-gen-tile-sticker {
   width: 100%;
-  height: 100%;
+  height: auto;
   padding: 2px;
-  border: 1px solid #aeb8ba;
-  border-radius: 5px 5px 0 9px;
+  border: 1px solid #d9dbdb;
+  border-radius: 0 0 0 8px;
   background: #ffffff;
   box-shadow: none;
 }
 
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-label {
-  /* Brand row trimmed to 6% (and that space handed to the artwork) so
-     the "NINTENDO 3DS" strip stays thin and the boxart gets more room. */
-  grid-template-rows: 6% 62% 18% 14%;
-  border: 1px solid #c1cbcd;
-  border-radius: 3px 3px 0 7px;
+  /* Brand strip and product-code strip removed entirely - the label is
+     one row now, so the boxart fills the full card face. Height is
+     auto so the card hugs the image's own aspect ratio (see the tile
+     rule) instead of stretching to a fixed box. */
+  grid-template-rows: 100%;
+  height: auto;
+  border: 1px solid #d9dbdb;
+  border-radius: 0 0 0 7px;
   background: #ffffff;
 }
 /* Grid items default to an automatic minimum size based on their own
@@ -10592,8 +10716,8 @@ display: none;
 
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-inset-art {
   margin: 3px 4px 2px;
-  border: 1px solid #b8c4c6;
-  background: #e2e9ea;
+  border: 1px solid #d9dbdb;
+  background: #f2f3f3;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.8);
 }
 
@@ -10612,10 +10736,13 @@ display: none;
   }
 }
 
-/* Artwork fills its cell edge-to-edge, no inset gap. */
+/* Artwork fills the card width edge-to-edge, no inset gap. Height is
+   auto (not stretched to 100%) so the box hugs whatever aspect ratio
+   the actual image is, instead of forcing it into a fixed shape and
+   letterboxing/cropping the difference. */
 .kalos-gen-grid[data-open-presentation="cartridge"] .kalos-3ds-inset-art {
   width: 100%;
-  height: 100%;
+  height: auto;
   margin: 0;
   border-width: 0;
 }
@@ -11384,3 +11511,188 @@ padding: 14px;
 max-height: 50vh;
 }
 }}
+
+
+/* DS box-art container, rebuilt on the 3DS's label/inset-art frame -------------
+   Reuses the exact same .kalos-3ds-label/.kalos-3ds-inset-art/.kalos-3ds-boxart
+   markup and sizing the 3DS cartridge already uses (see buildKalosTileCollapsedHtml
+   in script.js), just recolored black to match the DS shell instead of the 3DS's
+   white/grey plastic, and without the 3DS's top-right retention notch/tab (that
+   pseudo-element is scoped to [data-cart="3ds"] only, so it was never inherited
+   here in the first place). The old plain full-bleed .kalos-gen-tile-boxart <img>
+   path is left in place for any DS tile that hasn't been re-rendered yet. */
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	transform: none;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label {
+	display: grid;
+	grid-template-rows: 100%;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	overflow: hidden;
+	border: 1px solid #050607;
+	border-radius: 4px;
+	background: #050607;
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12), 0 1px 2px rgba(0,0,0,0.7);
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label .kalos-3ds-inset-art {
+	margin: 2px;
+	border: 1px solid #050607;
+	background: #050607;
+	box-shadow: none;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label .kalos-3ds-boxart {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
+	background: #050607;
+	filter: none;
+}
+
+/* Same recolor + notch removal for the larger opened-carousel "cartridge"
+   presentation of the DS shell (mirrors the [data-open-presentation="cartridge"]
+   3DS rules, minus its retention tab). */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label {
+	border-color: #050607;
+	border-radius: 3px 3px 8px 8px;
+	background: #050607;
+	box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label .kalos-3ds-inset-art {
+	margin: 3px;
+	border-color: #050607;
+	background: #050607;
+	box-shadow: none;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label .kalos-3ds-boxart {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	filter: none;
+}
+
+/* ---------------------------------------------------------------------------
+   FINAL DS box-art fix: fill the full cartridge face, no letterboxing.
+   Earlier passes above left the DS art letterboxed (object-fit: contain,
+   height:auto ancestors, stray margins) in both the small carousel tile and
+   the large opened "cartridge" view. This block forces every ancestor of the
+   DS box-art image to a real 100% height and switches the image itself to
+   object-fit: cover so it always fills its box edge-to-edge, cropping
+   instead of leaving empty space. Scoped to [data-cart="ds"] only, so the
+   3DS/GBA/Switch tiles keep their existing (intentionally different)
+   behavior. !important is used because this is deliberately the last word
+   after many earlier, conflicting DS sizing passes above. */
+
+/* Collapsed carousel tile - old plain <img class="kalos-gen-tile-boxart"> path */
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	width: 100% !important;
+	height: 100% !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-boxart {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	object-position: center !important;
+	transform: none !important;
+}
+
+/* Collapsed carousel tile - current <div class="kalos-ds-photo-label"> path */
+.kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label {
+	display: grid !important;
+	grid-template-rows: 100% !important;
+	width: 100% !important;
+	height: 100% !important;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label .kalos-3ds-inset-art {
+	width: 100% !important;
+	height: 100% !important;
+	margin: 0 !important;
+}
+.kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label .kalos-3ds-boxart {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	object-position: center !important;
+}
+
+/* Opened single-cartridge presentation - same fix, both markup paths */
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo {
+	width: 100% !important;
+	height: 100% !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-gen-tile-sticker.has-ds-reference-photo .kalos-gen-tile-boxart {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	object-position: center !important;
+	transform: none !important;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label {
+	display: grid !important;
+	grid-template-rows: 100% !important;
+	width: 100% !important;
+	height: 100% !important;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label .kalos-3ds-inset-art {
+	width: 100% !important;
+	height: 100% !important;
+	margin: 0 !important;
+}
+.kalos-gen-grid[data-open-presentation="cartridge"] .kalos-gen-tile[data-cart="ds"] .kalos-ds-photo-label .kalos-3ds-boxart {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	object-position: center !important;
+}
+
+/* ---------------------------------------------------------------------------
+   Switch box-art full-bleed fix: when a gen has real box art (gens 8-9,
+   see GEN_BOX_ART in script.js), drop the red "NINTENDO SWITCH" header
+   strip and the black product-code footer strip entirely, and let the
+   artwork fill the whole card edge-to-edge - matching how the GBA/DS/3DS
+   cartridges already go full-bleed with their box art. Uses :has() to
+   detect the has-boxart artwork band from its sibling header/footer,
+   since a gen with no box art should keep the original badge/header/
+   footer layout as a fallback. */
+.kalos-gen-tile[data-cart="switch"] .kalos-gen-tile-sticker:has(.kalos-switch-art.has-boxart) .kalos-switch-header,
+.kalos-gen-tile[data-cart="switch"] .kalos-gen-tile-sticker:has(.kalos-switch-art.has-boxart) .kalos-switch-footer {
+	display: none !important;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-art.has-boxart {
+	position: absolute !important;
+	inset: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	border-radius: inherit;
+}
+.kalos-gen-tile[data-cart="switch"] .kalos-switch-boxart {
+	position: absolute !important;
+	inset: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	object-position: center !important;
+}
