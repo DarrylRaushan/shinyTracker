@@ -1871,6 +1871,12 @@ species: [
 [1024, "Terapagos"],
 [1025, "Pecharunt"]
 ]
+}, {
+gen: 10,
+region: "Winds and Waves",
+species: [
+[1026, "Tidemaw"]
+]
 }, ];
 // REGION BALL CONTAINER images — one ball icon per region, shown in the
 // round badge on each Living Dex generation card. Files live in
@@ -1884,7 +1890,8 @@ var REGION_BALLS = {
 "Kalos": "ball_kalos_timerball.png",
 "Alola": "ball_alola_beastball.png",
 "Galar": "ball_galar_dynamaxball.png",
-"Paldea": "ball_paldea_premierball.png"
+"Paldea": "ball_paldea_premierball.png",
+"Winds and Waves": "ball_kanto_pokeball.png"
 };
 var SPECIES_INFO = {
 "bulbasaur": [1, "Grass", "Poison"],
@@ -4756,10 +4763,12 @@ if (cb) cb.checked = dexVariantFilter[key] !== false;
 var opt = document.querySelector('#k-variant-panel .dex-select-option[data-value="' + key + '"]');
 if (opt) opt.classList.toggle('active', key === soleActiveKey);
 });
-['btn-variant-filter', 'btn-k-variant'].forEach(function(id) {
-var btn = document.getElementById(id);
+var btn = document.getElementById('btn-variant-filter');
 if (btn) btn.classList.toggle('active', !allOn);
-});
+// #btn-k-variant now covers Form AND Stage (see updateFormStageButtonActive
+// below), so its active state can't be decided from dexVariantFilter
+// alone - hand off to the combined check instead of setting it here.
+updateFormStageButtonActive();
 }
 function wireVariantCheckboxes(idMap) {
 VARIANT_FILTER_KEYS.forEach(function(key) {
@@ -4797,7 +4806,7 @@ function closeOtherDexDropdowns(exceptId) {
 [
 'variant-filter-wrap', 'dex-sort-wrap', 'dex-type-wrap',
 'log-search-wrap', 'log-sort-wrap', 'log-filter-wrap',
-'k-search-wrap', 'k-sort-wrap', 'k-type-wrap', 'k-variant-wrap', 'k-evo-wrap'
+'k-search-wrap', 'k-sort-wrap', 'k-type-wrap', 'k-variant-wrap', 'k-3d-wrap'
 ].forEach(function(id) {
 if (id === exceptId) return;
 var wrap = document.getElementById(id);
@@ -4935,57 +4944,72 @@ collapseKalosToolbar();
 });
 document.getElementById('btn-k-variant').addEventListener('click', function(e) {
 e.stopPropagation();
-toggleKalosDropdown('k-variant-wrap');
+var willOpen = toggleKalosDropdown('k-variant-wrap');
+// Always land back on the Form-vs-Stage picker when freshly opened -
+// same "press it, choose one of two, then see that choice's options"
+// flow as the merged 3D/Anim panel, rather than remembering whichever
+// category was open last time.
+if (willOpen) {
+document.getElementById('k-variant-panel').dataset.step = 'pick';
+}
 });
-// Form is single-select now, same pattern as Sort/Type: a tap sets that
-// one variant category as the sole active filter (everything else turns
-// off) and the panel closes immediately - no Done pill needed any more.
-// Still driven through the same dexVariantFilter object the desktop
-// checkboxes use (see applyDexVariantFilter/syncVariantCheckboxes above),
-// just always leaving exactly one key true from this panel's own taps.
+// Form and Stage share one panel now, opened on a "pick" step (Form vs
+// Stage) - tapping one of those swaps in that category's real options
+// via data-step on #k-variant-panel (see the CSS-KALOS-MOBILE k-variant
+// rules in style.css), without closing the panel. Once inside a
+// category, each option is still single-select on its own: a tap sets
+// it as the sole active filter within its group and closes the whole
+// panel - no Done pill needed. Stage options carry the "evo-stage-option"
+// class so this one delegated handler can tell which state object
+// (dexVariantFilter vs dexEvoStageFilter) a given tap belongs to.
 document.getElementById('k-variant-panel').addEventListener('click', function(e) {
 e.stopPropagation();
+var stepBtn = e.target.closest('[data-step-target]');
+if (stepBtn) {
+document.getElementById('k-variant-panel').dataset.step = stepBtn.dataset.stepTarget;
+return;
+}
 var opt = e.target.closest('.dex-select-option');
 if (!opt) return;
 var key = opt.dataset.value;
+if (opt.classList.contains('evo-stage-option')) {
+Object.keys(dexEvoStageFilter).forEach(function(k) {
+dexEvoStageFilter[k] = (k === key);
+});
+document.querySelectorAll('#k-variant-panel .evo-stage-option').forEach(function(o) {
+o.classList.toggle('active', o.dataset.value === key);
+});
+applyDexEvoStageFilter();
+} else {
 VARIANT_FILTER_KEYS.forEach(function(k) {
 dexVariantFilter[k] = (k === key);
 });
 applyDexVariantFilter();
+}
+updateFormStageButtonActive();
 document.getElementById('k-variant-wrap').classList.remove('open');
 collapseKalosToolbar();
 });
-document.getElementById('btn-k-evo').addEventListener('click', function(e) {
-e.stopPropagation();
-toggleKalosDropdown('k-evo-wrap');
+// Reflects the combined Form+Stage state onto the one merged button -
+// lit up whenever either group has a non-default filter active. Reads
+// both state objects live, so it's safe to call from either filter's
+// own apply path (see syncVariantCheckboxes below) without the two
+// groups needing to know about each other.
+function updateFormStageButtonActive() {
+var variantAllOn = VARIANT_FILTER_KEYS.every(function(k) {
+return dexVariantFilter[k] !== false;
 });
-// Stage is single-select now too: a tap sets that one bucket as the sole
-// active filter and closes the panel, same as Sort/Type/Form - no Done
-// pill, and no "keep at least one on" guard needed since there's always
-// exactly one (or, before any tap, none - meaning unfiltered).
-document.getElementById('k-evo-panel').addEventListener('click', function(e) {
-e.stopPropagation();
-var opt = e.target.closest('.dex-select-option');
-if (!opt) return;
-var key = opt.dataset.value;
-Object.keys(dexEvoStageFilter).forEach(function(k) {
-dexEvoStageFilter[k] = (k === key);
-});
-document.querySelectorAll('#k-evo-panel .dex-select-option').forEach(function(o) {
-o.classList.toggle('active', o.dataset.value === key);
-});
-syncDexEvoStageButtonState();
-applyDexEvoStageFilter();
-document.getElementById('k-evo-wrap').classList.remove('open');
-collapseKalosToolbar();
-});
-function syncDexEvoStageButtonState() {
-var btn = document.getElementById('btn-k-evo');
-if (!btn) return;
-var allOn = Object.keys(dexEvoStageFilter).every(function(k) {
+var stageAllOn = Object.keys(dexEvoStageFilter).every(function(k) {
 return dexEvoStageFilter[k];
 });
-btn.classList.toggle('active', !allOn);
+var btn = document.getElementById('btn-k-variant');
+if (btn) btn.classList.toggle('active', !(variantAllOn && stageAllOn));
+}
+// Kept as a thin wrapper (old name still referenced by the reset handler
+// below) so Stage's part of the combined button stays in sync even when
+// only dexEvoStageFilter changed.
+function syncDexEvoStageButtonState() {
+updateFormStageButtonActive();
 }
 // Sliding highlight pill (#kalos-toolbar-highlight, see index.html) that
 // glides under whichever toolbar button currently has its dropdown open,
@@ -5048,7 +5072,7 @@ applyDexVariantFilter();
 Object.keys(dexEvoStageFilter).forEach(function(key) {
 dexEvoStageFilter[key] = true;
 });
-document.querySelectorAll('#k-evo-panel .dex-select-option').forEach(function(o) {
+document.querySelectorAll('#k-variant-panel .evo-stage-option').forEach(function(o) {
 o.classList.remove('active');
 });
 syncDexEvoStageButtonState();
@@ -5721,14 +5745,14 @@ if (String(GEN_DATA[i].gen) === String(genNum)) return i;
 return -1;
 }
 // Maps a generation number to a cartridge shell style for the mobile
-// Living Dex carousel tiles: gens 1-3 (GBA), 4-5 (DS), 6-7 (3DS), 8-9
+// Living Dex carousel tiles: gens 1-3 (GBA), 4-5 (DS), 6-7 (3DS), 8-10
 // (Switch).
 function kalosCartStyleForGen(genNum) {
 var n = Number(genNum);
 if (n >= 1 && n <= 3) return 'gba';
 if (n >= 4 && n <= 5) return 'ds';
 if (n >= 6 && n <= 7) return '3ds';
-if (n >= 8 && n <= 9) return 'switch';
+if (n >= 8 && n <= 10) return 'switch';
 return '';
 }
 // Optional real box-art photo for a generation's cartridge-shell Living
@@ -5741,15 +5765,26 @@ return '';
 // works). Placeholder filenames below are guesses - rename each to
 // match whatever you actually saved, or set an entry to null/remove
 // it to fall back to the plain swirl sticker for that gen.
+//
+// GEN_BOX_ART_VERSION is appended as a "?v=" query string to every
+// box-art <img> src below. Browsers cache images by their exact URL,
+// so swapping which file a gen points to (or replacing a file's
+// contents while keeping the same name) can still show the old,
+// cached picture even after script.js itself reloads. Using the
+// current timestamp (instead of a hand-bumped string) means every
+// fresh page load requests a URL that has never been cached before,
+// so there's no stale-string to forget to update going forward.
+var GEN_BOX_ART_VERSION = String(Date.now());
 var GEN_BOX_ART = {
-1: "firegreen.jpg", // Kanto
-2: "heartgold.jpg",  // Johto
-3: "emerald.jpg",    // Hoenn
-4: "platinum.jpg",              // Sinnoh — Pokémon Platinum cover artwork
-5: "black.jpg",                 // Unova — Pokémon Black cover artwork
-6: "x.jpg",   // Kalos
-7: "USUM.webp",       // Alola
-8: "gen8.jpg"     // Galar
+1: "gen1.png", // Kanto
+2: "gen2.png",  // Johto
+3: "gen3.png",    // Hoenn
+4: "gen4.png",              // Sinnoh
+5: "gen5.png",                 // Unova
+6: "gen6.png",   // Kalos
+7: "gen7.png",       // Alola
+8: "gen8.png",    // Galar
+9: "gen9.png"      // Paldea
 };
 function buildKalosTileCollapsedHtml(g, genCaught) {
 var pct = Math.round((genCaught / g.species.length) * 100);
@@ -5771,7 +5806,7 @@ var switchHudBallFallbacks = {
 var switchHudBallSlug = switchHudBallFallbacks[switchHudBallFile] || "poke-ball";
 var switchHudBallRemote = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/" + switchHudBallSlug + ".png";
 var switchHudBall = switchHudBallFile ?
-('<span class="kalos-gba-ball"><img src="' + switchHudBallRemote + '" data-local-src="images/region-balls/' + switchHudBallFile + '" alt="" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'is-fallback\');"></span>') :
+('<span class="kalos-gba-ball"><img src="images/region-balls/' + switchHudBallFile + '" data-remote-src="' + switchHudBallRemote + '" alt="" onerror="if(this.src!==this.dataset.remoteSrc){this.src=this.dataset.remoteSrc;}else{this.style.display=\'none\';this.parentElement.classList.add(\'is-fallback\');}"></span>') :
 '<span class="kalos-gba-ball is-fallback"></span>';
 var switchCompletion =
 '<div class="kalos-ds-completion" aria-label="' + escapeHtml(g.region) + ' completion ' + pct + ' percent">' +
@@ -5786,7 +5821,7 @@ switchHudBall +
 // markup if a gen has no photo set in GEN_BOX_ART.
 var switchBoxArt = GEN_BOX_ART[g.gen];
 var switchArtInner = switchBoxArt ?
-('<img class="kalos-switch-boxart" src="images/game-symbols/' + switchBoxArt + '" alt="" onerror="this.remove()">') :
+('<img class="kalos-switch-boxart" src="images/game-symbols/' + switchBoxArt + '?v=' + GEN_BOX_ART_VERSION + '" alt="" onerror="this.remove()">') :
 (buildDexGenBadgeHtml(g, pct) +
 '<div class="kalos-switch-region">' + escapeHtml(g.region) + '</div>' +
 '<div class="kalos-switch-publisher">Shiny Tracker</div>' +
@@ -5838,7 +5873,7 @@ var hudBallFallbacks = {
 var hudBallSlug = hudBallFallbacks[hudBallFile] || "poke-ball";
 var hudBallRemote = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/" + hudBallSlug + ".png";
 var gbaHudBall = hudBallFile ?
-('<span class="kalos-gba-ball"><img src="' + hudBallRemote + '" data-local-src="images/region-balls/' + hudBallFile + '" alt="" onerror="this.style.display=\'none\';this.parentElement.classList.add(\'is-fallback\');"></span>') :
+('<span class="kalos-gba-ball"><img src="images/region-balls/' + hudBallFile + '" data-remote-src="' + hudBallRemote + '" alt="" onerror="if(this.src!==this.dataset.remoteSrc){this.src=this.dataset.remoteSrc;}else{this.style.display=\'none\';this.parentElement.classList.add(\'is-fallback\');}"></span>') :
 '<span class="kalos-gba-ball is-fallback"></span>';
 var gbaCompletion = cartStyleForBoxArt === 'gba' ? (
 '<div class="kalos-gba-completion" style="--complete:' + pct + '%;--complete-rail:calc(' + pct + '% - 11px)" aria-label="' + escapeHtml(g.region) + ' completion ' + pct + ' percent">' +
@@ -5859,17 +5894,26 @@ gbaHudBall +
 // being suppressed by the carousel’s depth/overflow treatment.
 var dsBottomTriangle = cartStyleForBoxArt === 'ds' ?
 '<span class="kalos-ds-bottom-triangle" aria-hidden="true"></span>' : '';
+// Top "NINTENDO 3DS" brand strip and bottom product-code strip removed
+// per request - the label is now just the inset-art box, given the
+// full label area so the boxart image has as much room as possible.
 var threeDsLabel = cartStyleForBoxArt === '3ds' ? (
 '<div class="kalos-3ds-label">' +
-'<div class="kalos-3ds-brand">NINTENDO <span class="kalos-3ds-mark"><i></i><i></i><span class="kalos-3ds-three">3</span>DS</span><sup>™</sup></div>' +
 '<div class="kalos-3ds-inset-art">' +
-(boxArt ? '<img class="kalos-3ds-boxart" src="images/game-symbols/' + boxArt + '" alt="" onerror="this.remove()">' : '') +
+(boxArt ? '<img class="kalos-3ds-boxart" src="images/game-symbols/' + boxArt + '?v=' + GEN_BOX_ART_VERSION + '" alt="" onerror="this.remove()">' : '') +
 '</div>' +
-'<div class="kalos-3ds-info-bar">' +
-'<span class="kalos-3ds-nintendo"><span class="kalos-3ds-nintendo-word">Nintendo</span><span class="kalos-3ds-nintendo-sub">The Pokémon Company</span></span>' +
-'<span class="kalos-3ds-ce" aria-hidden="true">CE</span>' +
+'</div>'
+) : '';
+// DS reuses the exact same label/inset-art container markup as the 3DS
+// cartridge (same classes, so it automatically picks up the shared
+// framing rules those already have) - just tagged with an extra
+// "kalos-ds-photo-label" hook so the CSS can recolor it black and drop
+// the 3DS's top-right notch/tab for the DS shell specifically.
+var dsPhotoLabel = (cartStyleForBoxArt === 'ds' && boxArt) ? (
+'<div class="kalos-3ds-label kalos-ds-photo-label">' +
+'<div class="kalos-3ds-inset-art">' +
+'<img class="kalos-3ds-boxart" src="images/game-symbols/' + boxArt + '?v=' + GEN_BOX_ART_VERSION + '" alt="" onerror="this.remove()">' +
 '</div>' +
-'<div class="kalos-3ds-product-code">LNA-CTR-TRK-0' + g.gen + '-USA</div>' +
 '</div>'
 ) : '';
 // GBA and DS cards are now physical cartridges with their own dedicated
@@ -5887,7 +5931,7 @@ buildDexGenBadgeHtml(g, pct) +
 );
 return (
 '<div class="kalos-gen-tile-sticker' + (boxArt ? ' has-boxart' : '') + (usesDsReferencePhoto ? ' has-ds-reference-photo' : '') + '">' +
-(threeDsLabel || ((boxArt ? '<img class="kalos-gen-tile-boxart" src="images/game-symbols/' + boxArt + '" alt="" onerror="this.remove()">' : '') + legacyTileDetails)) +
+(threeDsLabel || dsPhotoLabel || ((boxArt ? '<img class="kalos-gen-tile-boxart" src="images/game-symbols/' + boxArt + '?v=' + GEN_BOX_ART_VERSION + '" alt="" onerror="this.remove()">' : '') + legacyTileDetails)) +
 '</div>' +
 dsBottomTriangle +
 gbaCompletion +
@@ -7463,27 +7507,52 @@ if (!chip) return;
 e.preventDefault();
 chip.click();
 });
-// 3D View toggle: desktop (#btn-dex-3d-toggle) and mobile
-// (#btn-k-3d-toggle) both flip the same dex3DMode flag and stay in sync
-// with each other, the same way the desktop/mobile Sort/Type toolbars
-// mirror dexSortMode/dexTypeFilter elsewhere in this file. Only a class
-// toggle on the two grids (for the cursor/badge affordance in style.css) -
-// no re-render needed, since the click handlers above read dex3DMode live.
+// 3D View toggle: desktop (#btn-dex-3d-toggle) is still its own standalone
+// pressed/unpressed button, but mobile now opens #k-3d-wrap's panel (see
+// btn-k-3d-toggle's own click handler further down) and the actual toggle
+// lives on #k-3d-toggle-option inside it, alongside Animated Only. Both
+// still flip the same dex3DMode flag and stay in sync with each other, the
+// same way the desktop/mobile Sort/Type toolbars mirror dexSortMode/
+// dexTypeFilter elsewhere in this file. Only a class toggle on the two
+// grids (for the cursor/badge affordance in style.css) - no re-render
+// needed, since the click handlers above read dex3DMode live.
 (function() {
 var desktopBtn = document.getElementById('btn-dex-3d-toggle');
-var mobileBtn = document.getElementById('btn-k-3d-toggle');
+var mobileOption = document.getElementById('k-3d-toggle-option');
 var desktopGrid = document.getElementById('dex-grid');
 var mobileGrid = document.getElementById('kalos-gen-grid');
 function toggleDex3DMode() {
 dex3DMode = !dex3DMode;
 if (desktopBtn) desktopBtn.setAttribute('aria-pressed', dex3DMode ? 'true' : 'false');
-if (mobileBtn) mobileBtn.setAttribute('aria-pressed', dex3DMode ? 'true' : 'false');
+if (mobileOption) {
+mobileOption.setAttribute('aria-pressed', dex3DMode ? 'true' : 'false');
+mobileOption.classList.toggle('active', dex3DMode);
+}
 if (desktopGrid) desktopGrid.classList.toggle('mode-3d', dex3DMode);
 if (mobileGrid) mobileGrid.classList.toggle('mode-3d', dex3DMode);
+updateK3dWrapButtonActive();
 }
 if (desktopBtn) desktopBtn.addEventListener('click', toggleDex3DMode);
-if (mobileBtn) mobileBtn.addEventListener('click', toggleDex3DMode);
+if (mobileOption) mobileOption.addEventListener('click', function(e) {
+e.stopPropagation();
+toggleDex3DMode();
+});
 })();
+// Opens/closes #k-3d-wrap's panel - the two toggles inside it (3D View,
+// Animated Only) each flip their own state independently without closing
+// the panel, unlike Form/Stage/Sort/Type's tap-and-close pattern, so both
+// can be turned on together in one visit to the panel.
+document.getElementById('btn-k-3d-toggle').addEventListener('click', function(e) {
+e.stopPropagation();
+toggleKalosDropdown('k-3d-wrap');
+});
+// Lights up the merged #btn-k-3d-toggle whenever either 3D View or
+// Animated Only is currently on - mirrors updateFormStageButtonActive's
+// pattern for the merged Form/Stage button above.
+function updateK3dWrapButtonActive() {
+var btn = document.getElementById('btn-k-3d-toggle');
+if (btn) btn.classList.toggle('active', dex3DMode || dexAnimatedOnlyFilter);
+}
 // Recomputes and updates the per-card and overall Living Dex counters
 // (caught/total counts, progress bars, percentages) without touching any
 // sprite <img> elements, so sprites never reload/re-flash from a counter
@@ -7727,26 +7796,36 @@ return;
 chip.classList.toggle('anim-hidden', !hasAnimatedModel(chip.dataset.dexnum, shiny));
 });
 }
+// #btn-dex-anim-filter (desktop) is still a real pressed/unpressed button.
+// Mobile's toggle now lives as #k-anim-toggle-option inside #k-3d-wrap's
+// panel alongside 3D View - it gets the standard reskin-full
+// .dex-select-option.active tint (see style.css) instead of dedicated
+// aria-pressed styling, but still tracks aria-pressed for a11y.
 function syncDexAnimatedFilterUI() {
-['btn-dex-anim-filter', 'btn-k-anim-filter'].forEach(function(id) {
-var btn = document.getElementById(id);
-if (!btn) return;
-btn.classList.toggle('active', dexAnimatedOnlyFilter);
-btn.setAttribute('aria-pressed', dexAnimatedOnlyFilter ? 'true' : 'false');
-});
+var desktopBtn = document.getElementById('btn-dex-anim-filter');
+if (desktopBtn) {
+desktopBtn.classList.toggle('active', dexAnimatedOnlyFilter);
+desktopBtn.setAttribute('aria-pressed', dexAnimatedOnlyFilter ? 'true' : 'false');
+}
+var mobileOption = document.getElementById('k-anim-toggle-option');
+if (mobileOption) {
+mobileOption.classList.toggle('active', dexAnimatedOnlyFilter);
+mobileOption.setAttribute('aria-pressed', dexAnimatedOnlyFilter ? 'true' : 'false');
+}
+updateK3dWrapButtonActive();
 }
 function setDexAnimatedOnlyFilter(value) {
 dexAnimatedOnlyFilter = value;
 syncDexAnimatedFilterUI();
 applyDexAnimatedFilter();
 }
-['btn-dex-anim-filter', 'btn-k-anim-filter'].forEach(function(id) {
-var btn = document.getElementById(id);
-if (!btn) return;
-btn.addEventListener('click', function(e) {
+document.getElementById('btn-dex-anim-filter').addEventListener('click', function(e) {
 e.stopPropagation();
 setDexAnimatedOnlyFilter(!dexAnimatedOnlyFilter);
 });
+document.getElementById('k-anim-toggle-option').addEventListener('click', function(e) {
+e.stopPropagation();
+setDexAnimatedOnlyFilter(!dexAnimatedOnlyFilter);
 });
 // ---------- Living Dex: 3D model viewer ----------
 // Model source: Pokemon-3D-api's community-maintained, web-optimized (Draco
