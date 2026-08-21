@@ -6424,7 +6424,7 @@ user-select: none;
 cursor: grabbing;
 }
 .kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile {
-will-change: transform, opacity;
+will-change: transform, opacity, filter;
 transform-style: preserve-3d;
 backface-visibility: hidden;
 -webkit-backface-visibility: hidden;
@@ -6432,24 +6432,6 @@ backface-visibility: hidden;
    letting Safari decide mid-drag, which is where the first swipe or two on
    iPhone used to visibly hitch before the layers "warmed up". */
 -webkit-transform: translateZ(0);
-}
-/* Depth darkening overlay (see layoutKalosDepthCarousel in script.js).
-   iOS Safari paints the CSS `filter` property off the GPU compositor
-   whenever the element also sits inside a `transform-style: preserve-3d` /
-   `perspective` context, which is exactly this carousel - that was forcing
-   a CPU repaint of every card on every single scroll/drag frame, which is
-   what read as "iffy"/stuttery scrolling on iPhone specifically. A plain
-   opacity-animated black overlay produces the same visual darkening while
-   staying fully on the compositor, so recessed cards dim smoothly instead. */
-.kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile .kalos-depth-dim {
-position: absolute;
-inset: 0;
-background: #000;
-opacity: 0;
-pointer-events: none;
-z-index: 5;
-border-radius: inherit;
-will-change: opacity;
 }
 @media (prefers-reduced-motion: reduce) {
 .kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile {
@@ -7527,6 +7509,26 @@ padding: 2px 1px;
 width: 100%;
 box-sizing: border-box;
 margin-bottom: 0;
+}
+
+/* Gen 10 gets a red shell instead of the dark charcoal shared by gens 8-9,
+   matching the red cartridge-case reference image. Only the outer housing
+   (body/border/pull-tab/connector-notch) changes color here - the header
+   banner, white art band, and black footer strip inside the sticker stay
+   as-is. Doubled-up [data-cart="switch"][data-gen="10"] selector outweighs
+   the shared switch-shell rule above without needing source-order luck. */
+.kalos-gen-tile[data-cart="switch"][data-gen="10"] {
+border: 2px solid #7a0000 !important;
+background:
+linear-gradient(90deg, rgba(255,255,255,0.22), transparent 10% 88%, rgba(0,0,0,0.3)),
+linear-gradient(160deg, #ff4b4b 0%, #e60012 32%, #a5000d 100%) !important;
+}
+.kalos-gen-tile[data-cart="switch"][data-gen="10"]::before {
+background: #7a0000;
+box-shadow: inset 0 2px 3px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(255,255,255,0.12), 0 1px 0 rgba(255,255,255,0.1);
+}
+.kalos-gen-tile[data-cart="switch"][data-gen="10"]::after {
+background: #4a0000;
 }
 
 /* GBA proportion correction -------------------------------------------------------
