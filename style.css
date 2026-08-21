@@ -7323,8 +7323,8 @@ bottom: 3px;
 /* Nintendo DS: black square housing with a cream top strip, oversized framed
    artwork label and the shallow, centred lower finger notch. */
 .kalos-gen-tile[data-cart="ds"] {
-flex: 0 0 63%;
-aspect-ratio: 0.98 / 1;
+flex: 0 0 55%;
+aspect-ratio: 0.9 / 1;
 padding: 15px 7px 9px;
 border: 2px solid #16181a;
 border-radius: 9px 9px 11px 11px;
@@ -9554,7 +9554,7 @@ display: none;
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
 	flex: 0 0 64%;
-	aspect-ratio: 0.95 / 1;
+	aspect-ratio: 0.9 / 1;
 	padding: 12px 6px 8px;
 	border: 3px solid #151516;
 	border-radius: 12px 12px 15px 15px;
@@ -9922,7 +9922,7 @@ display: none;
 /* Restore a larger DS body while reserving space above the lower panel. */
 .kalos-gen-tile[data-cart="ds"][data-gen="4"],
 .kalos-gen-tile[data-cart="ds"][data-gen="5"] {
-	flex-basis: 61%;
+	flex-basis: 55%;
 	margin-bottom: 12px;
 }
 
