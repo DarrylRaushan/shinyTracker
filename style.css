@@ -6424,7 +6424,7 @@ user-select: none;
 cursor: grabbing;
 }
 .kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile {
-will-change: transform, opacity, filter;
+will-change: transform, opacity;
 transform-style: preserve-3d;
 backface-visibility: hidden;
 -webkit-backface-visibility: hidden;
@@ -6432,6 +6432,24 @@ backface-visibility: hidden;
    letting Safari decide mid-drag, which is where the first swipe or two on
    iPhone used to visibly hitch before the layers "warmed up". */
 -webkit-transform: translateZ(0);
+}
+/* Depth darkening overlay (see layoutKalosDepthCarousel in script.js).
+   iOS Safari paints the CSS `filter` property off the GPU compositor
+   whenever the element also sits inside a `transform-style: preserve-3d` /
+   `perspective` context, which is exactly this carousel - that was forcing
+   a CPU repaint of every card on every single scroll/drag frame, which is
+   what read as "iffy"/stuttery scrolling on iPhone specifically. A plain
+   opacity-animated black overlay produces the same visual darkening while
+   staying fully on the compositor, so recessed cards dim smoothly instead. */
+.kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile .kalos-depth-dim {
+position: absolute;
+inset: 0;
+background: #000;
+opacity: 0;
+pointer-events: none;
+z-index: 5;
+border-radius: inherit;
+will-change: opacity;
 }
 @media (prefers-reduced-motion: reduce) {
 .kalos-gen-grid.kalos-depth-ready:not(.kalos-gen-grid-open) .kalos-gen-tile {
