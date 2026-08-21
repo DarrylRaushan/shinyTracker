@@ -6562,7 +6562,19 @@ var opacity = d < 0 ? Math.max(0, 1 + d) : 1;
 var brightness = Math.max(0.42, 1 - back * cfg.falloff);
 tile.style.transform = 'translate3d(' + side.toFixed(2) + 'px, 0, ' + z.toFixed(2) + 'px) rotateY(' + rotate.toFixed(2) + 'deg) scale(' + scale.toFixed(3) + ')';
 tile.style.opacity = opacity.toFixed(3);
-tile.style.filter = 'brightness(' + brightness.toFixed(3) + ')';
+// A real compositor-driven overlay instead of tile.style.filter - see the
+// .kalos-depth-dim CSS comment in style.css for why. Tiles get their
+// innerHTML replaced whenever the mobile dex re-renders (renderKalosMobileDex,
+// expandKalosTile, etc.), which wipes this element out along with everything
+// else in the tile, so it's recreated on demand here rather than assumed to
+// still exist.
+var dim = tile.querySelector(':scope > .kalos-depth-dim');
+if (!dim) {
+dim = document.createElement('div');
+dim.className = 'kalos-depth-dim';
+tile.appendChild(dim);
+}
+dim.style.opacity = (1 - brightness).toFixed(3);
 tile.style.zIndex = String(2000 - Math.round(d * 20));
 tile.style.pointerEvents = opacity > 0.05 ? 'auto' : 'none';
 }
@@ -6665,7 +6677,15 @@ e.preventDefault();
 stopKalosDepthMotion();
 var delta = e.deltaMode === 1 ? raw * 24 : raw;
 var maxScroll = Math.max(0, grid.scrollWidth - grid.clientWidth);
-grid.scrollLeft = Math.max(0, Math.min(maxScroll, grid.scrollLeft + delta));
+var nextScroll = grid.scrollLeft + delta;
+// Loop the carousel: scrolling past the last generation wraps back to the
+// first (and vice versa) instead of clamping dead at either end.
+if (nextScroll > maxScroll) {
+nextScroll = 0;
+} else if (nextScroll < 0) {
+nextScroll = maxScroll;
+}
+grid.scrollLeft = Math.max(0, Math.min(maxScroll, nextScroll));
 queueKalosCarouselSync();
 kalosDepthWheelTimer = setTimeout(function() {
 scrollKalosCarouselToIndex(nearestKalosCarouselIndex(grid, 0), true);
@@ -6758,6 +6778,17 @@ kalosDepthIgnoreClickUntil = Date.now() + 360;
 // snap back to the start card), just clamped to a one-card step.
 var flungIndex = nearestKalosCarouselIndex(grid, drag.velocityX);
 var target = Math.max(drag.startIndex - 1, Math.min(drag.startIndex + 1, flungIndex));
+var count = grid.children.length;
+// Loop the carousel: swiping forward off the last generation wraps to the
+// first, and swiping backward off the first wraps to the last, so the
+// gen picker reads as a continuous loop instead of a dead end at gen 10.
+var isForwardSwipe = grid.scrollLeft > drag.startScroll;
+var isBackwardSwipe = grid.scrollLeft < drag.startScroll;
+if (isForwardSwipe && drag.startIndex === count - 1) {
+target = 0;
+} else if (isBackwardSwipe && drag.startIndex === 0) {
+target = count - 1;
+}
 scrollKalosCarouselToIndex(target, true);
 }
 grid.addEventListener('pointerup', finishDepthDrag, { passive: true });
