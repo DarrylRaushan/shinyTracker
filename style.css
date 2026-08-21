@@ -7324,7 +7324,7 @@ bottom: 3px;
    artwork label and the shallow, centred lower finger notch. */
 .kalos-gen-tile[data-cart="ds"] {
 flex: 0 0 63%;
-aspect-ratio: 0.94 / 1;
+aspect-ratio: 0.98 / 1;
 padding: 15px 7px 9px;
 border: 2px solid #16181a;
 border-radius: 9px 9px 11px 11px;
