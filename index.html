@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,7 +7,7 @@
     <title>Shiny Tracker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&family=Share+Tech+Mono&family=Press+Start+2P&display=swap" rel="stylesheet">
     <script type="module">
       import { animate, stagger } from "https://cdn.jsdelivr.net/npm/motion@latest/+esm";
       window.Motion = { animate: animate, stagger: stagger };
@@ -16,7 +17,7 @@
          custom element, no build step/React needed, so it drops straight
          into this vanilla page the same way the sprite <img>s do. -->
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=ds-shell-sides-2">
+    <link rel="stylesheet" href="style.css?v=log-screen-mint-fix-8">
   </head>
   <body>
     <div id="stars"></div>
@@ -30,82 +31,82 @@
 
           <div id="view-collection" class="dex-page">
             <div class="log-dex-shell-wrap">
-              <div class="log-dex-shell" id="log-dex-shell" data-log-mode="card" data-log-hof="false">
+              <div class="log-dex-shell log-v2-shell" id="log-dex-shell" data-log-mode="card" data-log-hof="false">
                 <div class="log-dex-shell-crease-wrap"><div class="log-dex-shell-crease"></div></div>
 
-                <div class="log-mode-toggle" id="log-mode-toggle">
-                  <button type="button" data-mode="card" class="active">Card</button>
-                  <button type="button" data-mode="grid">Grid</button>
-                </div>
+                <header class="log-v2-header">
+                  <div class="log-mode-toggle" id="log-mode-toggle" aria-label="Log view mode">
+                    <button type="button" data-mode="card" class="active"><svg class="log-mode-icon log-mode-icon-card" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="#fff"/><path d="M2.5 12a9.5 9.5 0 0 1 19 0z" fill="#c62828"/><circle cx="12" cy="12" r="9.5" fill="none" stroke="#3d0a0e" stroke-width="1.6"/><path d="M2.5 12h6.2M15.3 12h6.2" stroke="#3d0a0e" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="#fff" stroke="#3d0a0e" stroke-width="1.6"/></svg>Card</button>
+                    <button type="button" data-mode="grid"><svg class="log-mode-icon log-mode-icon-grid" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="2" y="2" width="5.5" height="5.5" rx="1"/><rect x="9.25" y="2" width="5.5" height="5.5" rx="1"/><rect x="16.5" y="2" width="5.5" height="5.5" rx="1"/><rect x="2" y="9.25" width="5.5" height="5.5" rx="1"/><rect x="9.25" y="9.25" width="5.5" height="5.5" rx="1"/><rect x="16.5" y="9.25" width="5.5" height="5.5" rx="1"/><rect x="2" y="16.5" width="5.5" height="5.5" rx="1"/><rect x="9.25" y="16.5" width="5.5" height="5.5" rx="1"/><rect x="16.5" y="16.5" width="5.5" height="5.5" rx="1"/></svg>Grid</button>
+                  </div>
+                  <div class="log-v2-header-stats">
+                    <span class="log-v2-dex-number" id="log-v2-header-dexnum">No. ????</span>
+                    <span class="log-v2-divider">|</span>
+                    <strong id="log-v2-header-count">0</strong><span id="log-v2-header-unit"> ENCOUNTERS</span>
+                  </div>
+                </header>
 
-                <div class="log-dex-screen-stack">
-                  <div class="log-dex-screen" id="log-latest-screen"></div>
-                  <div class="log-dex-screen log-grid-screen" id="log-grid-screen"></div>
-                  <div class="log-dex-screen log-hof-screen" id="log-hof-screen"></div>
-                </div>
+                <section class="log-v2-record-panel" aria-label="Latest shiny log record">
+                  <div class="log-dex-screen-stack">
+                    <div class="log-dex-screen" id="log-latest-screen"></div>
+                    <div class="log-dex-screen log-grid-screen" id="log-grid-screen"></div>
+                    <div class="log-dex-screen log-hof-screen" id="log-hof-screen"></div>
+                  </div>
+                </section>
 
-                <div class="log-dex-toolbar" id="log-dex-toolbar">
-                  <div class="dex-select-wrap" id="log-search-wrap">
-                    <button type="button" class="log-dex-grid-btn" id="btn-log-search" title="Search" aria-label="Search">⌕</button>
-                    <div class="dex-select-panel log-search-panel" id="log-search-panel">
-                      <input type="text" id="log-search" class="log-key-input" placeholder="␣ filter your log...">
-                    </div>
+                <nav class="log-v2-tabs" aria-label="Shiny log sections">
+                  <button type="button" class="active" data-log-tab="overview"><svg class="log-v2-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></svg><span>Overview</span></button>
+                  <button type="button" data-log-tab="stats"><svg class="log-v2-tab-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="13" width="4.5" height="8" rx="1"/><rect x="9.75" y="9" width="4.5" height="12" rx="1"/><rect x="16.5" y="5" width="4.5" height="16" rx="1"/></svg><span>Stats</span></button>
+                  <button type="button" data-log-tab="log"><svg class="log-v2-tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5c2-1 5-1 7 0v14c-2-1-5-1-7 0V5z"/><path d="M21 5c-2-1-5-1-7 0v14c2-1 5-1 7 0V5z"/></svg><span>Log</span></button>
+                </nav>
+
+                <div class="log-tab-panel-stack">
+                  <div class="log-overview-panel" id="log-overview-panel">
+                    <div class="log-overview-genus" id="log-overview-genus">Accessing entry…</div>
+                    <div class="log-overview-metrics" id="log-overview-metrics"></div>
+                    <p class="log-overview-flavor" id="log-overview-flavor"></p>
                   </div>
-                  <div class="dex-select-wrap" id="log-sort-wrap">
-                    <button type="button" class="log-dex-grid-btn" id="btn-log-sort" title="Sort">Newest ▾</button>
-                    <div class="dex-select-panel" id="log-sort-panel">
-                      <div class="dex-select-option active" data-value="newest">Newest</div>
-                      <div class="dex-select-option" data-value="oldest">Oldest</div>
-                      <div class="dex-select-option" data-value="rarest">Rarest Odds</div>
-                      <div class="dex-select-option" data-value="fastest">Fastest Catch</div>
-                      <div class="dex-select-option" data-value="most">Most Encounters</div>
-                    </div>
+
+                  <div class="log-stats-panel" id="log-stats-panel">
+                    <div class="log-stats-rows" id="log-stats-rows">Accessing entry…</div>
                   </div>
-                  <div class="dex-select-wrap" id="log-filter-wrap">
-                    <button type="button" class="log-dex-grid-btn" id="btn-log-filter" title="Filter">All ▾</button>
-                    <div class="dex-select-panel log-filter-panel" id="log-filter-panel">
-                      <div class="log-filter-group">
-                        <label class="log-filter-group-label" for="log-filter-game">Game</label>
-                        <select id="log-filter-game"><option value="">All Games</option></select>
+
+                  <section class="log-v2-toolbar-wrap" aria-label="Shiny log controls">
+                    <div class="log-dex-toolbar log-v2-toolbar" id="log-dex-toolbar">
+                      <div class="dex-select-wrap log-v2-search-control" id="log-search-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-log-search" title="Search" aria-label="Search"><span>Search</span></button>
+                        <div class="dex-select-panel log-search-panel" id="log-search-panel">
+                          <input type="text" id="log-search" class="log-key-input" placeholder="␣ filter your log...">
+                        </div>
                       </div>
-                      <div class="log-filter-group">
-                        <label class="log-filter-group-label" for="log-filter-method">Method</label>
-                        <select id="log-filter-method"><option value="">All Methods</option></select>
+                      <div class="dex-select-wrap" id="log-sort-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-log-sort" title="Sort">Newest</button>
+                        <div class="dex-select-panel" id="log-sort-panel">
+                          <div class="dex-select-option active" data-value="newest">Newest</div>
+                          <div class="dex-select-option" data-value="oldest">Oldest</div>
+                          <div class="dex-select-option" data-value="rarest">Rarest Odds</div>
+                          <div class="dex-select-option" data-value="fastest">Fastest Catch</div>
+                          <div class="dex-select-option" data-value="most">Most Encounters</div>
+                        </div>
                       </div>
-                      <div class="log-filter-group">
-                        <label class="log-filter-group-label" for="log-filter-gen">Generation</label>
-                        <select id="log-filter-gen"><option value="">All Gens</option></select>
+                      <div class="dex-select-wrap" id="log-filter-wrap">
+                        <button type="button" class="log-dex-grid-btn" id="btn-log-filter" title="Filter">All</button>
+                        <div class="dex-select-panel log-filter-panel" id="log-filter-panel">
+                          <div class="log-filter-group"><label class="log-filter-group-label" for="log-filter-game">Game</label><select id="log-filter-game"><option value="">All Games</option></select></div>
+                          <div class="log-filter-group"><label class="log-filter-group-label" for="log-filter-method">Method</label><select id="log-filter-method"><option value="">All Methods</option></select></div>
+                          <div class="log-filter-group"><label class="log-filter-group-label" for="log-filter-gen">Generation</label><select id="log-filter-gen"><option value="">All Gens</option></select></div>
+                          <button type="button" class="ghost log-filter-clear" id="btn-log-filter-clear">Clear Filters</button>
+                        </div>
                       </div>
-                      <button type="button" class="ghost log-filter-clear" id="btn-log-filter-clear">Clear Filters</button>
                     </div>
-                  </div>
-                  <button type="button" class="log-dex-grid-btn log-dex-grid-hof" id="btn-log-hof" title="Hall of Fame" aria-pressed="false"><span class="log-dex-grid-hof-icon">★</span></button>
-                  <button type="button" class="log-dex-grid-btn" id="btn-toggle-log-edit" title="Edit Shiny Log" aria-label="Edit Shiny Log" aria-pressed="false">✎</button>
-                  <button type="button" class="log-dex-grid-btn" id="btn-log-reset-filters" title="Reset Filters" aria-label="Reset all filters">⟲</button>
+                    <div class="log-v2-utility-row">
+                      <button type="button" class="log-dex-grid-btn log-v2-utility-btn log-dex-grid-hof" id="btn-log-hof" title="Hall of Fame" aria-label="Hall of Fame" aria-pressed="false"><span>HOF</span></button>
+                      <button type="button" class="log-dex-grid-btn log-v2-utility-btn" id="btn-toggle-log-edit" title="Edit Log" aria-label="Edit Log" aria-pressed="false"><span>Edit</span></button>
+                      <button type="button" class="log-dex-grid-btn log-v2-utility-btn" id="btn-log-reset-filters" title="Reset" aria-label="Reset all filters"><span>Reset</span></button>
+                    </div>
+                  </section>
                 </div>
-                <div class="log-dex-row">
-                  <button type="button" class="log-dex-pill" id="btn-log-to-livingdex-1" title="Living Dex" aria-label="Go to Living Dex">
-                    <span class="log-dex-pill-rivet rivet-tl" aria-hidden="true"></span>
-                    <span class="log-dex-pill-rivet rivet-br" aria-hidden="true"></span>
-                    <span class="log-dex-pill-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" width="27" height="27" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="9" fill="currentColor" opacity="0.15"/>
-                        <path d="M3 12a9 9 0 0 1 18 0" fill="currentColor" opacity="0.55"/>
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none"/>
-                        <path d="M3 12H9M15 12H21" stroke="currentColor" stroke-width="1.8"/>
-                        <circle cx="12" cy="12" r="2.6" fill="#182463" stroke="currentColor" stroke-width="1.8"/>
-                      </svg>
-                    </span>
-                    <span class="log-dex-pill-label">Living Dex</span>
-                    <span class="log-dex-pill-count" id="log-dex-pill-count">0 / 0</span>
-                    <span class="log-dex-pill-leds" aria-hidden="true"><span></span><span></span><span></span></span>
-                    <span class="log-dex-pill-arrow" aria-hidden="true">→</span>
-                  </button>
-                </div>
-                <div class="log-dex-nav">
-                  <button class="log-dex-nav-btn" id="log-screen-prev" aria-label="Show previous catch">◀&#xFE0E;</button>
-                  <button class="log-dex-nav-btn" id="log-screen-next" aria-label="Show next catch">▶&#xFE0E;</button>
-                </div>
+                <div class="log-dex-nav"><button class="log-dex-nav-btn" id="log-screen-prev" aria-label="Show previous catch">◀&#xFE0E;</button><button class="log-dex-nav-btn log-dex-nav-menu-btn" id="log-screen-menu" title="Living Dex" aria-label="Go to Living Dex"><svg class="log-dex-nav-menu-svg" viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#fff"/><path d="M3 12a9 9 0 0 1 18 0" fill="#ee1515"/><circle cx="12" cy="12" r="9" stroke="#000" stroke-width="1.8" fill="none"/><path d="M3 12H9M15 12H21" stroke="#000" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="#fff" stroke="#000" stroke-width="1.8"/></svg></button><button class="log-dex-nav-btn" id="log-screen-next" aria-label="Show next catch">▶&#xFE0E;</button></div>
               </div>
             </div>
 
@@ -532,6 +533,6 @@
       }
     </script>
     <!-- Motion is loaded in the document head and powers the mobile carousel. -->
-    <script src="script.js?v=ds-3ds-container-1"></script>
+    <script src="script.js?v=log-header-stats-live-2"></script>
   </body>
 </html>
