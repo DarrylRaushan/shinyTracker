@@ -1,8 +1,3 @@
-// of the screen instead of failing silently. Several past bugs in this file
-// (see comments near syncTabChrome and connectToCloud) were invisible on
-// mobile precisely because nothing surfaced the thrown error - this makes
-// the next one visible without needing a computer/dev tools. Safe to remove
-// once things are stable again.
 (function() {
 var shown = 0;
 window.addEventListener('error', function(e) {
@@ -731,6 +726,11 @@ var el = document.getElementById('log-dex-pill-count');
 if (!el) return;
 var p = livingDexProgress();
 el.textContent = p.caught + ' / ' + p.total;
+var ratio = p.total ? Math.min(1, p.caught / p.total) : 0;
+var fill = document.querySelector('.log-v2-progress-fill');
+var percent = document.querySelector('.log-v2-progress-percent');
+if (fill) fill.style.width = (ratio * 100).toFixed(1) + '%';
+if (percent) percent.textContent = (ratio * 100).toFixed(1) + '%';
 }
 function ordinal(n) {
 var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
@@ -3046,6 +3046,18 @@ return suffix ? (slug + '-' + suffix) : slug;
 // static renders this app used before (X/Y for gen 6, Sun/Moon then
 // Ultra Sun/Ultra Moon for gen 7, HOME for gen 8) if a specific
 // Pokemon/form isn't in Showdown's set. Gen 9 -> Pokemon HOME. All shiny.
+// Mirrors shinySpriteUrls() but points at the non-shiny ("normal" form)
+// sprite paths instead, by swapping the shiny path segments used by each
+// source (pokemondb's /shiny/ folder, Showdown's ani-shiny set) for their
+// normal-form equivalents. Used to let the sprite mark toggle the card's
+// display between shiny and normal art - purely visual, no bearing on the
+// logged catch itself (which was still shiny).
+function normalSpriteUrls(name) {
+var shinyUrls = shinySpriteUrls(name);
+return shinyUrls.map(function(u) {
+return u.replace('ani-shiny', 'ani').replace('/shiny/', '/normal/');
+});
+}
 function shinySpriteUrls(name) {
 var slug = pokemonSlug(name);
 if (!slug) return [];
@@ -3210,6 +3222,14 @@ return Promise.all([speciesPromise, pokemonPromise])
 var species = results[0], mon = results[1];
 var genusEntry = (species.genera || []).filter(function(g) { return g.language && g.language.name === 'en'; })[0];
 var flavorEntry = (species.flavor_text_entries || []).filter(function(f) { return f.language && f.language.name === 'en'; }).pop();
+// Base stat spread (HP/Atk/Def/SpA/SpD/Spe), used by the Log screen's
+// Stats tab. PokeAPI names these hp/attack/defense/special-attack/
+// special-defense/speed - mapped here to the short keys the stat-bar
+// markup keys off of (see renderLogOverviewAndStats).
+var statMap = {};
+(mon.stats || []).forEach(function(s) {
+if (s.stat && s.stat.name) statMap[s.stat.name] = s.base_stat;
+});
 var entry = {
 genus: genusEntry ? genusEntry.genus : null,
 // PokeAPI flavor text keeps the original games' line-break/form-feed
@@ -3218,7 +3238,15 @@ genus: genusEntry ? genusEntry.genus : null,
 flavorText: flavorEntry ? flavorEntry.flavor_text.replace(/[\n\f\r]+/g, ' ') : null,
 // height is decimetres, weight is hectograms - convert to metres/kg.
 heightM: typeof mon.height === 'number' ? (mon.height / 10) : null,
-weightKg: typeof mon.weight === 'number' ? (mon.weight / 10) : null
+weightKg: typeof mon.weight === 'number' ? (mon.weight / 10) : null,
+stats: {
+hp: statMap.hp != null ? statMap.hp : null,
+atk: statMap.attack != null ? statMap.attack : null,
+def: statMap.defense != null ? statMap.defense : null,
+spa: statMap['special-attack'] != null ? statMap['special-attack'] : null,
+spd: statMap['special-defense'] != null ? statMap['special-defense'] : null,
+spe: statMap.speed != null ? statMap.speed : null
+}
 };
 _dexEntryCache[slug] = entry;
 return entry;
@@ -3480,8 +3508,9 @@ var DEFAULT_SPRITE_SCALE = 1.45;
 // Builds the <img>+fallback-letter markup for a Pokemon's shiny sprite,
 // wiring up the ordered URL list above so onerror steps through each
 // candidate before finally showing the letter placeholder.
-function spriteMarkup(name) {
+function spriteMarkup(name, startNormal) {
 var urls = shinySpriteUrls(name);
+var normalUrls = normalSpriteUrls(name);
 var letter = escapeHtml((name || '?').trim().charAt(0).toUpperCase());
 if (!urls.length) {
 return '<span class="fallback-letter">' + letter + '</span>';
@@ -3490,7 +3519,13 @@ var gen = pokemonGenOf(name);
 var scale = GEN_SPRITE_SCALE.hasOwnProperty(gen) ? GEN_SPRITE_SCALE[gen] : DEFAULT_SPRITE_SCALE;
 var first = urls[0];
 var rest = urls.slice(1);
-return '<img src="' + first + '" data-fallbacks="' + escapeHtml(JSON.stringify(rest)) + '" alt="" loading="lazy" style="transform:scale(' + scale + ')" onerror="window.__spriteErr(this)">' +
+// startNormal lets callers (the Shiny Log card, whose pokeball toggle
+// persists across entries) render already showing the normal-colored
+// sprite instead of always defaulting to shiny.
+var useNormal = !!startNormal && !!normalUrls.length;
+var initialSrc = useNormal ? normalUrls[0] : first;
+var initialFallbacks = useNormal ? normalUrls.slice(1) : rest;
+return '<img src="' + initialSrc + '" data-fallbacks="' + escapeHtml(JSON.stringify(initialFallbacks)) + '" data-shiny-src="' + escapeHtml(first) + '" data-shiny-fallbacks="' + escapeHtml(JSON.stringify(rest)) + '" data-normal-src="' + escapeHtml(normalUrls[0] || '') + '" data-normal-fallbacks="' + escapeHtml(JSON.stringify(normalUrls.slice(1))) + '" data-sprite-variant="' + (useNormal ? 'normal' : 'shiny') + '" alt="" loading="lazy" style="transform:scale(' + scale + ')" onerror="window.__spriteErr(this)">' +
 '<span class="fallback-letter" style="display:none">' + letter + '</span>';
 }
 // Shared onerror handler: tries the next URL in data-fallbacks, or
@@ -3600,19 +3635,13 @@ activateTab(btn.dataset.tab);
 });
 // The silver pill on the Shiny Log screen (formerly decorative) jumps
 // straight to Living Dex, now that there's no tab bar to reach it from
-// directly.
-['btn-log-to-livingdex-1'].forEach(function(id) {
+// directly. The big Living Dex pill button was removed - the "grate"
+// button between the prev/next nav arrows now carries the pokeball
+// icon and does this job instead.
+['log-screen-menu'].forEach(function(id) {
 var btn = document.getElementById(id);
 if (btn) btn.addEventListener('click', function() {
-// Retrigger the click-bounce animation even on rapid repeat clicks
-// (removing the class first forces a reflow so the animation restarts).
-btn.classList.remove('log-dex-pill-clicked');
-void btn.offsetWidth;
-btn.classList.add('log-dex-pill-clicked');
 activateTab('livingdex');
-});
-btn.addEventListener('animationend', function(e) {
-if (e.animationName === 'log-dex-pill-click') btn.classList.remove('log-dex-pill-clicked');
 });
 });
 // Living Dex has no tab bar to get back out through either, so it gets
@@ -3944,7 +3973,7 @@ el.innerHTML =
 '</div>' +
 '</div>' +
 '</div>' +
-'<div class="hunt-dex-pokeball-row"><button class="hunt-dex-pokeball-btn" data-action="mark-found" data-id="' + hunt.id + '" title="Mark as caught" aria-label="Mark as caught"></button></div>' +
+'<div class="hunt-dex-pokeball-row"><button class="hunt-dex-pokeball-btn" data-action="mark-found" data-id="' + hunt.id + '" title="Mark as caught" aria-label="Mark as caught"><svg class="hunt-dex-pokeball-svg" viewBox="0 0 24 24" width="27" height="27" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#fff"/><path d="M3 12a9 9 0 0 1 18 0" fill="#ee1515"/><circle cx="12" cy="12" r="9" stroke="#000" stroke-width="1.8" fill="none"/><path d="M3 12H9M15 12H21" stroke="#000" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="#fff" stroke="#000" stroke-width="1.8"/></svg></button></div>' +
 '<div class="hunt-dex-grille"><span></span><span></span><span></span><span></span><span></span></div>' +
 '</div>';
 wrap.appendChild(el);
@@ -4106,6 +4135,11 @@ var logEditMode = false;
 // selection survives re-sorting/filtering instead of jumping to
 // whatever now happens to sit at the old index.
 var logSelectedId = null;
+// Whether the Shiny Log card's pokeball toggle is showing normal-colored
+// sprites instead of shiny. This is a single persistent flag (not tied to
+// any one entry) so once toggled it stays in effect - including across
+// prev/next navigation and re-renders - until clicked again.
+var logCardShowNormal = false;
 var logViewMode = 'card'; // 'card' | 'grid'
 var logShowHoF = false;
 var logSearchQuery = '';
@@ -4202,6 +4236,79 @@ renderLogGrid();
 renderLogHoF();
 updateLivingDexPillBadge();
 }
+// Fills the Overview and Stats tab panels for whichever catch the Card
+// screen is currently showing (see renderLogCard's call at the bottom of
+// its render). Both panels stay mounted at all times (see .log-overview-
+// panel/.log-stats-panel in style.css) and are just cross-faded in by
+// tab, so this only ever needs to update their contents, never their
+// visibility. Guarded on a request token so a slow lookup for a catch
+// the person has already paged away from can't clobber a newer one that
+// resolved first.
+var _logOverviewRequestToken = 0;
+function renderLogOverviewAndStats(name) {
+var genusEl = document.getElementById('log-overview-genus');
+var metricsEl = document.getElementById('log-overview-metrics');
+var flavorEl = document.getElementById('log-overview-flavor');
+var statsRowsEl = document.getElementById('log-stats-rows');
+if (!genusEl || !statsRowsEl) return;
+if (!name) {
+genusEl.textContent = 'No catch selected.';
+metricsEl.innerHTML = '';
+flavorEl.textContent = '';
+statsRowsEl.innerHTML = '';
+return;
+}
+var token = ++_logOverviewRequestToken;
+genusEl.textContent = 'Accessing entry…';
+metricsEl.innerHTML = '';
+flavorEl.textContent = '';
+statsRowsEl.innerHTML = 'Accessing entry…';
+fetchDexEntryData(name).then(function(entry) {
+if (token !== _logOverviewRequestToken) return;
+if (!entry) {
+genusEl.textContent = 'No entry data available.';
+statsRowsEl.innerHTML = '';
+return;
+}
+genusEl.textContent = entry.genus || name;
+var metrics = '';
+if (entry.heightM != null) metrics += '<div class="log-overview-metric"><span class="log-overview-metric-label">HEIGHT</span><span class="log-overview-metric-value">' + entry.heightM.toFixed(1) + ' m</span></div>';
+if (entry.weightKg != null) metrics += '<div class="log-overview-metric"><span class="log-overview-metric-label">WEIGHT</span><span class="log-overview-metric-value">' + entry.weightKg.toFixed(1) + ' kg</span></div>';
+metricsEl.innerHTML = metrics;
+flavorEl.textContent = entry.flavorText || '';
+var statDefs = [
+['hp', 'HP'],
+['atk', 'ATK'],
+['def', 'DEF'],
+['spa', 'SP.A'],
+['spd', 'SP.D'],
+['spe', 'SPE']
+];
+var stats = entry.stats || {};
+var total = 0;
+var rows = statDefs.map(function(def) {
+var key = def[0], label = def[1];
+var val = stats[key];
+if (val == null) return '';
+total += val;
+// 255 is the series' theoretical stat cap, so bar length is
+// comparable across different Pokemon rather than just relative to
+// each one's own highest stat.
+var pct = Math.max(2, Math.min(100, Math.round((val / 255) * 100)));
+return '<div class="log-stats-row" data-stat="' + key + '">' +
+'<span class="log-stats-row-label">' + label + '</span>' +
+'<span class="log-stats-row-track"><span class="log-stats-row-fill" style="width:' + pct + '%"></span></span>' +
+'<span class="log-stats-row-value">' + val + '</span>' +
+'</div>';
+}).join('');
+statsRowsEl.innerHTML = rows || 'No stat data available.';
+if (rows) statsRowsEl.innerHTML += '<div class="log-stats-total"><span>TOTAL</span><span>' + total + '</span></div>';
+}).catch(function() {
+if (token !== _logOverviewRequestToken) return;
+genusEl.textContent = 'No entry data available.';
+statsRowsEl.innerHTML = '';
+});
+}
 function renderLogCard() {
 var screen = document.getElementById('log-latest-screen');
 var list = filteredLogEntries();
@@ -4211,6 +4318,13 @@ screen.innerHTML =
 '<div class="log-dex-screen-empty">' +
 (state.collection.length === 0 ? 'Your first catch will show up here' : 'No catches match your search/filters') +
 '</div>';
+var emptyHeaderDexNum = document.getElementById('log-v2-header-dexnum');
+if (emptyHeaderDexNum) emptyHeaderDexNum.textContent = 'No. ????';
+var emptyHeaderCount = document.getElementById('log-v2-header-count');
+if (emptyHeaderCount) emptyHeaderCount.textContent = '0';
+var emptyHeaderUnit = document.getElementById('log-v2-header-unit');
+if (emptyHeaderUnit) emptyHeaderUnit.textContent = ' ENCOUNTERS';
+renderLogOverviewAndStats(null);
 return;
 }
 var index = -1;
@@ -4240,15 +4354,36 @@ var began = latest.dateBegan || '';
 var ended = latest.dateEnded || latest.date || '';
 var dexNum = dexNumberOf(latest.pokemon);
 var entryLabel = dexNum ? ('No. ' + String(dexNum).padStart(4, '0')) : 'No. ????';
+renderLogOverviewAndStats(latest.pokemon);
+// Header strip (species dex no. | encounter-count + method-specific unit,
+// e.g. "612 EGGS HATCHED" for Masuda/breeding, "48 ENCOUNTERS" for a
+// random encounter hunt) mirrors whichever entry the card is currently
+// showing, so it stays in sync as the person pages through the log.
+var headerDexNum = document.getElementById('log-v2-header-dexnum');
+if (headerDexNum) headerDexNum.textContent = entryLabel;
+var headerCount = document.getElementById('log-v2-header-count');
+if (headerCount) headerCount.textContent = latest.encounters;
+var headerUnit = document.getElementById('log-v2-header-unit');
+if (headerUnit) headerUnit.textContent = ' ' + unit.toUpperCase();
 var trueNewest = state.collection[state.collection.length - 1];
 var isLatestEntry = !!trueNewest && latest.id === trueNewest.id;
 var screenPosLabel = isLatestEntry ? 'LATEST CATCH' : ('CATCH ' + (index + 1) + ' OF ' + list.length);
 var metaBits = [latest.game, latest.method, gen ? ('Gen ' + gen) : null].filter(Boolean);
-var meta = escapeHtml(metaBits.join(' · '));
-var beganRow = began ? ('<div class="log-dex-screen-meta">Began - ' + escapeHtml(fmtDate(began)) + '</div>') : '';
-var endRow = ended ? ('<div class="log-dex-screen-meta">End - ' + escapeHtml(fmtDate(ended)) + '</div>') : '';
-var timeRow = latest.timeSpentMinutes ? ('<div class="log-dex-screen-meta">Time Spent - ' + escapeHtml(fmtTime(latest.timeSpentMinutes * 60)) + '</div>') : '';
-var dateGroup = (beganRow || endRow || timeRow) ? ('<div class="log-dex-screen-date-group">' + beganRow + endRow + timeRow + '</div>') : '';
+var meta = escapeHtml(metaBits.join(' – '));
+// Renders one "LABEL ---- value" line for the field list beneath the
+// sprite/name (Method / Began / Ended / Time Spent). Skips silently
+// when there's nothing to show for that field, so entries missing a
+// begin date or a logged time-spent value don't leave a blank row.
+function logCardFieldRow(label, value) {
+if (!value) return '';
+return '<div class="log-dex-screen-field-row"><span class="log-dex-screen-field-label">' + label + '</span><span class="log-dex-screen-field-value">' + value + '</span></div>';
+}
+var fieldRowsHtml =
+logCardFieldRow('Method', meta) +
+logCardFieldRow('Began', began ? escapeHtml(fmtDate(began)) : '') +
+logCardFieldRow('Ended', ended ? escapeHtml(fmtDate(ended)) : '') +
+logCardFieldRow('Time Spent', latest.timeSpentMinutes ? escapeHtml(fmtTime(latest.timeSpentMinutes * 60)) : '');
+var dateGroup = fieldRowsHtml ? ('<div class="log-dex-screen-date-group">' + fieldRowsHtml + '</div>') : '';
 // Screen mirrors the log card exactly - same fields, same text - and
 // is now the only place the latest catch is shown (no more duplicate
 // row below). Edit/delete actions live here too, toggled by the
@@ -4260,11 +4395,16 @@ screen.innerHTML =
 '<div class="log-dex-screen-count">' + latest.encounters + '<span class="unit">' + escapeHtml(unit) + '</span></div>' +
 '</div>' +
 '<div class="log-dex-screen-body">' +
-'<div class="log-dex-screen-sprite">' + spriteMarkup(latest.pokemon) + '</div>' +
+'<div class="log-dex-screen-sprite' + (logCardShowNormal ? ' showing-normal-form' : '') + '" style="--type-rgb:' + typeRgbTriple((types && types[0]) || 'Normal') + '">' +
+'<button type="button" class="log-dex-screen-sprite-mark" data-action="toggle-sprite-variant" title="Toggle shiny/normal form" aria-label="Toggle shiny/normal form"></button>' +
+'<span class="log-dex-screen-sprite-dots" aria-hidden="true"><span></span><span></span><span></span></span>' +
+spriteMarkup(latest.pokemon, logCardShowNormal) +
+'<span class="log-dex-screen-sprite-corner corner-bl" aria-hidden="true"></span>' +
+'<span class="log-dex-screen-sprite-corner corner-br" aria-hidden="true"></span>' +
+'</div>' +
 '<div class="log-dex-screen-text">' +
 '<div class="log-dex-screen-name">' + escapeHtml(latest.pokemon) + '</div>' +
-'<div class="log-dex-screen-types">' + typeBadges(types, 68) + '</div>' +
-(meta ? '<div class="log-dex-screen-meta">' + meta + '</div>' : '') +
+'<div class="log-dex-screen-types">' + typeBadges(types, 63) + '</div>' +
 dateGroup +
 (latest.notes ? '<div class="log-dex-screen-notes">' + escapeHtml(latest.notes) + '</div>' : '') +
 '</div>' +
@@ -4404,6 +4544,13 @@ logViewMode = btn.dataset.mode;
 logShowHoF = false;
 renderCollection();
 });
+var logV2Tabs = document.querySelectorAll('[data-log-tab]');
+logV2Tabs.forEach(function(tab) {
+  tab.addEventListener('click', function() {
+    logV2Tabs.forEach(function(other) { other.classList.toggle('active', other === tab); });
+    document.getElementById('log-dex-shell').dataset.logTab = tab.dataset.logTab;
+  });
+});
 // Keeps at most one of the six log toolbar keys (Search, Sort, Filter,
 // Reset, HoF, Edit) "lit" at a time, EXCEPT Search/Sort/Filter, which
 // are allowed to stay active together - so opening/toggling any key
@@ -4427,7 +4574,7 @@ logSortMode = 'newest';
 document.querySelectorAll('#log-sort-panel .dex-select-option').forEach(function(o) {
 o.classList.toggle('active', o.dataset.value === 'newest');
 });
-document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS.newest + ' ▾';
+document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS.newest;
 document.getElementById('btn-log-sort').classList.remove('active');
 changed = true;
 }
@@ -4458,6 +4605,7 @@ editBtn.setAttribute('aria-pressed', 'false');
 changed = true;
 }
 if (changed) logCardJumpToTop();
+syncLogToolbarRed();
 return changed;
 }
 document.getElementById('btn-log-hof').addEventListener('click', function() {
@@ -4476,6 +4624,7 @@ e.stopPropagation();
 var changed = resetLogKeysExcept(['search', 'sort', 'filter']);
 closeOtherDexDropdowns('log-search-wrap');
 document.getElementById('log-search-wrap').classList.toggle('open');
+syncLogToolbarRed();
 if (document.getElementById('log-search-wrap').classList.contains('open')) {
 logSearchInput.focus();
 }
@@ -4489,6 +4638,7 @@ e.stopPropagation();
 var changed = resetLogKeysExcept(['search', 'sort', 'filter']);
 closeOtherDexDropdowns('log-sort-wrap');
 document.getElementById('log-sort-wrap').classList.toggle('open');
+syncLogToolbarRed();
 if (changed) renderCollection();
 });
 document.getElementById('log-sort-panel').addEventListener('click', function(e) {
@@ -4499,9 +4649,10 @@ logSortMode = opt.dataset.value;
 document.querySelectorAll('#log-sort-panel .dex-select-option').forEach(function(o) {
 o.classList.toggle('active', o === opt);
 });
-document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS[logSortMode] + ' ▾';
+document.getElementById('btn-log-sort').textContent = LOG_SORT_LABELS[logSortMode];
 document.getElementById('btn-log-sort').classList.toggle('active', logSortMode !== 'newest');
 document.getElementById('log-sort-wrap').classList.remove('open');
+syncLogToolbarRed();
 logCardJumpToTop();
 renderCollection();
 });
@@ -4510,6 +4661,7 @@ e.stopPropagation();
 var changed = resetLogKeysExcept(['search', 'sort', 'filter']);
 closeOtherDexDropdowns('log-filter-wrap');
 document.getElementById('log-filter-wrap').classList.toggle('open');
+syncLogToolbarRed();
 if (changed) renderCollection();
 });
 document.getElementById('log-filter-panel').addEventListener('click', function(e) {
@@ -4541,7 +4693,7 @@ genSel.appendChild(opt);
 function updateLogFilterButtonLabel() {
 var activeCount = [logFilterGame, logFilterMethod, logFilterGen].filter(Boolean).length;
 var btn = document.getElementById('btn-log-filter');
-btn.textContent = (activeCount ? activeCount + ' Filter' + (activeCount > 1 ? 's' : '') : 'All') + ' ▾';
+btn.textContent = (activeCount ? activeCount + ' Filter' + (activeCount > 1 ? 's' : '') : 'All');
 btn.classList.toggle('active', activeCount > 0);
 }
 document.getElementById('log-filter-game').addEventListener('change', function() {
@@ -4813,7 +4965,30 @@ var wrap = document.getElementById(id);
 if (wrap) wrap.classList.remove('open');
 });
 if (!exceptId || exceptId.indexOf('k-') !== 0) collapseKalosToolbar();
+syncLogToolbarRed();
 }
+// Exactly one of the Shiny Log's Search/Sort/Filter buttons is red at any
+// given time - whichever one is currently open, or Search by default when
+// none of them are. Called any time one of those wraps opens or closes so
+// the red highlight always tracks the "pressed" button instead of sitting
+// on Search permanently.
+function syncLogToolbarRed() {
+var redMap = {
+'log-sort-wrap': 'btn-log-sort',
+'log-filter-wrap': 'btn-log-filter',
+'log-search-wrap': 'btn-log-search'
+};
+var openWrapId = Object.keys(redMap).find(function(id) {
+var wrap = document.getElementById(id);
+return wrap && wrap.classList.contains('open');
+});
+var redBtnId = openWrapId ? redMap[openWrapId] : 'btn-log-search';
+['btn-log-search', 'btn-log-sort', 'btn-log-filter'].forEach(function(id) {
+var btn = document.getElementById(id);
+if (btn) btn.classList.toggle('toolbar-red', id === redBtnId);
+});
+}
+syncLogToolbarRed();
 // Freezes #kalos-toggle-filter-card at its natural rendered height the
 // first time Living Dex is actually visible (it's display:none behind the
 // Hunts/Shiny Log tabs until then, so measuring any earlier would just
@@ -9295,6 +9470,31 @@ overlay.remove();
 document.getElementById('log-latest-screen').addEventListener('click', function(e) {
 var btn = e.target.closest('[data-action]');
 if (!btn) return;
+if (btn.dataset.action === 'toggle-sprite-variant') {
+var spriteWrap = btn.closest('.log-dex-screen-sprite');
+var img = spriteWrap && spriteWrap.querySelector('img[data-sprite-variant]');
+if (img) {
+var toShiny = img.getAttribute('data-sprite-variant') !== 'shiny';
+var srcAttr = toShiny ? 'data-shiny-src' : 'data-normal-src';
+var fallbacksAttr = toShiny ? 'data-shiny-fallbacks' : 'data-normal-fallbacks';
+var newSrc = img.getAttribute(srcAttr);
+if (newSrc) {
+img.setAttribute('data-sprite-variant', toShiny ? 'shiny' : 'normal');
+img.setAttribute('data-fallbacks', img.getAttribute(fallbacksAttr) || '[]');
+img.style.display = '';
+var letterSib = img.nextElementSibling;
+if (letterSib) letterSib.style.display = 'none';
+img.src = newSrc;
+}
+spriteWrap.classList.toggle('showing-normal-form', toShiny === false);
+// Persist across entries: this flag (not any per-entry state) is
+// what renderLogCard reads on every re-render, so switching to
+// another catch via prev/next keeps showing normal colors too,
+// until the pokeball is clicked again.
+logCardShowNormal = (toShiny === false);
+}
+return;
+}
 var id = btn.dataset.id;
 var entry = state.collection.find(function(c) {
 return c.id === id;
@@ -9391,4 +9591,3 @@ container.appendChild(s);
 // Populate the interface from local state immediately. Cloud sync can return
 // later and repaint once the first snapshot arrives.
 renderAll();
-syncFromCloud();
