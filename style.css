@@ -3655,7 +3655,7 @@ filter: blur(1.5px);
 }
 .log-dex-shell-wrap {
 position: relative;
-margin-bottom: 20px;
+margin-bottom: 40px;
 /* Moved here from .log-dex-shell: Safari fails to render a drop-shadow
 filter on an element that also has its own clip-path (same issue as
 .hunt-dex-flap - see notes there), which was leaving this page's
@@ -4392,7 +4392,7 @@ flex: 0 0 auto;
   display: none;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 12px 10px 10px;
+  padding: 0px 12px 10px 10px;
 }
 .log-grid-screen.log-screen-visible {
   display: flex;
@@ -4417,29 +4417,31 @@ flex: 0 0 auto;
 .log-grid-inner {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  /* Each row is exactly half of whatever height .log-grid-screen actually
-     has (which itself always matches the Card and Hall of Fame screens'
-     height - see .log-dex-screen-stack, sized off flex:1 rather than off
-     any one screen's content), so 2 rows of 3 (6 tiles) always exactly
-     fill the available area no matter how big that area is. A 3rd+ row
-     is sized the same but pushes past 100%, which is what makes
-     .log-grid-screen's own overflow-y: auto (see above) kick in and
-     scroll instead of the tiles just being squeezed smaller. */
-  grid-auto-rows: calc(50% - 4px);
-  gap: 8px;
-  flex: 1 1 auto;
-  min-height: 0;
+  /* Fixed-height rows (not a % of the flex item's own height) so the
+     grid's total content height is a plain sum that keeps growing with
+     every row added, instead of being pinned to always exactly fill
+     .log-grid-screen's box. Paired with flex:0 0 auto/no min-height
+     below, .log-grid-inner now sizes to its real content height, so
+     once that exceeds .log-grid-screen's fixed box (see
+     .log-dex-screen-stack) the overflow-y: auto set on
+     .log-grid-screen actually has something to scroll - the old
+     percentage-based rows never grew past 100% in practice, so nothing
+     ever overflowed and rows 3+ were unreachable. */
+  grid-auto-rows: 60px;
+  gap: 6px;
+  flex: 0 0 auto;
+  width: 100%;
 }
 .log-grid-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
   background: rgba(0, 0, 0, 0.04);
   border: 2px solid rgba(0, 0, 0, 0.1);
   border-radius: 10px;
-  padding: 6px 4px 5px;
+  padding: 3px 3px 2px;
   box-sizing: border-box;
   overflow: hidden;
   cursor: pointer;
@@ -4451,8 +4453,8 @@ flex: 0 0 auto;
   border-color: var(--blue);
 }
 .log-grid-tile-sprite {
-  width: 36px;
-  height: 36px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4465,17 +4467,17 @@ flex: 0 0 auto;
   image-rendering: crisp-edges;
 }
 .log-grid-tile-name {
-  font-family: var(--pixel);
+  font-family: var(--mono);
   font-weight: 800;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--ink);
   text-align: center;
-  line-height: 1.15;
+  line-height: 1.1;
   overflow-wrap: break-word;
 }
 .log-grid-tile-num {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 7px;
   color: var(--green-dark);
 }
 .log-grid-empty {
@@ -11910,6 +11912,14 @@ max-height: 50vh;
 .log-v2-header{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 8px}
 .log-v2-header-stats{display:flex;align-items:center;gap:5px;padding:7px 12px;color:var(--green-dark);background:#fff6dc;border:2px solid var(--line);border-radius:9px 16px 16px 9px;box-shadow:0 3px 0 rgba(43,35,32,.35),inset 0 1px 0 rgba(255,255,255,.9);font-family:var(--mono);font-size:9px;white-space:nowrap}
 .log-v2-header-stats strong{color:var(--red);font-family:var(--hud);font-size:18px}.log-v2-dex-number{font-weight:800}.log-v2-divider{color:var(--ink-dim)}
+/* Grid mode has no single selected catch for "No. XXXX | N UNIT" to
+   describe, so updateLogSummaryDisplay() (script.js) swaps the header to
+   a plain entry count and this hides the now-meaningless dex-number/
+   divider half of the strip, leaving just the count + "ENTRIES". */
+.log-v2-header-stats--summary .log-v2-dex-number,
+.log-v2-header-stats--summary .log-v2-divider {
+  display: none;
+}
 .log-v2-shell .log-mode-toggle{padding:0;border:2px solid var(--line);border-radius:12px;background:#761212;box-shadow:0 3px 0 rgba(43,35,32,.34)}
 .log-v2-shell .log-mode-toggle button{min-width:76px;padding:8px 12px;font-size:11px}
 .log-v2-record-panel{position:relative;z-index:1;background:var(--screen)}.log-v2-shell .log-dex-screen-stack{min-height:210px}.log-v2-shell .log-dex-screen{min-height:210px;padding:12px 14px;border-radius:17px;background:var(--screen);border-color:var(--line)}
@@ -11917,7 +11927,7 @@ max-height: 50vh;
 .log-v2-shell .log-dex-screen-sprite img{width:100%;height:100%}.log-v2-shell .log-dex-screen-text{gap:9px;justify-content:flex-start;padding-top:14px}.log-v2-shell .log-dex-screen-name{font-size:34px;line-height:1.35;letter-spacing:0}.log-v2-shell .log-dex-screen-types{margin-top:0}.log-v2-shell .log-dex-screen-meta{font-size:12px;line-height:1.3}.log-v2-shell .log-dex-screen-date-group{gap:0;margin-top:12px}.log-v2-shell .log-dex-screen-field-row{padding:8px 0}.log-v2-shell .log-dex-screen-field-label{font-size:15px}.log-v2-shell .log-dex-screen-field-value{font-size:17px}.log-v2-shell .log-dex-screen-toprow{margin-bottom:2px}.log-v2-shell .log-dex-screen-label{font-size:10px}.log-v2-shell .log-dex-screen-count{display:none}
 .log-v2-tabs{position:relative;z-index:2;display:grid;grid-template-columns:repeat(3,1fr);margin-top:-2px;border-bottom:3px solid var(--line)}
 .log-v2-tabs button{border:2px solid var(--line);border-bottom:0;border-radius:11px 11px 0 0;padding:8px 4px;color:#f7e8c5;background:#6e1717;font-family:var(--pixel);font-weight:800;font-size:11px;cursor:pointer;text-transform:uppercase}.log-v2-tabs button+button{border-left:0}.log-v2-tabs button.active{color:var(--red-dark);background:#fff8e7}
-.log-v2-toolbar-wrap{position:relative;z-index:3;padding:8px 0 0;background:#fff8e7;border:2px solid var(--line);border-radius:0 0 14px 14px;box-shadow:0 3px 0 rgba(43,35,32,.28)}
+.log-v2-toolbar-wrap{position:relative;z-index:3;padding:6px 0 0;background:#fff8e7;border:2px solid var(--line);border-radius:0 0 14px 14px;box-shadow:0 3px 0 rgba(43,35,32,.28)}
 /* Row 1 - Search/Sort/Filter: buttons are .log-dex-grid-btn inside a
    .dex-select-wrap (each opens a dropdown panel below it - see the
    .dex-select-panel/.dex-select-option rules). Grid is 1.25fr 1fr 1fr so
@@ -11929,7 +11939,7 @@ max-height: 50vh;
    (only border-color is overridden here, not width/sides) with an 8px
    grid gap between them - so this is 3 independently bordered pills,
    not one shared/segmented outline. */
-.log-v2-shell .log-v2-toolbar{display:grid;grid-template-columns:var(--log-v2-toolbar-cols);gap:8px;margin:0 8px;padding:2px 6px 10px;border:2px solid var(--line);border-radius:12px;background:#fffefa;box-shadow:0 3px 0 rgba(43,35,32,.28)}.log-v2-shell .log-v2-toolbar>.dex-select-wrap{height:44px}.log-v2-shell .log-v2-toolbar .log-dex-grid-btn{flex-direction:row;justify-content:center;align-items:center;text-align:center;gap:7px;padding:5px 9px;font-size:11px;color:var(--ink);border-color:#c0b49f;background:linear-gradient(#fffefa,#ece7db)}.log-v2-shell .log-v2-toolbar .log-dex-grid-btn.toolbar-red{color:#fff;background:linear-gradient(#e83d3d,#ae1515);border-color:#6f0e0e}.log-v2-shell .log-v2-toolbar .log-dex-grid-btn span{display:inline;font-family:var(--pixel)}.log-v2-shell .log-v2-toolbar #btn-log-search::after{display:none}
+.log-v2-shell .log-v2-toolbar{display:grid;grid-template-columns:var(--log-v2-toolbar-cols);gap:6px;margin:0 8px;padding:2px 6px 6px;border:2px solid var(--line);border-radius:12px;background:#fffefa;box-shadow:0 3px 0 rgba(43,35,32,.28)}.log-v2-shell .log-v2-toolbar>.dex-select-wrap{height:36px}.log-v2-shell .log-v2-toolbar .log-dex-grid-btn{flex-direction:row;justify-content:center;align-items:center;text-align:center;gap:6px;padding:4px 8px;font-size:11px;color:var(--ink);border-color:#c0b49f;background:linear-gradient(#fffefa,#ece7db)}.log-v2-shell .log-v2-toolbar .log-dex-grid-btn.toolbar-red{color:#fff;background:linear-gradient(#e83d3d,#ae1515);border-color:#6f0e0e}.log-v2-shell .log-v2-toolbar .log-dex-grid-btn span{display:inline;font-family:var(--pixel)}.log-v2-shell .log-v2-toolbar #btn-log-search::after{display:none}
 /* Row 2 - Hall of Fame/Edit Shiny Log/Reset Filters: a different class
    entirely (.log-v2-utility-btn, not .log-dex-grid-btn). Equal 3-column
    grid, flat #fffefa fill (no gradient) with a #c0b49f border - flatter
@@ -11939,9 +11949,9 @@ max-height: 50vh;
    when toggled on. Same independent-border pattern as row 1: each
    button has its own complete 2px border, so the gap between them shows
    the card's cream background rather than a shared divider line. */
-.log-v2-utility-row{display:grid;grid-template-columns:var(--log-v2-toolbar-cols);gap:6px;margin:8px 8px 0;padding:6px;border:2px solid var(--line);border-radius:12px;background:#fffefa;box-shadow:0 3px 0 rgba(43,35,32,.28)}.log-v2-utility-btn{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;min-height:0;height:auto;padding:3px 9px;border:2px solid #c0b49f;border-radius:8px;color:var(--ink-dim);background:#fffefa;font-family:var(--pixel);font-size:5.5px;font-weight:800;cursor:pointer}.log-v2-utility-btn span{display:inline}.log-v2-utility-btn.active,.log-v2-utility-btn[aria-pressed="true"]{background:linear-gradient(#fff4a9,#e8ae25);color:var(--ink)}
+.log-v2-utility-row{display:grid;grid-template-columns:var(--log-v2-toolbar-cols);gap:5px;margin:6px 8px 0;padding:4px;border:2px solid var(--line);border-radius:12px;background:#fffefa;box-shadow:0 3px 0 rgba(43,35,32,.28)}.log-v2-utility-btn{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:4px;min-height:0;height:auto;padding:2px 8px;border:2px solid #c0b49f;border-radius:8px;color:var(--ink-dim);background:#fffefa;font-family:var(--pixel);font-size:5.5px;font-weight:800;cursor:pointer}.log-v2-utility-btn span{display:inline}.log-v2-utility-btn.active,.log-v2-utility-btn[aria-pressed="true"]{background:linear-gradient(#fff4a9,#e8ae25);color:var(--ink)}
 .log-v2-progress-module{position:relative;z-index:2;margin-top:2px}.log-v2-progress-module .log-dex-pill{height:55px;padding:0 12px;gap:9px}.log-v2-progress-module .log-dex-pill-label{flex:0 0 auto;font-size:13px}.log-v2-progress-track{flex:1 1 auto;min-width:55px;height:15px;overflow:hidden;border:2px solid #10183f;border-radius:6px;background:#111a3e;box-shadow:inset 0 2px 3px rgba(0,0,0,.45)}.log-v2-progress-fill{display:block;width:75.9%;height:100%;background:linear-gradient(#9cf33b,#49bd20)}.log-v2-progress-percent{flex:0 0 auto;padding:4px 6px;border:2px solid #10183f;border-radius:6px;color:#8ff33a;background:#131b48;font-family:var(--pixel);font-size:10px}.log-v2-shell .log-dex-nav{margin-top:2px}.log-v2-shell .log-dex-nav-btn{min-width:40%}
-@media (max-width:560px){.log-v2-shell{padding:12px 6px 10px;min-height:570px}.log-v2-header-stats{font-size:7px;padding:6px 8px}.log-v2-header-stats strong{font-size:15px}.log-v2-shell .log-mode-toggle button{min-width:62px;padding:7px 8px}.log-v2-shell .log-dex-screen{padding:12px}.log-v2-shell .log-dex-screen-body{gap:12px}.log-v2-shell .log-dex-screen-sprite{width:48.5%;height:100%;min-width:110px}.log-v2-shell .log-dex-screen-name{font-size:16px;line-height:1.4}.log-v2-shell .log-dex-screen-meta{font-size:10px}.log-v2-shell .log-dex-screen-field-row{padding:5px 0;gap:8px}.log-v2-shell .log-dex-screen-field-label{font-size:12.25px}.log-v2-shell .log-dex-screen-field-value{font-size:12.25px}.log-v2-shell .log-v2-toolbar{gap:4px;margin:0 5px}.log-v2-shell .log-v2-toolbar .log-dex-grid-btn{font-size:9px}.log-v2-utility-row{gap:3px;padding:3px}.log-v2-utility-btn{font-size:4.5px;padding:3px 4px}.log-v2-progress-module .log-dex-pill{padding:0 7px;gap:5px}.log-v2-progress-percent{font-size:8px}}
+@media (max-width:560px){.log-v2-shell{padding:12px 6px 10px;min-height:570px}.log-v2-header-stats{font-size:7px;padding:6px 8px}.log-v2-header-stats strong{font-size:15px}.log-v2-shell .log-mode-toggle button{min-width:62px;padding:7px 8px}.log-v2-shell .log-dex-screen{padding:12px}.log-v2-shell .log-dex-screen-body{gap:12px}.log-v2-shell .log-dex-screen-sprite{width:48.5%;height:100%;min-width:110px}.log-v2-shell .log-dex-screen-name{font-size:16px;line-height:1.4}.log-v2-shell .log-dex-screen-meta{font-size:10px}.log-v2-shell .log-dex-screen-field-row{padding:5px 0;gap:8px}.log-v2-shell .log-dex-screen-field-label{font-size:12.25px}.log-v2-shell .log-dex-screen-field-value{font-size:12.25px}.log-v2-shell .log-v2-toolbar{gap:3px;margin:0 5px}.log-v2-shell .log-v2-toolbar .log-dex-grid-btn{font-size:9px}.log-v2-utility-row{gap:2px;padding:2px}.log-v2-utility-btn{font-size:4.5px;padding:2px 4px}.log-v2-progress-module .log-dex-pill{padding:0 7px;gap:5px}.log-v2-progress-percent{font-size:8px}}
 
 /* Version 2 reference fidelity patch: compact mobile proportions and clean utility labels. */
 /* Icon sits beside the label (not stacked above it) and text wraps only if
@@ -11962,11 +11972,11 @@ max-height: 50vh;
   .log-v2-shell .log-dex-screen-text { min-width: 0; overflow: hidden; }
   .log-v2-shell .log-dex-screen-name { max-width: 100%; font-size: 16px; white-space: normal; line-height: 1.3; }
   .log-v2-tabs button { font-size: 9px; padding: 8px 2px; }
-  .log-v2-shell .log-v2-toolbar { grid-template-columns: var(--log-v2-toolbar-cols-mobile); gap: 4px; margin: 0 5px; }
-  .log-v2-shell .log-v2-toolbar > .dex-select-wrap { height: 42px; }
-  .log-v2-shell .log-v2-toolbar .log-dex-grid-btn { gap: 3px; padding: 4px 2px; font-size: 6px; }
-  .log-v2-utility-row { grid-template-columns: var(--log-v2-toolbar-cols-mobile); gap: 3px; padding: 3px; }
-  .log-v2-utility-btn { flex-direction: row; min-width: 0; min-height: 0; height: auto; gap: 3px; padding: 4px 3px; font-size: 6px; }
+  .log-v2-shell .log-v2-toolbar { grid-template-columns: var(--log-v2-toolbar-cols-mobile); gap: 3px; margin: 0 5px; }
+  .log-v2-shell .log-v2-toolbar > .dex-select-wrap { height: 34px; }
+  .log-v2-shell .log-v2-toolbar .log-dex-grid-btn { gap: 3px; padding: 3px 2px; font-size: 6px; }
+  .log-v2-utility-row { grid-template-columns: var(--log-v2-toolbar-cols-mobile); gap: 2px; padding: 2px; }
+  .log-v2-utility-btn { flex-direction: row; min-width: 0; min-height: 0; height: auto; gap: 3px; padding: 3px 3px; font-size: 6px; }
   .log-v2-utility-btn span { min-width: 0; }
   .log-v2-progress-module .log-dex-pill { height: 53px; }
   .log-v2-progress-module .log-dex-pill-label { font-size: 9px; }
@@ -12144,7 +12154,7 @@ padding: 2px 3px;
 
 /* Small rectangle toggle - CARD / GRID as two segments in a modestly
    rounded rectangular housing, not a full pill. Right edge is cut on a
-   full-height diagonal - the point-symmetric inverse of the stats
+   single straight diagonal - the point-symmetric inverse of the stats
    badge's left-edge diagonal just to its right (see #view-collection
    .log-v2-header-stats below): badge keeps its sharp corner at
    bottom-left and cuts away top-left; this keeps its sharp corner at
@@ -12152,7 +12162,12 @@ padding: 2px 3px;
    depth as the badge so the two diagonals actually match in size/angle,
    not just direction. clip-path (not just border-radius) carries the
    border/box-shadow along the slanted edge the same way it does for the
-   stats badge. */
+   stats badge.
+   (Previously this was a multi-point polygon approximating a slight
+   wave along the cut edge - at small computed cut-depth values a couple
+   of those points' x-offsets went negative, poking a stray sliver past
+   the box's own left/right edge. A single straight diagonal can't do
+   that, so it's used here instead.) */
 #view-collection .log-mode-toggle {
   --dex-cut-depth: clamp(23px, 5.7vw, 27px);
   --dex-cut-height: 34px;
@@ -12197,11 +12212,15 @@ padding: 2px 3px;
   flex: none;
 }
 
-/* Stats badge - rectangle with the left edge cut on a diagonal (flag/
-   pennant shape), cream parchment fill, dark outline, drop shadow offset
-   down-right, matching the reference. clip-path carries the border and
-   box-shadow along with it, so the slanted edge stays outlined/shadowed
-   the same as the straight edges. */
+/* Stats badge - rectangle with the left edge cut on a single straight
+   diagonal (flag/pennant shape), cream parchment fill, dark outline,
+   drop shadow offset down-right, matching the reference. clip-path
+   carries the border and box-shadow along with it, so the slanted edge
+   stays outlined/shadowed the same as the straight edges.
+   (Previously the left edge was a multi-point polygon approximating a
+   slight wave - see the matching note on .log-mode-toggle above for why
+   that could spike a stray sliver past the box edge at small computed
+   cut-depth values. Straightened to match.) */
 #view-collection .log-v2-header-stats {
   --dex-cut-depth: clamp(23px, 5.7vw, 27px);
   --dex-cut-height: 34px;
@@ -12229,6 +12248,16 @@ padding: 2px 3px;
 
 #view-collection .log-v2-header-stats strong + span { font-size: clamp(10.8px, 2.7vw, 13.1px); }
 
+/* Grid mode's summary badge ("N ENTRIES") is shorter than the normal
+   "No. XXXX | N UNIT" badge (see .log-v2-header-stats--summary above,
+   which hides the dex-number/divider half) - the -19px translateX tuned
+   for the full-length badge leaves this shorter version sitting too far
+   left, crowding the CARD/GRID toggle. Nudge it back right specifically
+   in summary mode. */
+#view-collection .log-v2-header-stats--summary {
+  transform: translateX(85px);
+}
+
 #view-collection .log-v2-record-panel {
   margin: -13px 0 0 0;
   padding: 0;
@@ -12246,6 +12275,17 @@ padding: 2px 3px;
   box-shadow:
     inset 0 3px 10px rgba(0, 0, 0, 0.22),
     inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+}
+/* The rule above's overflow:hidden is meant for the Card screen's bezel
+   clipping, but Grid/HOF share the same .log-dex-screen class, so they
+   silently inherited it too - which is what was actually blocking the
+   Grid screen from scrolling (its own overflow-y:auto never had a
+   chance; this ID-scoped rule outranks it). Re-open scrolling on just
+   those two screens without touching the Card screen's clipping. */
+#view-collection .log-v2-shell .log-dex-screen.log-grid-screen,
+#view-collection .log-v2-shell .log-dex-screen.log-hof-screen {
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Same faint scanline texture the Active Hunts screen uses, for a
@@ -12354,8 +12394,11 @@ padding: 2px 3px;
 #view-collection .log-v2-toolbar-wrap {
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   margin: -13px 13px 0;
-  padding: 2px 10px 11px;
+  padding: 2px 10px 6px;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
@@ -12365,13 +12408,28 @@ padding: 2px 3px;
 
 /* Overview, Stats, and the Log toolbar (Search/Newest/All + HOF/Edit/
    Reset) all live in the same footprint so switching tabs never resizes
-   the shell. The Log toolbar is the one panel left in normal flow - it
-   sets the stack's height (the tallest/reference layout) - while
-   Overview and Stats are absolutely positioned over it and cross-faded
-   in via #log-dex-shell's data-log-tab attribute (set by the tab-click
-   handler in script.js). */
+   the shell more than necessary, and cross-fade in via #log-dex-shell's
+   data-log-tab attribute (set by the tab-click handler in script.js).
+
+   All three panels sit in the same CSS grid cell (grid-row/column: 1),
+   which sizes the shared cell to whichever panel is tallest instead of
+   assuming the Log toolbar always is. Previously the toolbar was the
+   only panel left in normal flow and Overview/Stats were absolutely
+   positioned to match its height exactly - fine as long as the toolbar
+   was the tallest of the three, but Overview's flavor text or Stats'
+   six bars can run taller than the toolbar for some entries, and that
+   fixed height clipped/overflowed their card instead of growing for
+   it. Grid placement fixes that for every entry, not just this one. */
 .log-tab-panel-stack {
-  position: relative;
+  display: grid;
+}
+
+.log-tab-panel-stack > .log-v2-toolbar-wrap,
+.log-tab-panel-stack > .log-overview-panel,
+.log-tab-panel-stack > .log-stats-panel {
+  grid-row: 1;
+  grid-column: 1;
+  min-width: 0;
 }
 
 #log-dex-shell .log-v2-toolbar-wrap {
@@ -12386,9 +12444,8 @@ padding: 2px 3px;
 
 .log-overview-panel,
 .log-stats-panel {
-  position: absolute;
-  inset: 0;
   overflow-y: auto;
+  max-height: 70vh;
   visibility: hidden;
   pointer-events: none;
   opacity: 0;
@@ -12402,8 +12459,8 @@ padding: 2px 3px;
   opacity: 1;
 }
 
-#view-collection .log-v2-shell .log-v2-toolbar { gap: 9px; margin: 8px 0 0; }
-#view-collection .log-v2-utility-row { gap: 9px; padding: 6px 10px 16px; margin: 8px 0 0; }
+#view-collection .log-v2-shell .log-v2-toolbar { gap: 6px; margin: 6px 0 0; }
+#view-collection .log-v2-utility-row { gap: 6px; padding: 4px 10px 8px; margin: 6px 0 0; }
 
 /* --- Overview tab: species genus, height/weight, flavor-text blurb for
    whichever catch the Card screen is currently showing. Filled in by
@@ -12411,8 +12468,15 @@ padding: 2px 3px;
    (PokeAPI), same async-fill pattern as the 3D model viewer's dex-entry
    panel. --- */
 #view-collection .log-v2-shell .log-overview-panel {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   margin: -13px 13px 0;
-  padding: 12px 14px 14px;
+  padding: 3px 10px 8px;
+  height: 210px;
+  overflow-y: auto;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
@@ -12420,45 +12484,224 @@ padding: 2px 3px;
   box-shadow: inset 4px 4px #fffef7, inset -4px -4px #d6c18a, 4px 5px #65070d;
 }
 
+#view-collection .log-overview-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  /* Matches the region badge's rendered height (46px icon + gap + label)
+     so the row doesn't collapse to just the genus line's height when the
+     badge is empty/absent - see .log-overview-facts-grid's negative
+     margin below, which depends on this row staying a consistent height. */
+  min-height: 65px;
+}
+
+#view-collection .log-overview-heading-col {
+  min-width: 0;
+  flex: 1 1 auto;
+  /* Nudges the genus heading up slightly relative to the region badge
+     next to it (which stays put via its own "top: 10px" offset below) -
+     a transform rather than a margin so it doesn't affect the flex row's
+     own height/alignment math, which the region badge's centering
+     depends on. */
+  transform: translateY(-6px);
+}
+
 #view-collection .log-overview-genus {
   font-family: var(--pixel);
-  font-size: 12px;
+  font-size: 13px;
   color: #5c2a12;
 }
 
-#view-collection .log-overview-metrics {
-  display: flex;
-  gap: 14px;
-  margin: 8px 0;
+/* Unified 2x2 grid holding Height, Weight, Ability, and Egg Group as
+   plain label/value cells - no surrounding box, just dashed rules
+   between cells (matching the flavor box's dashed-divider language)
+   so all four facts read as one consistent group. */
+#view-collection .log-overview-facts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: -16px 0 0;
 }
 
-#view-collection .log-overview-metric {
+#view-collection .log-overview-facts-grid:empty {
+  display: none;
+}
+
+#view-collection .log-overview-fact-cell {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 6px 12px;
+}
+
+/* Right-hand column cells get a left divider. */
+#view-collection .log-overview-fact-cell:nth-child(2n) {
+  border-left: 1px dashed #d8c491;
+}
+
+/* Bottom row cells get a top divider, plus a min-height reserving room
+   for a 2-line ABILITY value (species with 2-3 abilities + "(Hidden)"
+   often wrap) - without this, a 1-line vs 2-line ability list changes
+   the grid's height per-entry and shoves the flavor box below it up or
+   down each time you switch catches. */
+#view-collection .log-overview-fact-cell:nth-child(n+3) {
+  border-top: 1px dashed #d8c491;
+  min-height: 40px;
+}
+
+/* Aggregate/collection-wide summary ("X Shinies Caught" - no region
+   badge, no per-species Height/Weight/Ability facts) needs far less
+   vertical room than the per-species Card view this panel was tuned
+   for. Relax the badge-height reservation on the heading row, the
+   fact-cell padding, and the 2-line-Ability min-height so the whole
+   summary fits inside the fixed-height panel without scrolling. */
+#view-collection .log-overview-panel:has(.log-overview-region:empty) .log-overview-top-row {
+  min-height: 0;
+  align-items: flex-start;
+  margin-top: 12px;
+}
+#view-collection .log-overview-panel:has(.log-overview-region:empty) .log-overview-facts-grid {
+  margin-top: 4px;
+}
+#view-collection .log-overview-panel:has(.log-overview-region:empty) .log-overview-fact-cell {
   padding: 4px 12px;
+}
+#view-collection .log-overview-panel:has(.log-overview-region:empty) .log-overview-fact-cell:nth-child(n+3) {
+  min-height: 0;
+}
+
+#view-collection .log-overview-flavor-row {
+  position: relative;
+  margin-top: -6px;
+  padding: 6px 10px 12px;
   border: 2px solid #b8944f;
   border-radius: 8px;
   background: #fffef7;
+  overflow: hidden;
 }
 
-#view-collection .log-overview-metric-label {
+#view-collection .log-overview-info-label-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#view-collection .log-overview-info-label {
   font-family: var(--pixel);
-  font-size: 8px;
+  font-size: 8.5px;
+  letter-spacing: 0.3px;
+  color: #347630;
+}
+
+/* Small type-icon chip next to the ABILITY label was removed per
+   feedback - .log-overview-info-label-row is kept as a plain wrapper
+   for the label text alone. */
+
+#view-collection .log-overview-info-value {
+  font-size: 12.5px;
+  line-height: 1.2;
+  color: #2b2320;
+}
+
+#view-collection .log-overview-info-tag {
+  font-size: 10px;
   color: #8a6a3a;
 }
 
-#view-collection .log-overview-metric-value {
-  font-family: var(--pixel);
-  font-size: 12px;
+#view-collection .log-overview-flavor {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding-right: 40px;
+  font-size: 11px;
+  line-height: 1.4;
   color: #2b2320;
+  max-height: calc(1.4em * 3.4);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
 }
 
-#view-collection .log-overview-flavor {
-  margin: 0;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: #2b2320;
+#view-collection .log-overview-flavor::-webkit-scrollbar {
+  width: 5px;
+}
+
+#view-collection .log-overview-flavor::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#view-collection .log-overview-flavor::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+/* Faint decorative Poke Ball watermark sitting behind the flavor text,
+   echoing the reference mock's embossed-into-the-paper look. */
+#view-collection .log-overview-watermark {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 34px;
+  height: 34px;
+  color: #d8bf82;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+}
+#view-collection .log-overview-watermark svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Region badge, top-right of the Overview tab: a plain icon-in-a-circle
+   with the region name stacked underneath - no surrounding card, just
+   the icon and label, matching the reference mock. Each region gets
+   its own line-art icon (see REGION_ICON_SVGS in script.js), matching
+   the stroke style already used by the Overview/Stats/Log tab icons. */
+#view-collection .log-overview-region {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  top: 10px;
+}
+
+#view-collection .log-overview-region:empty {
+  display: none;
+}
+
+#view-collection .log-overview-region-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: #5c2a12;
+}
+
+#view-collection .log-overview-region-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+#view-collection .log-overview-region-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#view-collection .log-overview-region-name {
+  font-family: var(--pixel);
+  font-size: 9.5px;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+  text-align: center;
+  color: #5c2a12;
 }
 
 /* --- Stats tab: species base stat spread (HP/Atk/Def/SpA/SpD/Spe), bar
@@ -12466,8 +12709,15 @@ padding: 2px 3px;
    bars are comparable across different Pokemon rather than each just
    filling relative to its own highest stat. --- */
 #view-collection .log-v2-shell .log-stats-panel {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
   margin: -13px 13px 0;
-  padding: 14px 16px;
+  padding: 8px 16px 9px;
+  height: 195px;
+  overflow-y: auto;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
@@ -12478,14 +12728,32 @@ padding: 2px 3px;
 #view-collection .log-stats-rows {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 5px;
+}
+
+/* Section headers ("BY METHOD" / "BY GAME" / "BY GENERATION") above each
+   breakdown's bar rows in the collection-wide Stats summary - see
+   breakdownSection() in script.js. */
+#view-collection .log-stats-section-label {
+  font-family: var(--pixel);
+  font-size: 8.5px;
+  letter-spacing: 0.3px;
+  color: #347630;
+  margin: 6px 0 1px;
+  padding-top: 6px;
+  border-top: 2px dashed #b8944f;
+}
+#view-collection .log-stats-section-label:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
 }
 
 #view-collection .log-stats-row {
   display: grid;
   grid-template-columns: 52px 1fr 30px;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 #view-collection .log-stats-row-label {
@@ -12495,7 +12763,7 @@ padding: 2px 3px;
 }
 
 #view-collection .log-stats-row-track {
-  height: 10px;
+  height: 9px;
   border: 2px solid #10183f;
   border-radius: 5px;
   background: #e9ddbf;
@@ -12515,6 +12783,20 @@ padding: 2px 3px;
   text-align: right;
 }
 
+/* Grid mode's method-breakdown rows (see updateLogSummaryDisplay in
+   script.js) reuse this bar-row look, but method names ("Poké Radar /
+   DexNav Chain") run far longer than the 3-4 letter stat abbreviations
+   these rows were built for - widen the label column and shrink/ellipsize
+   the text so long names don't blow out the row instead of wrapping. */
+#view-collection .log-stats-row-agg {
+  grid-template-columns: 108px 1fr 26px;
+}
+#view-collection .log-stats-row-agg .log-stats-row-label {
+  font-size: 7.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 #view-collection .log-stats-row[data-stat="hp"] .log-stats-row-fill { background: linear-gradient(#ff6b6b, #d63c3c); }
 #view-collection .log-stats-row[data-stat="atk"] .log-stats-row-fill { background: linear-gradient(#ffab5e, #e6812a); }
 #view-collection .log-stats-row[data-stat="def"] .log-stats-row-fill { background: linear-gradient(#ffe066, #e0b721); }
@@ -12523,14 +12805,46 @@ padding: 2px 3px;
 #view-collection .log-stats-row[data-stat="spe"] .log-stats-row-fill { background: linear-gradient(#ff8fd6, #d6469f); }
 
 #view-collection .log-stats-total {
-  margin-top: 10px;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 5px;
   border-top: 2px dashed #b8944f;
   display: flex;
   justify-content: space-between;
   font-family: var(--pixel);
   font-size: 10px;
   color: #5c2a12;
+}
+
+/* Type Matchups rows (see computeTypeMatchups/matchupRow in script.js) -
+   a label ("4x WEAK" / "IMMUNE" etc.) on the left and a row of small
+   type icons on the right, one row per non-empty bucket. Deliberately
+   not reusing .log-stats-row's grid (that one's built around a fixed
+   label/bar/value layout for the base-stat bars) since this row has a
+   variable-width icon strip instead of a bar+number. */
+#view-collection .log-stats-matchup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 20px;
+  padding: 1px 0;
+}
+#view-collection .log-stats-matchup-label {
+  font-family: var(--pixel);
+  font-size: 7.5px;
+  letter-spacing: 0.2px;
+  color: #5c2a12;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#view-collection .log-stats-matchup-icons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+#view-collection .log-stats-matchup-icons .type-circle-icon {
+  margin-right: 0;
 }
 
 /* Indented/recessed well look for both row containers: swap their
@@ -12564,7 +12878,7 @@ padding: 2px 3px;
 }
 
 #view-collection .log-v2-utility-btn {
-  height: 30px;
+  height: 26px;
 }
 
 #view-collection .log-v2-utility-btn[aria-pressed="true"],
@@ -12639,19 +12953,31 @@ padding: 2px 3px;
   display: none;
 }
 
+/* The Living Dex shortcut now lives inside the Log tab itself (bottom of
+   its toolbar section) instead of the shared prev/next nav row below the
+   tab stack, so it only shows up while the Log tab is open. Reuses
+   .log-dex-nav-menu-btn wholesale for the exact same circular pokeball
+   look/press-state it already had - this wrapper just centers it under
+   the Search/Sort/Filter + HOF/Edit/Reset rows. */
+#view-collection .log-v2-livingdex-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 6px;
+}
+
 #view-collection .log-v2-shell .log-dex-nav {
-  column-gap: 48px;
+  column-gap: 14px;
   margin: 10px 13px 4px;
-  flex-wrap: wrap;
-  row-gap: 6px;
+  flex-wrap: nowrap;
+  row-gap: 0;
 }
 
 #view-collection #log-screen-prev.log-dex-nav-btn {
-  order: 1;
+  flex: 1 1 0;
 }
 
 #view-collection #log-screen-next.log-dex-nav-btn {
-  order: 2;
+  flex: 1 1 0;
 }
 
 #view-collection .log-v2-shell .log-dex-nav-btn {
@@ -12678,42 +13004,112 @@ padding: 2px 3px;
   transform: translateY(2px) scale(.98);
 }
 
-/* The middle button doubles as the "go to Living Dex" shortcut. Styled to
-   match the plain, chrome-free pokeball icon button used on the Active
-   Hunts page (.hunt-dex-pokeball-btn) rather than the boxed nav-key look
-   of the prev/next arrows either side of it. */
+/* The middle button doubles as the "go to Living Dex" shortcut. Sits
+   inline between the Prev/Next arrows (not on its own wrapped row) and
+   is styled as a real circular button - matching border/shadow language
+   as the arrow keys - so it reads as a third action, not a stray icon. */
 #view-collection .log-v2-shell .log-dex-nav-menu-btn {
-  width: 27px;
-  height: 27px;
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  align-self: center;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(145deg, #fffdf6, #f5e9c7);
+  border: 2px solid #570a10;
+  border-radius: 50%;
+  box-shadow:
+    inset 2px 2px #fffef7,
+    inset -3px -3px #d6c18a,
+    2px 3px #65060b,
+    0 0 10px 2px rgba(255, 190, 60, 0.55),
+    0 4px 14px -2px rgba(255, 120, 200, 0.45);
+  padding: 5px;
   cursor: pointer;
   pointer-events: auto;
-  order: 3;
-  flex: 0 0 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 4px auto 14px;
-  transform: scale(1.9);
-  transition: transform 0.15s ease;
+  margin: 0;
+  /* Bouncy overshoot on release (the resting state's own transition is
+     what runs when :active is removed on mouseup/touchend) - paired with
+     a much quicker snap-down transition defined on :active itself below,
+     so pressing feels instant but releasing feels springy. */
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: livingdex-underglow 3.2s ease-in-out infinite;
+}
+
+/* Diagonal shimmer sweep across the button face, echoing the sparkle a
+   shiny Pokémon gets in-game - a soft white band that slides through on
+   a loop. Sits on its own stacking layer (isolation: isolate above) so
+   it can pass over the pokeball icon without fighting z-index elsewhere
+   on the page. */
+#view-collection .log-v2-shell .log-dex-nav-menu-btn::after {
+  content: "";
+  position: absolute;
+  inset: -60%;
+  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.85) 50%, transparent 58%);
+  transform: translateX(-130%) rotate(8deg);
+  animation: livingdex-shimmer 3.2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Soft rainbow-cycling glow underneath the button (the "underlight"),
+   layered on top of - not replacing - its existing raised-bevel shadow. */
+@keyframes livingdex-underglow {
+  0%, 100% {
+    box-shadow:
+      inset 2px 2px #fffef7,
+      inset -3px -3px #d6c18a,
+      2px 3px #65060b,
+      0 0 10px 2px rgba(255, 190, 60, 0.55),
+      0 4px 14px -2px rgba(255, 120, 200, 0.45);
+  }
+  33% {
+    box-shadow:
+      inset 2px 2px #fffef7,
+      inset -3px -3px #d6c18a,
+      2px 3px #65060b,
+      0 0 10px 2px rgba(120, 200, 255, 0.55),
+      0 4px 14px -2px rgba(160, 255, 170, 0.45);
+  }
+  66% {
+    box-shadow:
+      inset 2px 2px #fffef7,
+      inset -3px -3px #d6c18a,
+      2px 3px #65060b,
+      0 0 10px 2px rgba(255, 120, 220, 0.55),
+      0 4px 14px -2px rgba(255, 220, 120, 0.45);
+  }
+}
+
+@keyframes livingdex-shimmer {
+  0%, 35% { transform: translateX(-130%) rotate(8deg); }
+  55%, 100% { transform: translateX(130%) rotate(8deg); }
 }
 
 #view-collection .log-v2-shell .log-dex-nav-menu-btn:hover {
-  transform: scale(2);
+  transform: scale(1.06);
 }
 
+/* Press state: fast squash-down with its own short transition (overrides
+   the bouncy one above just for the press itself), then the base rule's
+   springy cubic-bezier takes back over on release to bounce it back past
+   1.0 before settling - the actual "press" feel. */
 #view-collection .log-v2-shell .log-dex-nav-menu-btn:active {
-  transform: scale(1.8) rotate(-8deg);
+  transform: scale(0.86) rotate(-4deg);
+  transition: transform 0.08s ease-out;
+  box-shadow: inset 2px 2px #d6c18a, 2px 1px #65060b;
 }
 
 #view-collection .log-v2-shell .log-dex-nav-menu-svg {
   width: 100%;
   height: 100%;
   display: block;
-  filter: brightness(0.92);
+  position: relative;
+  z-index: 2;
 }
 
 @media (max-width: 640px) {
@@ -12723,20 +13119,24 @@ padding: 2px 3px;
   #view-collection .log-v2-tabs { margin: -8px 7px 0; padding: 3px 4px 0; gap: 6px; }
   #view-collection .log-v2-tabs button { min-height: 34px; border-width: 2px !important; border-radius: 8px 8px 0 0; gap: 4px; }
   #view-collection .log-v2-tab-icon { width: 11px; height: 11px; }
-  #view-collection .log-v2-toolbar-wrap { margin: -13px 7px 0; padding: 0px 6px 8px; border-width: 3px; border-top: 0; border-radius: 0 0 13px 13px; }
-  #view-collection .log-v2-shell .log-v2-toolbar { gap: 5px; margin: 6px 0 0; }
-  #view-collection .log-v2-utility-row { gap: 5px; padding: 3px 6px 9px; margin: 6px 0 0; }
-  #view-collection .log-v2-utility-btn { height: 26px; }
+  #view-collection .log-v2-toolbar-wrap,
+  #view-collection .log-v2-shell .log-overview-panel,
+  #view-collection .log-v2-shell .log-stats-panel { margin: -13px 7px 0; border-width: 3px; }
+  #view-collection .log-v2-toolbar-wrap { padding: 0px 6px 5px; border-top: 0; border-radius: 0 0 13px 13px; }
+  #view-collection .log-v2-shell .log-v2-toolbar { gap: 4px; margin: 4px 0 0; }
+  #view-collection .log-v2-utility-row { gap: 4px; padding: 2px 6px 5px; margin: 4px 0 0; }
+  #view-collection .log-v2-utility-btn { height: 22px; }
   #view-collection .log-v2-shell .log-v2-toolbar .log-dex-grid-btn,
   #view-collection .log-v2-utility-btn { border-radius: 8px; box-shadow: inset 1px 1px #fffef7, inset -1px -1px #d6c08a, 0 2px 0 #a88d55; }
   #view-collection .log-v2-progress-module { margin: 7px 0 0; }
   #view-collection .log-v2-progress-module .log-dex-pill { height: 46px; padding: 0 9px; border-width: 3px; border-radius: 12px; }
   #view-collection .log-v2-progress-track { height: 11px; width: 68px; }
-  #view-collection .log-v2-shell .log-dex-nav { column-gap: 36px; row-gap: 6px; margin: 8px 7px 3px; }
+  #view-collection .log-v2-livingdex-row { margin-top: 4px; }
+  #view-collection .log-v2-shell .log-dex-nav { column-gap: 10px; row-gap: 0; margin: 8px 7px 3px; }
   #view-collection .log-v2-shell .log-dex-nav-btn { min-height: 26px; border-width: 2px; border-radius: 7px; }
   #view-collection #log-screen-prev.log-dex-nav-btn,
   #view-collection #log-screen-next.log-dex-nav-btn { min-height: 42px; font-size: 18px; }
-  #view-collection .log-v2-shell .log-dex-nav-menu-btn { margin-top: 4px; }
+  #view-collection .log-v2-shell .log-dex-nav-menu-btn { width: 36px; height: 36px; }
 }
 
 /* Reference fidelity pass 8: main card window locked to a ~450x310
@@ -12798,7 +13198,7 @@ padding: 2px 3px;
   display: flex !important;
   align-items: stretch !important;
   gap: 6px !important;
-  margin: 10px 24px -6px !important;
+  margin: 2px 24px -6px !important;
   padding: 0 !important;
   border-bottom: 0 !important;
   box-sizing: border-box !important;
@@ -12845,15 +13245,19 @@ padding: 2px 3px;
   position: static !important;
   top: auto !important;
 }
-#view-collection .log-v2-toolbar-wrap {
+#view-collection .log-v2-toolbar-wrap,
+#view-collection .log-overview-panel,
+#view-collection .log-stats-panel {
   margin-top: -4px !important;
-  padding-top: 0px !important;
   border-radius: 16px !important;
   border-top: 2px solid #4a0d10 !important;
 }
+#view-collection .log-v2-toolbar-wrap {
+  padding-top: 0px !important;
+}
 @media (max-width: 640px) {
   #view-collection .log-v2-tabs {
-    margin: 8px 16px -6px !important;
+    margin: 0px 16px -6px !important;
     gap: 4px !important;
   }
   #view-collection .log-v2-tabs button {
@@ -12867,7 +13271,9 @@ padding: 2px 3px;
     width: 11px !important;
     height: 11px !important;
   }
-  #view-collection .log-v2-toolbar-wrap {
+  #view-collection .log-v2-toolbar-wrap,
+  #view-collection .log-overview-panel,
+  #view-collection .log-stats-panel {
     border-radius: 13px !important;
   }
 }
@@ -12889,7 +13295,9 @@ padding: 2px 3px;
 #view-collection .log-v2-tabs button.active {
   border-color: #3f1207 !important;
 }
-#view-collection .log-v2-toolbar-wrap {
+#view-collection .log-v2-toolbar-wrap,
+#view-collection .log-overview-panel,
+#view-collection .log-stats-panel {
   border-color: #5c2a12 !important;
 }
 #view-collection .log-v2-shell .log-v2-toolbar .log-dex-grid-btn,
