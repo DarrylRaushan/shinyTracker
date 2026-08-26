@@ -573,6 +573,56 @@ gen: info[0],
 types: [info[1], info[2]].filter(Boolean)
 };
 }
+// Looks up which region a generation belongs to (Kanto for gen 1, Alola
+// for gen 7, etc.) using the same GEN_DATA table the Living Dex pages are
+// built from. Used by the Log Overview tab's region badge.
+// Simple line-art icons, one per region, drawn in the same stroke style as
+// the Overview/Stats/Log tab icons (stroke=currentColor, width 2, round
+// caps/joins, 24x24 viewBox) so the Overview tab's region badge (see
+// .log-overview-region-icon in style.css) reads as part of the same icon
+// family instead of introducing a new visual language. Keyed by the
+// region name as returned by regionForGen()/GEN_DATA.
+var REGION_ICON_SVGS = {
+"Kanto": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V9M20 20V9"/><path d="M2 9c2-3 5-5 10-5s8 2 10 5"/><path d="M4 9h16"/><path d="M9 20v-6h6v6"/></svg>',
+"Johto": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3"/><path d="M7 8h10l2 12H5L7 8z"/><path d="M9 12h6"/><path d="M10 8V6a2 2 0 0 1 4 0v2"/></svg>',
+"Hoenn": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>',
+"Sinnoh": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 19l6-13 4 8 3-5 7 10z"/></svg>',
+"Unova": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="9" width="4" height="11"/><rect x="10.5" y="4" width="4" height="16"/><rect x="16" y="12" width="4" height="8"/></svg>',
+"Kalos": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l7 20H5L12 2z"/><path d="M9 15h6"/></svg>',
+"Alola": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21c-.6-3.4-.9-6.6.4-10"/><path d="M12.5 11c-1.7-1.7-4.3-1.9-6.2-.3 1.4 2 4 2.6 6.2 1.1"/><path d="M13 10.4c.6-2.2 2.7-3.6 5-3.2-.4 2.3-2.5 3.9-5 3.5"/><path d="M12.7 9.6c-.3-2.3-2.2-4-4.5-3.9.1 2.3 2 4.1 4.5 4.2"/><path d="M13.2 9.3c1-2 3.3-3 5.4-2.3-.7 2.1-2.9 3.3-5.4 2.6"/></svg>',
+"Galar": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18 6l-1.8 1.8M7.8 16.2 6 18M18 18l-1.8-1.8M7.8 7.8 6 6"/></svg>',
+"Hisui": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v6"/><path d="M8 6h8l3 14H5L8 6z"/><path d="M9 14h6"/></svg>',
+"Paldea": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M22 12h-2M4 12H2"/></svg>'
+};
+// Round region-badge artwork (the circled emblem next to "ALOLA" etc. on the
+// Overview panel) lives as real PNG files under images/game-symbols/, one
+// per region. Kept separate from REGION_ICON_SVGS above, which stays as the
+// line-art fallback if a badge PNG is missing or hasn't been dropped in yet.
+var REGION_BADGE_IMAGES = {
+"Kanto": "kantoSVG.png",
+"Johto": "johtoSVG.png",
+"Hoenn": "hoennSVG.png",
+"Sinnoh": "sinnohSVG.png",
+"Unova": "unovaSVG.png",
+"Kalos": "kalosSVG.png",
+"Alola": "alolaSVG.png",
+"Galar": "galarSVG.png",
+"Hisui": "hisuiSVG.png",
+"Paldea": "paldeaSVG.png"
+};
+// A missing/broken region-badge PNG swaps itself out for the matching
+// line-art icon from REGION_ICON_SVGS rather than leaving a broken-image
+// box, same pattern as handleGameIconError() below for game-version icons.
+function handleRegionBadgeError(imgEl, region) {
+var fallback = REGION_ICON_SVGS[region];
+if (fallback) { imgEl.outerHTML = fallback; } else { imgEl.remove(); }
+}
+function regionForGen(gen) {
+for (var i = 0; i < GEN_DATA.length; i++) {
+if (GEN_DATA[i].gen === gen) return GEN_DATA[i].region;
+}
+return null;
+}
 function typeBadges(types, size) {
 if (!types || !types.length) return '<span class="type-badge type-unknown">?</span>';
 return types.map(function(t) {
@@ -601,6 +651,59 @@ return '<div class="tcg-wr">' +
 '<div class="tcg-wrr-cell"><span class="tcg-wrr-label">Weakness</span>' + weaknessValue(types) + '</div>' +
 '<div class="tcg-wrr-cell"><span class="tcg-wrr-label">Resistance</span><span class="tcg-wrr-value">None</span></div>' +
 '</div>';
+}
+// Full 18-type attacking damage chart (Gen 6+ values, incl. Fairy and the
+// modern Steel/Ghost/Dark relationship), keyed by attacking type -> a map
+// of defending type -> multiplier. Only non-neutral entries are listed;
+// anything absent is assumed to be the neutral 1x, same convention as
+// GAME_BASE_ODDS/METHOD_ODDS_RULES above. Used by computeTypeMatchups()
+// for the Log screen's Stats tab "Type Matchups" section - this is a
+// separate, more complete picture than the single-type TYPE_WEAKNESS
+// table above (which only drives the simplified TCG-style card).
+var TYPE_CHART = {
+"Normal": { "Rock": 0.5, "Ghost": 0, "Steel": 0.5 },
+"Fire": { "Fire": 0.5, "Water": 0.5, "Grass": 2, "Ice": 2, "Bug": 2, "Rock": 0.5, "Dragon": 0.5, "Steel": 2 },
+"Water": { "Fire": 2, "Water": 0.5, "Grass": 0.5, "Ground": 2, "Rock": 2, "Dragon": 0.5 },
+"Electric": { "Water": 2, "Electric": 0.5, "Grass": 0.5, "Ground": 0, "Flying": 2, "Dragon": 0.5 },
+"Grass": { "Fire": 0.5, "Water": 2, "Grass": 0.5, "Poison": 0.5, "Ground": 2, "Flying": 0.5, "Bug": 0.5, "Rock": 2, "Dragon": 0.5, "Steel": 0.5 },
+"Ice": { "Fire": 0.5, "Water": 0.5, "Grass": 2, "Ice": 0.5, "Ground": 2, "Flying": 2, "Dragon": 2, "Steel": 0.5 },
+"Fighting": { "Normal": 2, "Ice": 2, "Poison": 0.5, "Flying": 0.5, "Psychic": 0.5, "Bug": 0.5, "Rock": 2, "Ghost": 0, "Dark": 2, "Steel": 2, "Fairy": 0.5 },
+"Poison": { "Grass": 2, "Poison": 0.5, "Ground": 0.5, "Rock": 0.5, "Ghost": 0.5, "Steel": 0, "Fairy": 2 },
+"Ground": { "Fire": 2, "Electric": 2, "Grass": 0.5, "Poison": 2, "Flying": 0, "Bug": 0.5, "Rock": 2, "Steel": 2 },
+"Flying": { "Electric": 0.5, "Grass": 2, "Fighting": 2, "Bug": 2, "Rock": 0.5, "Steel": 0.5 },
+"Psychic": { "Fighting": 2, "Poison": 2, "Psychic": 0.5, "Dark": 0, "Steel": 0.5 },
+"Bug": { "Fire": 0.5, "Grass": 2, "Fighting": 0.5, "Poison": 0.5, "Flying": 0.5, "Psychic": 2, "Ghost": 0.5, "Dark": 2, "Steel": 0.5, "Fairy": 0.5 },
+"Rock": { "Fire": 2, "Ice": 2, "Fighting": 0.5, "Ground": 0.5, "Flying": 2, "Bug": 2, "Steel": 0.5 },
+"Ghost": { "Normal": 0, "Psychic": 2, "Ghost": 2, "Dark": 0.5 },
+"Dragon": { "Dragon": 2, "Steel": 0.5, "Fairy": 0 },
+"Dark": { "Fighting": 0.5, "Psychic": 2, "Ghost": 2, "Dark": 0.5, "Fairy": 0.5 },
+"Steel": { "Fire": 0.5, "Water": 0.5, "Electric": 0.5, "Ice": 2, "Rock": 2, "Steel": 0.5, "Fairy": 2 },
+"Fairy": { "Fire": 0.5, "Fighting": 2, "Poison": 0.5, "Dragon": 2, "Dark": 2, "Steel": 0.5 }
+};
+var ALL_ATTACKING_TYPES = Object.keys(TYPE_COLORS);
+// Combines the defending Pokemon's type(s) into one set of incoming-damage
+// multipliers (multiplying each attacking type's effectiveness across
+// every defending type it has), then buckets the 18 attacking types into
+// 4x/2x weak, 2x/4x resist, and immune groups for display. Returns null
+// for a Pokemon with no known type yet (still loading/unmapped).
+function computeTypeMatchups(types) {
+var defTypes = (types || []).filter(Boolean);
+if (!defTypes.length) return null;
+var buckets = { quadWeak: [], weak: [], resist: [], quadResist: [], immune: [] };
+ALL_ATTACKING_TYPES.forEach(function(atk) {
+var mult = 1;
+defTypes.forEach(function(def) {
+var row = TYPE_CHART[atk];
+var m = (row && row.hasOwnProperty(def)) ? row[def] : 1;
+mult *= m;
+});
+if (mult === 0) buckets.immune.push(atk);
+else if (mult === 4) buckets.quadWeak.push(atk);
+else if (mult === 2) buckets.weak.push(atk);
+else if (mult === 0.25) buckets.quadResist.push(atk);
+else if (mult === 0.5) buckets.resist.push(atk);
+});
+return buckets;
 }
 // Small circular energy-cost icon used on attack rows. Optionally takes
 // a type name to show that type's real icon centered inside the circle;
@@ -3239,6 +3342,23 @@ flavorText: flavorEntry ? flavorEntry.flavor_text.replace(/[\n\f\r]+/g, ' ') : n
 // height is decimetres, weight is hectograms - convert to metres/kg.
 heightM: typeof mon.height === 'number' ? (mon.height / 10) : null,
 weightKg: typeof mon.weight === 'number' ? (mon.weight / 10) : null,
+// Abilities: PokeAPI slugs are hyphenated ("flash-fire") - title-case
+// them for display, and flag hidden abilities so they can be marked
+// distinctly rather than blending in with the regular ones.
+abilities: (mon.abilities || []).map(function(a) {
+if (!a.ability || !a.ability.name) return null;
+var label = a.ability.name.split('-').map(function(w) {
+return w.charAt(0).toUpperCase() + w.slice(1);
+}).join(' ');
+return { name: label, hidden: !!a.is_hidden };
+}).filter(Boolean),
+eggGroups: (species.egg_groups || []).map(function(g) {
+if (!g.name) return null;
+if (g.name === 'no-eggs') return 'Undiscovered';
+return g.name.split('-').map(function(w) {
+return w.charAt(0).toUpperCase() + w.slice(1);
+}).join(' ');
+}).filter(Boolean),
 stats: {
 hp: statMap.hp != null ? statMap.hp : null,
 atk: statMap.attack != null ? statMap.attack : null,
@@ -3246,7 +3366,17 @@ def: statMap.defense != null ? statMap.defense : null,
 spa: statMap['special-attack'] != null ? statMap['special-attack'] : null,
 spd: statMap['special-defense'] != null ? statMap['special-defense'] : null,
 spe: statMap.speed != null ? statMap.speed : null
-}
+},
+// Extra generic species facts for the Log screen's Stats tab "Species
+// Data" section - catch rate (0-255, higher = easier), base experience
+// yield, and growth rate (leveling speed curve). All optional/nullable
+// since a handful of species resources omit one or another.
+catchRate: typeof species.capture_rate === 'number' ? species.capture_rate : null,
+baseExperience: typeof mon.base_experience === 'number' ? mon.base_experience : null,
+growthRate: (species.growth_rate && species.growth_rate.name) ?
+species.growth_rate.name.split('-').map(function(w) {
+return w.charAt(0).toUpperCase() + w.slice(1);
+}).join(' ') : null
 };
 _dexEntryCache[slug] = entry;
 return entry;
@@ -4234,7 +4364,148 @@ updateLogModeUI();
 renderLogCard();
 renderLogGrid();
 renderLogHoF();
+updateLogSummaryDisplay();
 updateLivingDexPillBadge();
+}
+// When the Grid screen is what's actually showing (not Card, not Hall of
+// Fame), there's no single "selected" catch left for the header strip or
+// the Overview/Stats tabs to describe - renderLogCard() above still
+// dutifully fills all three in for whichever entry is selected in Card
+// mode even while Grid is what's visible, so this runs right after it
+// and swaps that per-entry content for a collection-wide summary of
+// whatever's currently in the grid instead. The Log tab (search/sort/
+// filter) doesn't reference a selected entry either way, so it's left
+// untouched here.
+function updateLogSummaryDisplay() {
+var showSummary = !logShowHoF && logViewMode === 'grid';
+var headerStats = document.querySelector('.log-v2-header-stats');
+if (headerStats) headerStats.classList.toggle('log-v2-header-stats--summary', showSummary);
+if (!showSummary) return;
+
+var list = filteredLogEntries();
+
+var headerCount = document.getElementById('log-v2-header-count');
+var headerUnit = document.getElementById('log-v2-header-unit');
+if (headerCount) headerCount.textContent = list.length;
+if (headerUnit) headerUnit.textContent = list.length === 1 ? ' ENTRY' : ' ENTRIES';
+
+// Invalidate any per-entry fetchDexEntryData() lookup still in flight
+// (see renderLogOverviewAndStats) so a slow response can't land after
+// this and clobber the summary with a single catch's info again.
+_logOverviewRequestToken++;
+
+var genusEl = document.getElementById('log-overview-genus');
+var flavorEl = document.getElementById('log-overview-flavor');
+var regionEl = document.getElementById('log-overview-region');
+var factsEl = document.getElementById('log-overview-facts-grid');
+var statsRowsEl = document.getElementById('log-stats-rows');
+if (!genusEl || !statsRowsEl) return;
+if (regionEl) regionEl.innerHTML = '';
+
+if (list.length === 0) {
+genusEl.textContent = state.collection.length === 0 ? 'Your Shiny Collection' : 'No Matches';
+flavorEl.textContent = state.collection.length === 0 ? 'Your first catch will show up here.' : 'No catches match your search/filters.';
+if (factsEl) factsEl.innerHTML = '';
+statsRowsEl.innerHTML = '';
+return;
+}
+
+genusEl.textContent = list.length + (list.length === 1 ? ' Shiny Caught' : ' Shinies Caught');
+
+var games = {}, methods = {}, gens = {};
+var totalEncounters = 0;
+list.forEach(function(e) {
+totalEncounters += e.encounters || 0;
+if (e.game) games[e.game] = (games[e.game] || 0) + 1;
+if (e.method) methods[e.method] = (methods[e.method] || 0) + 1;
+var info = speciesInfo(e.pokemon);
+var g = e.gen || (info ? info.gen : null);
+if (g) gens['Gen ' + g] = (gens['Gen ' + g] || 0) + 1;
+});
+function topEntry(obj) {
+var best = null, bestCount = -1;
+Object.keys(obj).forEach(function(k) { if (obj[k] > bestCount) { best = k; bestCount = obj[k]; } });
+return best;
+}
+var topGame = topEntry(games) || '—';
+var topMethod = topEntry(methods) || '—';
+var gameCount = Object.keys(games).length;
+var genCount = Object.keys(gens).length;
+var avgEncounters = Math.round(totalEncounters / list.length);
+
+flavorEl.textContent = 'Spanning ' + gameCount + (gameCount === 1 ? ' game' : ' games') +
+' and ' + genCount + (genCount === 1 ? ' generation.' : ' generations.');
+
+if (factsEl) {
+function factCell(label, valueHtml) {
+return '<div class="log-overview-fact-cell">' +
+'<div class="log-overview-info-label-row"><span class="log-overview-info-label">' + label + '</span></div>' +
+'<span class="log-overview-info-value">' + valueHtml + '</span>' +
+'</div>';
+}
+var uniqueSpecies = {};
+list.forEach(function(e) { if (e.pokemon) uniqueSpecies[e.pokemon] = true; });
+var uniqueSpeciesCount = Object.keys(uniqueSpecies).length;
+
+factsEl.innerHTML =
+factCell('TOTAL CAUGHT', String(list.length)) +
+factCell('UNIQUE SPECIES', String(uniqueSpeciesCount)) +
+factCell('TOP GAME', escapeHtml(topGame)) +
+factCell('TOP METHOD', escapeHtml(topMethod)) +
+factCell('AVG ENCOUNTERS', String(avgEncounters)) +
+factCell('TOTAL ENCOUNTERS', String(totalEncounters));
+}
+
+// Stats tab: reuses the same bar-row styling the base-stat spread uses
+// in Card mode, but for breakdowns across the whole grid (Method, Game,
+// Generation) - bar length relative to the most-used entry within each
+// breakdown (not a fixed cap like the 255 stat scale), since there's no
+// natural universal ceiling for "times a method/game/gen was used".
+function breakdownRows(counts) {
+var entries = Object.keys(counts).map(function(k) { return [k, counts[k]]; })
+.sort(function(a, b) { return b[1] - a[1]; });
+var maxCount = entries.length ? entries[0][1] : 1;
+return entries.map(function(pair) {
+var label = pair[0], count = pair[1];
+var pct = Math.max(2, Math.round((count / maxCount) * 100));
+return '<div class="log-stats-row log-stats-row-agg">' +
+'<span class="log-stats-row-label" title="' + escapeHtml(label) + '">' + escapeHtml(label.toUpperCase()) + '</span>' +
+'<span class="log-stats-row-track"><span class="log-stats-row-fill" style="width:' + pct + '%"></span></span>' +
+'<span class="log-stats-row-value">' + count + '</span>' +
+'</div>';
+}).join('');
+}
+function breakdownSection(title, rowsHtml) {
+return rowsHtml ? '<div class="log-stats-section-label">' + title + '</div>' + rowsHtml : '';
+}
+
+var methodRowsHtml = breakdownRows(methods);
+var gameRowsHtml = breakdownRows(games);
+var genRowsHtml = breakdownRows(gens);
+var breakdownHtml = breakdownSection('BY METHOD', methodRowsHtml) +
+breakdownSection('BY GAME', gameRowsHtml) +
+breakdownSection('BY GENERATION', genRowsHtml);
+statsRowsEl.innerHTML = breakdownHtml || 'No stat data available.';
+
+// Extra collection-wide facts, below the breakdown bars - same
+// dashed-divider "total row" treatment as Total Encounters already used.
+var totalTimeSeconds = list.reduce(function(sum, e) { return sum + (e.timeSpentMinutes || 0) * 60; }, 0);
+var charmCount = list.reduce(function(sum, e) { return sum + (e.shinyCharm ? 1 : 0); }, 0);
+var charmPct = Math.round((charmCount / list.length) * 100);
+var rarest = list.reduce(function(best, e) {
+return (!best || logEntryDenom(e) > logEntryDenom(best)) ? e : best;
+}, null);
+var fastest = list.reduce(function(best, e) {
+if (e.encounters == null) return best;
+return (!best || best.encounters == null || e.encounters < best.encounters) ? e : best;
+}, null);
+
+statsRowsEl.innerHTML +=
+'<div class="log-stats-total"><span>TOTAL ENCOUNTERS</span><span>' + totalEncounters + '</span></div>' +
+'<div class="log-stats-total"><span>TOTAL TIME SPENT</span><span>' + fmtTime(totalTimeSeconds) + '</span></div>' +
+'<div class="log-stats-total"><span>SHINY CHARM USE</span><span>' + charmPct + '%</span></div>' +
+(rarest ? '<div class="log-stats-total"><span>RAREST CATCH</span><span>' + escapeHtml(rarest.pokemon) + ' (' + (rarest.encounters || 0) + ' enc.)</span></div>' : '') +
+(fastest ? '<div class="log-stats-total"><span>FASTEST CATCH</span><span>' + escapeHtml(fastest.pokemon) + ' (' + fastest.encounters + ')</span></div>' : '');
 }
 // Fills the Overview and Stats tab panels for whichever catch the Card
 // screen is currently showing (see renderLogCard's call at the bottom of
@@ -4245,37 +4516,76 @@ updateLivingDexPillBadge();
 // the person has already paged away from can't clobber a newer one that
 // resolved first.
 var _logOverviewRequestToken = 0;
-function renderLogOverviewAndStats(name) {
+function renderLogOverviewAndStats(name, dexNum, types, gen, catchEntry) {
 var genusEl = document.getElementById('log-overview-genus');
-var metricsEl = document.getElementById('log-overview-metrics');
 var flavorEl = document.getElementById('log-overview-flavor');
+var regionEl = document.getElementById('log-overview-region');
 var statsRowsEl = document.getElementById('log-stats-rows');
 if (!genusEl || !statsRowsEl) return;
+var factsEl = document.getElementById('log-overview-facts-grid');
 if (!name) {
 genusEl.textContent = 'No catch selected.';
-metricsEl.innerHTML = '';
 flavorEl.textContent = '';
+if (regionEl) regionEl.innerHTML = '';
+if (factsEl) factsEl.innerHTML = '';
 statsRowsEl.innerHTML = '';
 return;
 }
+if (regionEl) {
+var region = gen ? regionForGen(gen) : null;
+var badgeFile = region ? REGION_BADGE_IMAGES[region] : null;
+var regionIconSvg = region ? REGION_ICON_SVGS[region] : null;
+var regionIconMarkup = badgeFile ?
+('<img class="log-overview-region-badge-img" src="images/game-symbols/' + badgeFile + '" alt="" onerror="handleRegionBadgeError(this,\'' + region + '\')">') :
+(regionIconSvg || '');
+regionEl.innerHTML = region ?
+('<span class="log-overview-region-icon">' + regionIconMarkup + '</span>' +
+'<span class="log-overview-region-name">' + escapeHtml(region.toUpperCase()) + '</span>') : '';
+}
 var token = ++_logOverviewRequestToken;
-genusEl.textContent = 'Accessing entry…';
-metricsEl.innerHTML = '';
-flavorEl.textContent = '';
-statsRowsEl.innerHTML = 'Accessing entry…';
+// Deliberately NOT clearing genus/metrics/flavor/stats to a loading
+// placeholder here. This function fires on every arrow-key entry
+// switch, and clearing first (even briefly, while fetchDexEntryData
+// resolves - which is a real network round trip for anything not yet
+// cached) reads as the whole panel flickering blank on every page.
+// Leaving the previous entry's content in place until the new one is
+// ready reads as a normal update instead.
 fetchDexEntryData(name).then(function(entry) {
 if (token !== _logOverviewRequestToken) return;
 if (!entry) {
 genusEl.textContent = 'No entry data available.';
+flavorEl.textContent = '';
+if (factsEl) factsEl.innerHTML = '';
 statsRowsEl.innerHTML = '';
 return;
 }
 genusEl.textContent = entry.genus || name;
-var metrics = '';
-if (entry.heightM != null) metrics += '<div class="log-overview-metric"><span class="log-overview-metric-label">HEIGHT</span><span class="log-overview-metric-value">' + entry.heightM.toFixed(1) + ' m</span></div>';
-if (entry.weightKg != null) metrics += '<div class="log-overview-metric"><span class="log-overview-metric-label">WEIGHT</span><span class="log-overview-metric-value">' + entry.weightKg.toFixed(1) + ' kg</span></div>';
-metricsEl.innerHTML = metrics;
 flavorEl.textContent = entry.flavorText || '';
+if (factsEl) {
+// Single unbordered 2x2 grid: Height/Weight on top, Ability/Egg
+// Group below, all sharing the same label-above-value styling
+// (see .log-overview-fact-cell in style.css) instead of separate
+// boxed metrics + info sections.
+function factCell(label, valueHtml) {
+return '<div class="log-overview-fact-cell">' +
+'<div class="log-overview-info-label-row"><span class="log-overview-info-label">' + label + '</span></div>' +
+'<span class="log-overview-info-value">' + valueHtml + '</span>' +
+'</div>';
+}
+var heightVal = entry.heightM != null ? (entry.heightM.toFixed(1) + ' m') : '—';
+var weightVal = entry.weightKg != null ? (entry.weightKg.toFixed(1) + ' kg') : '—';
+var abilityLabel = (entry.abilities && entry.abilities.length) ?
+entry.abilities.map(function(a) {
+return escapeHtml(a.name) + (a.hidden ? ' <span class="log-overview-info-tag">(Hidden)</span>' : '');
+}).join(' &middot; ') : '—';
+var eggLabel = (entry.eggGroups && entry.eggGroups.length) ?
+entry.eggGroups.map(escapeHtml).join(' &middot; ') : '—';
+factsEl.innerHTML =
+factCell('HEIGHT', heightVal) +
+factCell('WEIGHT', weightVal) +
+factCell('ABILITY', abilityLabel) +
+factCell('EGG GROUP', eggLabel);
+}
 var statDefs = [
 ['hp', 'HP'],
 ['atk', 'ATK'],
@@ -4286,11 +4596,14 @@ var statDefs = [
 ];
 var stats = entry.stats || {};
 var total = 0;
+var bestStat = null, weakestStat = null;
 var rows = statDefs.map(function(def) {
 var key = def[0], label = def[1];
 var val = stats[key];
 if (val == null) return '';
 total += val;
+if (!bestStat || val > bestStat.val) bestStat = { label: label, val: val };
+if (!weakestStat || val < weakestStat.val) weakestStat = { label: label, val: val };
 // 255 is the series' theoretical stat cap, so bar length is
 // comparable across different Pokemon rather than just relative to
 // each one's own highest stat.
@@ -4302,10 +4615,80 @@ return '<div class="log-stats-row" data-stat="' + key + '">' +
 '</div>';
 }).join('');
 statsRowsEl.innerHTML = rows || 'No stat data available.';
-if (rows) statsRowsEl.innerHTML += '<div class="log-stats-total"><span>TOTAL</span><span>' + total + '</span></div>';
+if (rows) {
+statsRowsEl.innerHTML += '<div class="log-stats-total"><span>TOTAL</span><span>' + total + '</span></div>';
+// Best/Weakest stat only means something when there's more than one
+// stat to compare against - a single known stat can't be "best" or
+// "weakest" relative to anything.
+if (bestStat && weakestStat && bestStat.label !== weakestStat.label) {
+statsRowsEl.innerHTML +=
+'<div class="log-stats-total"><span>BEST STAT</span><span>' + bestStat.label + ' (' + bestStat.val + ')</span></div>' +
+'<div class="log-stats-total"><span>WEAKEST STAT</span><span>' + weakestStat.label + ' (' + weakestStat.val + ')</span></div>';
+}
+}
+
+// "About this catch" - odds for the method actually used, plus how
+// likely a shiny was to have shown up by the time it actually did
+// (1 - (1 - 1/odds)^encounters), using the odds actually rolled at
+// catch time when saved (logEntryDenom) so this matches what Card
+// mode/Log rows already report elsewhere.
+if (catchEntry) {
+var denom = logEntryDenom(catchEntry);
+var enc = catchEntry.encounters || 0;
+if (denom) {
+var chancePct = (1 - Math.pow(1 - 1 / denom, enc)) * 100;
+var chanceLabel = chancePct < 0.01 ? '< 0.01%' :
+(chancePct > 99.99 ? '> 99.99%' : (Math.round(chancePct * 100) / 100) + '%');
+statsRowsEl.innerHTML +=
+'<div class="log-stats-section-label">THIS CATCH</div>' +
+'<div class="log-stats-total"><span>ODDS</span><span>1 in ' + denom.toLocaleString() + '</span></div>' +
+'<div class="log-stats-total"><span>SHINY CHANCE BY ' + enc.toLocaleString() + ' ENC.</span><span>' + chanceLabel + '</span></div>';
+}
+}
+
+// Type matchups - full 18-type incoming-damage chart (see TYPE_CHART/
+// computeTypeMatchups above), not the simplified single-type table the
+// TCG-style card uses. Rows are only shown for buckets that actually
+// have members, so e.g. a Normal-type with no resistances just skips
+// straight past that row instead of showing an empty one.
+var matchups = computeTypeMatchups(types);
+if (matchups) {
+// Small round cropped icons (typeCircleMarkup), same style used for
+// energy costs on the TCG-style card - reads better at this size than
+// the wide pill icons typeBadges()/typeIconMarkup() use for the
+// species' own type row above.
+var matchupRow = function(label, list) {
+if (!list.length) return '';
+return '<div class="log-stats-matchup-row"><span class="log-stats-matchup-label">' + label + '</span>' +
+'<span class="log-stats-matchup-icons">' + list.map(function(t) {
+return typeCircleMarkup(t, 20);
+}).join('') + '</span></div>';
+};
+var matchupRowsHtml = matchupRow('4&times; WEAK', matchups.quadWeak) +
+matchupRow('2&times; WEAK', matchups.weak) +
+matchupRow('2&times; RESIST', matchups.resist) +
+matchupRow('4&times; RESIST', matchups.quadResist) +
+matchupRow('IMMUNE', matchups.immune);
+statsRowsEl.innerHTML += '<div class="log-stats-section-label">TYPE MATCHUPS</div>' +
+(matchupRowsHtml || '<div class="log-stats-matchup-row"><span class="log-stats-matchup-label">NEUTRAL TO ALL TYPES</span></div>');
+// Icons above are inserted as placeholder circles (see typeCircleMarkup)
+// - hydrate them with the actual cropped glyph now that they're in the DOM.
+hydrateTypeCircleIcons(statsRowsEl);
+}
+
+// Species data - other generic PokeAPI fields not shown elsewhere in
+// the Overview/Stats tabs yet.
+var catchRatePct = entry.catchRate != null ? Math.round((entry.catchRate / 255) * 100) : null;
+var speciesDataHtml =
+(entry.catchRate != null ? '<div class="log-stats-total"><span>CATCH RATE</span><span>' + entry.catchRate + ' (' + catchRatePct + '%)</span></div>' : '') +
+(entry.baseExperience != null ? '<div class="log-stats-total"><span>BASE EXPERIENCE</span><span>' + entry.baseExperience + '</span></div>' : '') +
+(entry.growthRate ? '<div class="log-stats-total"><span>GROWTH RATE</span><span>' + escapeHtml(entry.growthRate) + '</span></div>' : '');
+if (speciesDataHtml) statsRowsEl.innerHTML += '<div class="log-stats-section-label">SPECIES DATA</div>' + speciesDataHtml;
 }).catch(function() {
 if (token !== _logOverviewRequestToken) return;
 genusEl.textContent = 'No entry data available.';
+flavorEl.textContent = '';
+if (factsEl) factsEl.innerHTML = '';
 statsRowsEl.innerHTML = '';
 });
 }
@@ -4354,7 +4737,7 @@ var began = latest.dateBegan || '';
 var ended = latest.dateEnded || latest.date || '';
 var dexNum = dexNumberOf(latest.pokemon);
 var entryLabel = dexNum ? ('No. ' + String(dexNum).padStart(4, '0')) : 'No. ????';
-renderLogOverviewAndStats(latest.pokemon);
+renderLogOverviewAndStats(latest.pokemon, dexNum, types, gen, latest);
 // Header strip (species dex no. | encounter-count + method-specific unit,
 // e.g. "612 EGGS HATCHED" for Masuda/breeding, "48 ENCOUNTERS" for a
 // random encounter hunt) mirrors whichever entry the card is currently
@@ -4544,7 +4927,7 @@ logViewMode = btn.dataset.mode;
 logShowHoF = false;
 renderCollection();
 });
-var logV2Tabs = document.querySelectorAll('[data-log-tab]');
+var logV2Tabs = document.querySelectorAll('.log-v2-tabs [data-log-tab]');
 logV2Tabs.forEach(function(tab) {
   tab.addEventListener('click', function() {
     logV2Tabs.forEach(function(other) { other.classList.toggle('active', other === tab); });
@@ -9560,12 +9943,58 @@ renderAll();
 var tabBtn = document.querySelector('nav.tabs button[data-tab="hunts"]');
 if (tabBtn) { tabBtn.click(); } else { activateTab('hunts'); }
 }
-document.getElementById('log-screen-prev').addEventListener('click', function() {
-logScreenStep(-1);
-});
-document.getElementById('log-screen-next').addEventListener('click', function() {
-logScreenStep(1);
-});
+// Prev/Next were the two red arrow buttons under the Card screen - removed
+// now that swiping the card (see setupLogScreenSwipe below) does their job,
+// so there's nothing left to wire click handlers to here.
+// ---------- swipe left/right on the Card screen to step prev/next ----------
+// Scoped to .log-dex-screen-stack only (the sprite/name/method card) so it
+// never fights with swipes/scrolls elsewhere - the Overview/Stats/Log tabs
+// below it, the flavor text's own vertical scroll, or the outer clamshell's
+// Active Hunts <-> Shiny Log <-> Living Dex swipe. Mirrors the same
+// logScreenStep() the prev/next arrow buttons already call, just triggered
+// by a horizontal drag instead of a tap.
+(function setupLogScreenSwipe() {
+var stack = document.querySelector('.log-dex-screen-stack');
+if (!stack) return;
+var startX = 0, startY = 0;
+var decided = false; // classified this gesture as horizontal vs vertical yet?
+var dragging = false; // classified horizontal - we own this gesture now
+var DIRECTION_THRESHOLD = 8; // px moved before classifying the gesture
+var COMMIT_THRESHOLD = 40; // px of horizontal drag before it counts as a swipe
+
+function onStart(e) {
+if (e.touches.length !== 1) return;
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
+decided = false;
+dragging = false;
+}
+function onMove(e) {
+if (e.touches.length !== 1) return;
+var dx = e.touches[0].clientX - startX;
+var dy = e.touches[0].clientY - startY;
+if (!decided) {
+if (Math.abs(dx) < DIRECTION_THRESHOLD && Math.abs(dy) < DIRECTION_THRESHOLD) return;
+decided = true;
+dragging = Math.abs(dx) > Math.abs(dy);
+}
+if (!dragging) return; // vertical - let native scroll handle it
+if (e.cancelable) e.preventDefault(); // stop rubber-banding while dragging
+e.stopPropagation(); // don't let this bubble into the outer clamshell swipe
+}
+function onEnd(e) {
+if (!decided || !dragging) return;
+var endX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : startX;
+var dx = endX - startX;
+if (Math.abs(dx) >= COMMIT_THRESHOLD) {
+logScreenStep(dx < 0 ? 1 : -1);
+}
+}
+stack.style.touchAction = 'pan-y';
+stack.addEventListener('touchstart', onStart, { passive: true });
+stack.addEventListener('touchmove', onMove, { passive: false });
+stack.addEventListener('touchend', onEnd, { passive: true });
+})();
 (function initStars() {
 var container = document.getElementById('stars');
 // Stars are placed at fully random positions across the whole viewport,
