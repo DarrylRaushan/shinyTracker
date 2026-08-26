@@ -17,7 +17,7 @@
          custom element, no build step/React needed, so it drops straight
          into this vanilla page the same way the sprite <img>s do. -->
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=log-screen-mint-fix-8">
+    <link rel="stylesheet" href="style.css?v=log-tab-panel-center-fix-2">
   </head>
   <body>
     <div id="stars"></div>
@@ -31,7 +31,7 @@
 
           <div id="view-collection" class="dex-page">
             <div class="log-dex-shell-wrap">
-              <div class="log-dex-shell log-v2-shell" id="log-dex-shell" data-log-mode="card" data-log-hof="false">
+              <div class="log-dex-shell log-v2-shell" id="log-dex-shell" data-log-mode="card" data-log-hof="false" data-log-tab="overview">
                 <div class="log-dex-shell-crease-wrap"><div class="log-dex-shell-crease"></div></div>
 
                 <header class="log-v2-header">
@@ -62,9 +62,17 @@
 
                 <div class="log-tab-panel-stack">
                   <div class="log-overview-panel" id="log-overview-panel">
-                    <div class="log-overview-genus" id="log-overview-genus">Accessing entry…</div>
-                    <div class="log-overview-metrics" id="log-overview-metrics"></div>
-                    <p class="log-overview-flavor" id="log-overview-flavor"></p>
+                    <div class="log-overview-top-row">
+                      <div class="log-overview-heading-col">
+                        <div class="log-overview-genus" id="log-overview-genus">Accessing entry…</div>
+                      </div>
+                      <div class="log-overview-region" id="log-overview-region"></div>
+                    </div>
+                    <div class="log-overview-facts-grid" id="log-overview-facts-grid"></div>
+                    <div class="log-overview-flavor-row">
+                      <p class="log-overview-flavor" id="log-overview-flavor"></p>
+                      <div class="log-overview-watermark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none"/><path d="M3 12a9 9 0 0 1 18 0" fill="currentColor"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M3 12H9M15 12H21" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="2.4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></div>
+                    </div>
                   </div>
 
                   <div class="log-stats-panel" id="log-stats-panel">
@@ -104,9 +112,9 @@
                       <button type="button" class="log-dex-grid-btn log-v2-utility-btn" id="btn-toggle-log-edit" title="Edit Log" aria-label="Edit Log" aria-pressed="false"><span>Edit</span></button>
                       <button type="button" class="log-dex-grid-btn log-v2-utility-btn" id="btn-log-reset-filters" title="Reset" aria-label="Reset all filters"><span>Reset</span></button>
                     </div>
+                    <div class="log-v2-livingdex-row"><button class="log-dex-nav-btn log-dex-nav-menu-btn" id="log-screen-menu" title="Living Dex" aria-label="Go to Living Dex"><svg class="log-dex-nav-menu-svg" viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#fff"/><path d="M3 12a9 9 0 0 1 18 0" fill="#ee1515"/><circle cx="12" cy="12" r="9" stroke="#000" stroke-width="1.8" fill="none"/><path d="M3 12H9M15 12H21" stroke="#000" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="#fff" stroke="#000" stroke-width="1.8"/></svg></button></div>
                   </section>
                 </div>
-                <div class="log-dex-nav"><button class="log-dex-nav-btn" id="log-screen-prev" aria-label="Show previous catch">◀&#xFE0E;</button><button class="log-dex-nav-btn log-dex-nav-menu-btn" id="log-screen-menu" title="Living Dex" aria-label="Go to Living Dex"><svg class="log-dex-nav-menu-svg" viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#fff"/><path d="M3 12a9 9 0 0 1 18 0" fill="#ee1515"/><circle cx="12" cy="12" r="9" stroke="#000" stroke-width="1.8" fill="none"/><path d="M3 12H9M15 12H21" stroke="#000" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="#fff" stroke="#000" stroke-width="1.8"/></svg></button><button class="log-dex-nav-btn" id="log-screen-next" aria-label="Show next catch">▶&#xFE0E;</button></div>
               </div>
             </div>
 
