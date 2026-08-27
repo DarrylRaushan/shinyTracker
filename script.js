@@ -4008,6 +4008,26 @@ return a.createdAt - b.createdAt;
 }
 return sorted;
 }
+// Maps a 0-100 "odds so far" percentage to a pair of hex colors for the
+// hunt card's capture gauge - green while the odds are still low, sliding
+// through yellow and into a hot red/orange as the cumulative probability
+// climbs toward (and past) 100%, so the bar itself communicates urgency
+// instead of always rendering the same static green-to-yellow fill.
+function oddsGaugeColors(pct) {
+var t = Math.max(0, Math.min(1, pct / 100));
+var hue = 128 - t * 128;
+var c1 = 'hsl(' + hue + ', 60%, 42%)';
+var c2 = 'hsl(' + hue + ', 90%, 58%)';
+return [c1, c2];
+}
+// Small stroke-style icons for the hunt card's dark readout strip, matching
+// the icon language used by the Overview/Stats tab icons elsewhere in the
+// app (stroke=currentColor, width 2, round caps/joins, 24x24 viewBox).
+var HUNT_READOUT_ICONS = {
+encounters: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5" fill="currentColor" stroke-width="1.5"/></svg>',
+time: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+odds: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg>'
+};
 function renderHunts() {
 var wrap = document.getElementById('hunts-list');
 wrap.innerHTML = '';
@@ -4023,7 +4043,15 @@ var pct = Math.round(prob * 1000) / 10;
 var dexNum = dexNumberOf(hunt.pokemon);
 var entryLabel = dexNum ? ('No. ' + String(dexNum).padStart(4, '0')) : 'No. ????';
 var info = speciesInfo(hunt.pokemon);
-var idLine = escapeHtml(hunt.pokemon).toUpperCase() + ' // ' + (info && info.types.length ? info.types.join(' · ').toUpperCase() : 'UNKNOWN TYPE') + (info && info.gen ? ' // GEN ' + info.gen : '');
+var primaryType = info && info.types.length ? info.types[0] : null;
+var typeHex = primaryType ? (TYPE_COLORS[primaryType] || '#4caf50') : '#4caf50';
+var typeRgb = primaryType ? typeRgbTriple(primaryType) : '76,175,80';
+var screenStyle = '--type-color:' + typeHex + ';--type-rgb:' + typeRgb + ';';
+var barColors = oddsGaugeColors(pct);
+var barStyle = 'width:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';--bar-c2:' + barColors[1] + ';';
+var markerStyle = 'left:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';--bar-c2:' + barColors[1] + ';';
+var typePillsHtml = info && info.types.length ? typeBadges(info.types) : '<span class="tag">Unknown Type</span>';
+var genChipHtml = info && info.gen ? ('<span class="hunt-dex-gen-chip">GEN ' + info.gen + '</span>') : '';
 el.innerHTML =
 '<div class="hunt-dex-flap">' +
 '<div class="hunt-dex-flap-crease-wrap"><div class="hunt-dex-flap-crease"></div></div>' +
@@ -4043,31 +4071,41 @@ el.innerHTML =
 '<div class="hunt-dex-body">' +
 '<div class="hunt-dex-bezel">' +
 '<div class="hunt-dex-bezel-dots"><span></span><span></span></div>' +
-'<div class="hunt-dex-screen">' +
+'<div class="hunt-dex-screen" style="' + screenStyle + '">' +
+'<div class="hunt-dex-glare" aria-hidden="true"></div>' +
 '<div class="hunt-dex-entry-row">' +
-'<span>ENTRY ' + entryLabel + '</span>' +
-'<span class="hunt-dex-running">' + (hunt.running ? '<span class="hunt-dex-rec-dot"></span> TRACKING' : 'PAUSED') + '</span>' +
+'<span class="hunt-dex-entry-label"><span class="hunt-dex-entry-dot"></span>ENTRY ' + entryLabel + '</span>' +
+'<span class="hunt-dex-status ' + (hunt.running ? 'is-tracking' : 'is-paused') + '">' + (hunt.running ? '<span class="hunt-dex-rec-dot"></span> TRACKING' : 'PAUSED') + '</span>' +
 '</div>' +
 '<div class="hunt-dex-main">' +
+'<div class="hunt-dex-portrait-wrap">' +
+'<div class="hunt-dex-portrait-glow" aria-hidden="true"></div>' +
+'<div class="hunt-dex-portrait-shadow" aria-hidden="true"></div>' +
 '<div class="hunt-dex-portrait">' + spriteMarkup(hunt.pokemon) + '</div>' +
+(hunt.shinyCharm ? '<span class="hunt-dex-charm-badge" title="Shiny Charm">✨</span>' : '') +
+'</div>' +
 '<div class="hunt-dex-id-block">' +
-'<div class="hunt-dex-id">' + idLine + '</div>' +
+'<div class="hunt-dex-type-row">' + typePillsHtml + genChipHtml + '</div>' +
 '<div class="hunt-dex-name">' + escapeHtml(hunt.pokemon) + '</div>' +
 '<div class="tag-row">' +
 '<span class="tag">' + escapeHtml(hunt.game) + '</span>' +
 '<span class="tag">' + escapeHtml(hunt.method) + '</span>' +
-'<span class="tag">1 in ' + hunt.denom + '</span>' +
-(hunt.shinyCharm ? '<span class="tag">✨ Charm</span>' : '') +
+'<span class="tag tag-odds">1 in ' + hunt.denom + '</span>' +
 '</div>' +
 '</div>' +
 '</div>' +
 '<div class="hunt-dex-readout">' +
-'<div class="cell"><div class="num">' + hunt.encounters + '</div><div class="lbl">Encounters</div></div>' +
-'<div class="cell"><div class="num" data-timer-for="' + hunt.id + '">' + fmtTime(elapsedSeconds(hunt)) + '</div><div class="lbl">Time Spent</div></div>' +
-'<div class="cell"><div class="num">' + pct + '%</div><div class="lbl">Odds So Far</div></div>' +
+'<div class="cell"><span class="cell-icon">' + HUNT_READOUT_ICONS.encounters + '</span><div class="num">' + hunt.encounters + '</div><div class="lbl">Encounters</div></div>' +
+'<div class="cell"><span class="cell-icon">' + HUNT_READOUT_ICONS.time + '</span><div class="num" data-timer-for="' + hunt.id + '">' + fmtTime(elapsedSeconds(hunt)) + '</div><div class="lbl">Time Spent</div></div>' +
+'<div class="cell"><span class="cell-icon">' + HUNT_READOUT_ICONS.odds + '</span><div class="num" style="color:' + barColors[1] + '">' + pct + '%</div><div class="lbl">Odds So Far</div></div>' +
 '</div>' +
-'<div class="hunt-dex-bar-track"><div class="hunt-dex-bar-fill" style="width:' + pct + '%"></div></div>' +
+'<div class="hunt-dex-gauge">' +
+'<div class="hunt-dex-bar-track">' +
+'<div class="hunt-dex-bar-inner"><div class="hunt-dex-bar-fill" style="' + barStyle + '"></div></div>' +
+'<div class="hunt-dex-bar-marker" style="' + markerStyle + '"></div>' +
+'</div>' +
 '<div class="hunt-dex-bar-caption"><span>P(shiny) BY NOW</span><span>' + hunt.encounters + ' / ' + hunt.denom + ' AVG</span></div>' +
+'</div>' +
 '<div class="hunt-dex-actions">' +
 '<button class="hunt-dex-btn hunt-dex-btn-ghost hunt-dex-btn-step" data-action="remove-encounter" data-id="' + hunt.id + '" title="Remove an encounter">−</button>' +
 '<button class="hunt-dex-btn hunt-dex-btn-ghost hunt-dex-btn-step" data-action="add-encounter" data-id="' + hunt.id + '" title="Add an encounter">+</button>' +
@@ -4627,25 +4665,6 @@ statsRowsEl.innerHTML +=
 }
 }
 
-// "About this catch" - odds for the method actually used, plus how
-// likely a shiny was to have shown up by the time it actually did
-// (1 - (1 - 1/odds)^encounters), using the odds actually rolled at
-// catch time when saved (logEntryDenom) so this matches what Card
-// mode/Log rows already report elsewhere.
-if (catchEntry) {
-var denom = logEntryDenom(catchEntry);
-var enc = catchEntry.encounters || 0;
-if (denom) {
-var chancePct = (1 - Math.pow(1 - 1 / denom, enc)) * 100;
-var chanceLabel = chancePct < 0.01 ? '< 0.01%' :
-(chancePct > 99.99 ? '> 99.99%' : (Math.round(chancePct * 100) / 100) + '%');
-statsRowsEl.innerHTML +=
-'<div class="log-stats-section-label">THIS CATCH</div>' +
-'<div class="log-stats-total"><span>ODDS</span><span>1 in ' + denom.toLocaleString() + '</span></div>' +
-'<div class="log-stats-total"><span>SHINY CHANCE BY ' + enc.toLocaleString() + ' ENC.</span><span>' + chanceLabel + '</span></div>';
-}
-}
-
 // Type matchups - full 18-type incoming-damage chart (see TYPE_CHART/
 // computeTypeMatchups above), not the simplified single-type table the
 // TCG-style card uses. Rows are only shown for buckets that actually
@@ -4676,14 +4695,6 @@ statsRowsEl.innerHTML += '<div class="log-stats-section-label">TYPE MATCHUPS</di
 hydrateTypeCircleIcons(statsRowsEl);
 }
 
-// Species data - other generic PokeAPI fields not shown elsewhere in
-// the Overview/Stats tabs yet.
-var catchRatePct = entry.catchRate != null ? Math.round((entry.catchRate / 255) * 100) : null;
-var speciesDataHtml =
-(entry.catchRate != null ? '<div class="log-stats-total"><span>CATCH RATE</span><span>' + entry.catchRate + ' (' + catchRatePct + '%)</span></div>' : '') +
-(entry.baseExperience != null ? '<div class="log-stats-total"><span>BASE EXPERIENCE</span><span>' + entry.baseExperience + '</span></div>' : '') +
-(entry.growthRate ? '<div class="log-stats-total"><span>GROWTH RATE</span><span>' + escapeHtml(entry.growthRate) + '</span></div>' : '');
-if (speciesDataHtml) statsRowsEl.innerHTML += '<div class="log-stats-section-label">SPECIES DATA</div>' + speciesDataHtml;
 }).catch(function() {
 if (token !== _logOverviewRequestToken) return;
 genusEl.textContent = 'No entry data available.';
@@ -9943,57 +9954,15 @@ renderAll();
 var tabBtn = document.querySelector('nav.tabs button[data-tab="hunts"]');
 if (tabBtn) { tabBtn.click(); } else { activateTab('hunts'); }
 }
-// Prev/Next were the two red arrow buttons under the Card screen - removed
-// now that swiping the card (see setupLogScreenSwipe below) does their job,
-// so there's nothing left to wire click handlers to here.
-// ---------- swipe left/right on the Card screen to step prev/next ----------
-// Scoped to .log-dex-screen-stack only (the sprite/name/method card) so it
-// never fights with swipes/scrolls elsewhere - the Overview/Stats/Log tabs
-// below it, the flavor text's own vertical scroll, or the outer clamshell's
-// Active Hunts <-> Shiny Log <-> Living Dex swipe. Mirrors the same
-// logScreenStep() the prev/next arrow buttons already call, just triggered
-// by a horizontal drag instead of a tap.
-(function setupLogScreenSwipe() {
-var stack = document.querySelector('.log-dex-screen-stack');
-if (!stack) return;
-var startX = 0, startY = 0;
-var decided = false; // classified this gesture as horizontal vs vertical yet?
-var dragging = false; // classified horizontal - we own this gesture now
-var DIRECTION_THRESHOLD = 8; // px moved before classifying the gesture
-var COMMIT_THRESHOLD = 40; // px of horizontal drag before it counts as a swipe
-
-function onStart(e) {
-if (e.touches.length !== 1) return;
-startX = e.touches[0].clientX;
-startY = e.touches[0].clientY;
-decided = false;
-dragging = false;
-}
-function onMove(e) {
-if (e.touches.length !== 1) return;
-var dx = e.touches[0].clientX - startX;
-var dy = e.touches[0].clientY - startY;
-if (!decided) {
-if (Math.abs(dx) < DIRECTION_THRESHOLD && Math.abs(dy) < DIRECTION_THRESHOLD) return;
-decided = true;
-dragging = Math.abs(dx) > Math.abs(dy);
-}
-if (!dragging) return; // vertical - let native scroll handle it
-if (e.cancelable) e.preventDefault(); // stop rubber-banding while dragging
-e.stopPropagation(); // don't let this bubble into the outer clamshell swipe
-}
-function onEnd(e) {
-if (!decided || !dragging) return;
-var endX = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : startX;
-var dx = endX - startX;
-if (Math.abs(dx) >= COMMIT_THRESHOLD) {
-logScreenStep(dx < 0 ? 1 : -1);
-}
-}
-stack.style.touchAction = 'pan-y';
-stack.addEventListener('touchstart', onStart, { passive: true });
-stack.addEventListener('touchmove', onMove, { passive: false });
-stack.addEventListener('touchend', onEnd, { passive: true });
+// Prev/Next: the two arrow buttons under the Card screen, stepping
+// logSelectedId backward/forward through the current filtered/sorted list
+// via logScreenStep(). Swipe-to-step was tried instead of these buttons for
+// a while (see git history) but was reverted in favor of explicit buttons.
+(function setupLogScreenNavButtons() {
+var prevBtn = document.getElementById('log-screen-prev');
+var nextBtn = document.getElementById('log-screen-next');
+if (prevBtn) prevBtn.addEventListener('click', function() { logScreenStep(-1); });
+if (nextBtn) nextBtn.addEventListener('click', function() { logScreenStep(1); });
 })();
 (function initStars() {
 var container = document.getElementById('stars');
