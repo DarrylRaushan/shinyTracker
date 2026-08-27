@@ -845,6 +845,8 @@ inset 0 1px 1px rgba(0, 0, 0, 0.4),
 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 .hunt-dex-screen {
+--type-color: var(--green);
+--type-rgb: 76, 175, 80;
 background: var(--screen);
 border: 3px solid var(--line);
 border-radius: 16px;
@@ -853,13 +855,17 @@ position: relative;
 overflow: hidden;
 box-shadow:
 inset 0 3px 10px rgba(0, 0, 0, 0.22),
-inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+inset 0 0 0 2px rgba(0, 0, 0, 0.05),
+0 0 0 2px rgba(var(--type-rgb), 0.3),
+0 0 20px -6px rgba(var(--type-rgb), 0.65);
+transition: box-shadow 0.3s ease;
 }
 .hunt-dex-screen::before {
 content: "";
 position: absolute;
 inset: 0;
 pointer-events: none;
+z-index: 2;
 background: repeating-linear-gradient(
 180deg,
 rgba(43, 35, 32, 0.035) 0px,
@@ -867,6 +873,23 @@ rgba(43, 35, 32, 0.035) 1px,
 transparent 1px,
 transparent 3px
 );
+}
+/* Diagonal glass sheen sitting above the scanlines, tinted faintly by the
+species' type color so the whole screen reads like a lit, curved-glass
+display rather than a flat rectangle of color. */
+.hunt-dex-glare {
+position: absolute;
+inset: 0;
+pointer-events: none;
+z-index: 3;
+background: linear-gradient(
+115deg,
+rgba(255, 255, 255, 0.4) 0%,
+rgba(255, 255, 255, 0.12) 16%,
+transparent 32%,
+transparent 100%
+);
+mix-blend-mode: screen;
 }
 .hunt-dex-entry-row {
 display: flex;
@@ -876,8 +899,24 @@ font-family: var(--mono);
 font-size: 11px;
 color: var(--green-dark);
 margin-bottom: 8px;
+position: relative;
+z-index: 1;
 }
-.hunt-dex-running {
+.hunt-dex-entry-label {
+display: flex;
+align-items: center;
+gap: 6px;
+letter-spacing: 0.4px;
+}
+.hunt-dex-entry-dot {
+width: 6px;
+height: 6px;
+border-radius: 50%;
+background: var(--type-color);
+box-shadow: 0 0 6px 1px rgba(var(--type-rgb), 0.85);
+flex-shrink: 0;
+}
+.hunt-dex-status {
 display: flex;
 align-items: center;
 gap: 5px;
@@ -901,11 +940,14 @@ opacity: 0.25;
 }
 .hunt-dex-main {
 display: flex;
-gap: 20px;
+gap: 18px;
 align-items: center;
 padding: 6px 0 4px;
+position: relative;
+z-index: 1;
 }
-.hunt-dex-portrait {
+.hunt-dex-portrait-wrap {
+position: relative;
 width: 160px;
 height: 160px;
 flex-shrink: 0;
@@ -913,11 +955,35 @@ display: flex;
 align-items: center;
 justify-content: center;
 }
-.hunt-dex-portrait img {
+.hunt-dex-portrait-glow {
+display: none;
+}
+.hunt-dex-portrait-shadow {
+position: absolute;
+bottom: 6%;
+left: 50%;
+width: 58%;
+height: 13px;
+transform: translateX(-50%);
+border-radius: 50%;
+background: radial-gradient(ellipse at center, rgba(43, 35, 32, 0.4), transparent 72%);
+filter: blur(0.5px);
+}
+.hunt-dex-portrait {
+position: relative;
 width: 100%;
 height: 100%;
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 1;
+}
+.hunt-dex-portrait img {
+width: 108%;
+height: 108%;
 object-fit: contain;
-filter: drop-shadow(0 3px 3px rgba(43, 35, 32, 0.3));
+filter: drop-shadow(0 3px 3px rgba(43, 35, 32, 0.3)) drop-shadow(0 0 10px rgba(var(--type-rgb), 0.4));
 image-rendering: pixelated;
 image-rendering: crisp-edges;
 }
@@ -927,21 +993,55 @@ font-weight: 800;
 font-size: 56px;
 color: var(--ink-dim);
 }
+.hunt-dex-charm-badge {
+position: absolute;
+top: -2px;
+right: 4px;
+font-size: 16px;
+filter: drop-shadow(0 0 5px rgba(255, 203, 5, 0.85));
+animation: huntDexSparkle 1.8s ease-in-out infinite;
+z-index: 2;
+}
+@keyframes huntDexSparkle {
+0%,
+100% {
+transform: scale(1) rotate(0deg);
+}
+50% {
+transform: scale(1.22) rotate(10deg);
+}
+}
 .hunt-dex-id-block {
 min-width: 0;
 }
-.hunt-dex-id {
+.hunt-dex-type-row {
+display: flex;
+align-items: center;
+gap: 5px;
+flex-wrap: wrap;
+margin-bottom: 5px;
+}
+.hunt-dex-gen-chip {
 font-family: var(--mono);
-font-size: 11px;
+font-size: 9.5px;
+font-weight: 700;
+letter-spacing: 0.4px;
 color: var(--green-dark);
-margin-bottom: 2px;
+background: rgba(43, 35, 32, 0.06);
+border: 1px solid rgba(43, 35, 32, 0.18);
+padding: 2px 7px;
+border-radius: 999px;
 }
 .hunt-dex-name {
-font-family: var(--hud);
-font-size: 21px;
-font-weight: 800;
+font-family: var(--pixel);
+font-weight: 400;
+font-size: 15px;
+line-height: 1.55;
+letter-spacing: 0.5px;
+text-transform: uppercase;
 color: var(--ink);
-margin: 0 0 6px;
+margin: 0 0 8px;
+text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 .tag-row {
 display: flex;
@@ -958,14 +1058,22 @@ color: var(--ink);
 padding: 2px 8px;
 border-radius: 6px;
 }
+.tag-odds {
+background: linear-gradient(180deg, #fff, #fff3cc);
+border-color: var(--yellow-dark);
+color: var(--yellow-dark);
+}
 .hunt-dex-readout {
 margin-top: 12px;
-background: var(--ink);
+background: linear-gradient(180deg, #211a15, var(--ink));
 border-radius: 10px;
 padding: 10px 6px;
 display: flex;
 font-family: var(--mono);
 color: #9dffb0;
+position: relative;
+z-index: 1;
+box-shadow: inset 0 0 0 1px rgba(var(--type-rgb), 0.28);
 }
 .hunt-dex-readout .cell {
 flex: 1;
@@ -975,10 +1083,24 @@ border-right: 1px solid rgba(157, 255, 176, 0.15);
 .hunt-dex-readout .cell:last-child {
 border-right: none;
 }
+.hunt-dex-readout .cell-icon {
+display: block;
+width: 13px;
+height: 13px;
+margin: 0 auto 3px;
+color: #6fce85;
+opacity: 0.85;
+}
+.hunt-dex-readout .cell-icon svg {
+width: 100%;
+height: 100%;
+display: block;
+}
 .hunt-dex-readout .num {
 font-size: 17px;
 font-weight: 700;
 letter-spacing: 0.5px;
+text-shadow: 0 0 6px rgba(157, 255, 176, 0.5);
 }
 .hunt-dex-readout .lbl {
 font-size: 7.5px;
@@ -989,18 +1111,47 @@ margin-top: 2px;
 font-family: var(--body);
 font-weight: 700;
 }
+.hunt-dex-gauge {
+position: relative;
+z-index: 1;
+}
 .hunt-dex-bar-track {
-margin-top: 10px;
-height: 9px;
+margin-top: 12px;
+height: 11px;
 border-radius: 999px;
 background: #fff;
+background-image: repeating-linear-gradient(
+90deg,
+rgba(43, 35, 32, 0.12) 0,
+rgba(43, 35, 32, 0.12) 1px,
+transparent 1px,
+transparent 25%
+);
 border: 1.5px solid var(--line);
+position: relative;
+}
+.hunt-dex-bar-inner {
+position: absolute;
+inset: 0;
+border-radius: 999px;
 overflow: hidden;
 }
 .hunt-dex-bar-fill {
 height: 100%;
-background: linear-gradient(90deg, var(--green), var(--yellow));
+background: linear-gradient(90deg, var(--bar-c1, var(--green)), var(--bar-c2, var(--yellow)));
 transition: width 0.3s ease;
+}
+.hunt-dex-bar-marker {
+position: absolute;
+top: 50%;
+width: 15px;
+height: 15px;
+transform: translate(-50%, -50%);
+border-radius: 50%;
+background: radial-gradient(circle at 35% 30%, #fff, #ddd 45%, var(--bar-c2, var(--yellow)) 100%);
+border: 2px solid var(--line);
+box-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+transition: left 0.3s ease;
 }
 .hunt-dex-bar-caption {
 display: flex;
@@ -1008,7 +1159,7 @@ justify-content: space-between;
 font-family: var(--mono);
 font-size: 9.5px;
 color: var(--green-dark);
-margin-top: 4px;
+margin-top: 7px;
 }
 .hunt-dex-actions {
 display: flex;
@@ -3243,7 +3394,7 @@ display: none;
 .hunt-dex-handheld-controls {
 display: flex;
 }
-.hunt-dex-portrait {
+.hunt-dex-portrait-wrap {
 width: 150px;
 height: 150px;
 }
@@ -3261,10 +3412,10 @@ font-size: 12px;
 margin-bottom: 4px;
 }
 .hunt-dex-name {
-font-size: 20px;
+font-size: 13px;
 }
-.hunt-dex-id {
-font-size: 12px;
+.hunt-dex-gen-chip {
+font-size: 9px;
 }
 .tag {
 font-size: 11px;
@@ -3367,13 +3518,14 @@ text-align: center;
 gap: 6px;
 padding: 0;
 }
-.hunt-dex-portrait {
+.hunt-dex-portrait-wrap {
 width: 125px;
 height: 125px;
 }
 .hunt-dex-id-block {
 width: 100%;
 }
+.hunt-dex-type-row,
 .tag-row {
 justify-content: center;
 }
@@ -4427,7 +4579,7 @@ flex: 0 0 auto;
      .log-grid-screen actually has something to scroll - the old
      percentage-based rows never grew past 100% in practice, so nothing
      ever overflowed and rows 3+ were unreachable. */
-  grid-auto-rows: 60px;
+  grid-auto-rows: 96px;
   gap: 6px;
   flex: 0 0 auto;
   width: 100%;
@@ -4453,8 +4605,8 @@ flex: 0 0 auto;
   border-color: var(--blue);
 }
 .log-grid-tile-sprite {
-  width: 26px;
-  height: 26px;
+  width: 58px;
+  height: 58px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12402,8 +12554,18 @@ padding: 2px 3px;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
-  background: linear-gradient(145deg, #fffdf0, #f5e9c7);
-  box-shadow: inset 4px 4px #fffef7, inset -4px -4px #d6c18a, 4px 5px #65070d;
+  /* Same green-tinted glass/touchscreen treatment as the Overview and
+     Stats panels: diagonal glare + faint scanline texture over a green
+     LCD-tinted base, so all three tabs read as one consistent lit
+     display rather than the Log tab standing out as plain parchment. */
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.16) 20%, rgba(255, 255, 255, 0) 38%),
+    repeating-linear-gradient(180deg, rgba(43, 35, 32, 0.035) 0px, rgba(43, 35, 32, 0.035) 1px, transparent 1px, transparent 3px),
+    linear-gradient(145deg, #eef8e5, #cfe6c4);
+  box-shadow:
+    inset 0 3px 10px rgba(0, 0, 0, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    4px 5px #65070d;
 }
 
 /* Overview, Stats, and the Log toolbar (Search/Newest/All + HOF/Edit/
@@ -12473,15 +12635,23 @@ padding: 2px 3px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  margin: -13px 13px 0;
+  margin: -4px 42px 0;
   padding: 3px 10px 8px;
   height: 202px;
   overflow-y: auto;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
-  background: linear-gradient(145deg, #fffdf0, #f5e9c7);
-  box-shadow: inset 4px 4px #fffef7, inset -4px -4px #d6c18a, 4px 5px #65070d;
+  /* Exact same screen treatment as .log-dex-screen above (flat tinted
+     base + scanline overlay + matching inset shadow), same green LCD
+     tint (var(--screen)) as the screen above, so it reads as a
+     continuation of the same display rather than a separate one. */
+  background:
+    repeating-linear-gradient(180deg, rgba(43, 35, 32, 0.035) 0px, rgba(43, 35, 32, 0.035) 1px, transparent 1px, transparent 3px),
+    var(--screen);
+  box-shadow:
+    inset 0 3px 10px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.05);
 }
 
 #view-collection .log-overview-top-row {
@@ -12716,13 +12886,20 @@ padding: 2px 3px;
   justify-content: flex-start;
   margin: -13px 13px 0;
   padding: 8px 16px 9px;
-  height: 195px;
+  height: 202px;
   overflow-y: auto;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
-  background: linear-gradient(145deg, #fffdf0, #f5e9c7);
-  box-shadow: inset 4px 4px #fffef7, inset -4px -4px #d6c18a, 4px 5px #65070d;
+  /* Same exact screen treatment as the Overview panel (and .log-dex-screen
+     above) - flat green-tinted base + scanline overlay + matching inset
+     shadow - so Overview/Stats/Log all read as one consistent display. */
+  background:
+    repeating-linear-gradient(180deg, rgba(43, 35, 32, 0.035) 0px, rgba(43, 35, 32, 0.035) 1px, transparent 1px, transparent 3px),
+    var(--screen);
+  box-shadow:
+    inset 0 3px 10px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.05);
 }
 
 #view-collection .log-stats-rows {
@@ -12953,21 +13130,23 @@ padding: 2px 3px;
   display: none;
 }
 
-/* The Living Dex shortcut now lives inside the Log tab itself (bottom of
-   its toolbar section) instead of the shared prev/next nav row below the
-   tab stack, so it only shows up while the Log tab is open. Reuses
-   .log-dex-nav-menu-btn wholesale for the exact same circular pokeball
-   look/press-state it already had - this wrapper just centers it under
-   the Search/Sort/Filter + HOF/Edit/Reset rows. */
+/* The prev/next arrow buttons now sit at the bottom of the whole shell,
+   below the Overview/Stats/Log tab stack, so they're always visible no
+   matter which tab is open - rather than being nested inside the Log
+   tab's toolbar section (tab-dependent, only showing on Log). The
+   Living Dex shortcut has swapped the other way: it now lives inside
+   the Log tab's toolbar and only shows there, inheriting that panel's
+   visibility toggling automatically (no override needed - see
+   #log-dex-shell .log-v2-toolbar-wrap rules). */
 #view-collection .log-v2-livingdex-row {
   display: flex;
   justify-content: center;
-  margin-top: 6px;
+  margin: 8px 13px 0;
 }
 
 #view-collection .log-v2-shell .log-dex-nav {
   column-gap: 14px;
-  margin: 10px 13px 4px;
+  margin: 8px 13px 14px;
   flex-wrap: nowrap;
   row-gap: 0;
 }
@@ -13004,10 +13183,10 @@ padding: 2px 3px;
   transform: translateY(2px) scale(.98);
 }
 
-/* The middle button doubles as the "go to Living Dex" shortcut. Sits
-   inline between the Prev/Next arrows (not on its own wrapped row) and
-   is styled as a real circular button - matching border/shadow language
-   as the arrow keys - so it reads as a third action, not a stray icon. */
+/* The Living Dex shortcut button, on its own row inside the Log tab's
+   toolbar (see .log-v2-livingdex-row above) - styled as a real circular
+   button matching the arrow keys' border/shadow language so it still
+   reads as a deliberate action even off on its own row now. */
 #view-collection .log-v2-shell .log-dex-nav-menu-btn {
   width: 44px;
   height: 44px;
@@ -13121,7 +13300,7 @@ padding: 2px 3px;
   #view-collection .log-v2-tab-icon { width: 11px; height: 11px; }
   #view-collection .log-v2-toolbar-wrap,
   #view-collection .log-v2-shell .log-overview-panel,
-  #view-collection .log-v2-shell .log-stats-panel { margin: -13px 7px 0; border-width: 3px; }
+  #view-collection .log-v2-shell .log-stats-panel { margin: -4px 7px 0; border-width: 3px; }
   #view-collection .log-v2-toolbar-wrap { padding: 0px 6px 5px; border-top: 0; border-radius: 0 0 13px 13px; }
   #view-collection .log-v2-shell .log-v2-toolbar { gap: 4px; margin: 4px 0 0; }
   #view-collection .log-v2-utility-row { gap: 4px; padding: 2px 6px 5px; margin: 4px 0 0; }
@@ -13132,7 +13311,7 @@ padding: 2px 3px;
   #view-collection .log-v2-progress-module .log-dex-pill { height: 46px; padding: 0 9px; border-width: 3px; border-radius: 12px; }
   #view-collection .log-v2-progress-track { height: 11px; width: 68px; }
   #view-collection .log-v2-livingdex-row { margin-top: 4px; }
-  #view-collection .log-v2-shell .log-dex-nav { column-gap: 10px; row-gap: 0; margin: 8px 7px 3px; }
+  #view-collection .log-v2-shell .log-dex-nav { column-gap: 10px; row-gap: 0; margin: 5px 6px 12px; }
   #view-collection .log-v2-shell .log-dex-nav-btn { min-height: 26px; border-width: 2px; border-radius: 7px; }
   #view-collection #log-screen-prev.log-dex-nav-btn,
   #view-collection #log-screen-next.log-dex-nav-btn { min-height: 42px; font-size: 18px; }
@@ -13189,18 +13368,26 @@ padding: 2px 3px;
 
 
 
-/* Overview / Stats / Log tabs: slim rectangles, equal width, filling the
-   panel's full width edge-to-edge, connected flush (slight overlap) to
-   the rounded panel below. Single consolidated rule set - avoid adding
-   further patches on top of this; edit these rules directly instead. */
+/* Overview / Stats / Log tabs: now the literal top strip of the same
+   screen as the Overview/Stats panel below it - matching width, border
+   color/thickness, and green+scanline fill, joined with no border
+   between them (tabs rounded on top only, panel rounded on bottom only)
+   so together they read as one continuous screen instead of a floating
+   pill sitting above it. */
 .log-v2-tabs,
 #view-collection .log-v2-tabs {
   display: flex !important;
   align-items: stretch !important;
-  gap: 6px !important;
-  margin: 2px 24px -6px !important;
-  padding: 0 !important;
+  gap: 4px !important;
+  margin: -20px 42px 0 !important;
+  padding: 3px !important;
+  border: 4px solid #7c663c !important;
   border-bottom: 0 !important;
+  border-radius: 13px 13px 0 0 !important;
+  background:
+    repeating-linear-gradient(180deg, rgba(43, 35, 32, 0.035) 0px, rgba(43, 35, 32, 0.035) 1px, transparent 1px, transparent 3px),
+    var(--screen) !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.18) !important;
   box-sizing: border-box !important;
   position: relative !important;
   z-index: 5 !important;
@@ -13215,24 +13402,27 @@ padding: 2px 3px;
   align-items: center !important;
   justify-content: center !important;
   gap: 5px !important;
-  height: 30px !important;
-  min-height: 30px !important;
+  height: 22px !important;
+  min-height: 22px !important;
   padding: 0 8px !important;
   margin: 0 !important;
-  border: 2px solid #4a0d10 !important;
-  border-bottom: 0 !important;
-  border-radius: 8px !important;
-  color: #f7e8c5 !important;
-  background: linear-gradient(180deg, #8a2222, #5c1212) !important;
+  border: none !important;
+  border-radius: 10px !important;
+  color: var(--ink-dim) !important;
+  background: transparent !important;
+  opacity: 0.65 !important;
   box-shadow: none !important;
   font-size: 10.5px !important;
   white-space: nowrap !important;
+  transition: background 0.15s ease, opacity 0.15s ease, color 0.15s ease;
 }
 .log-v2-tabs button.active,
 #view-collection .log-v2-tabs button.active {
-  color: #982020 !important;
-  background: linear-gradient(180deg, #fffdf6, #fff2cf) !important;
-  border-color: #4a0d10 !important;
+  color: var(--blue) !important;
+  background: rgba(42, 58, 160, 0.12) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(42, 58, 160, 0.35) !important;
+  opacity: 1 !important;
+  border-color: transparent !important;
 }
 .log-v2-tab-icon,
 #view-collection .log-v2-tab-icon {
@@ -13249,8 +13439,8 @@ padding: 2px 3px;
 #view-collection .log-overview-panel,
 #view-collection .log-stats-panel {
   margin-top: -4px !important;
-  border-radius: 16px !important;
-  border-top: 2px solid #4a0d10 !important;
+  border-radius: 0 0 16px 16px !important;
+  border-top: 0 !important;
 }
 #view-collection .log-v2-toolbar-wrap {
   padding-top: 0px !important;
@@ -13287,14 +13477,10 @@ padding: 2px 3px;
 /* Warm parchment/maroon coloring pass to match reference: darker
    brown-maroon inactive tabs (instead of straight red), and a warmer
    golden-tan border on the toolbar + utility pills (instead of the
-   cooler golden-brown they had). */
-#view-collection .log-v2-tabs button {
-  border-color: #3f1207 !important;
-  background: linear-gradient(180deg, #6e2a1c, #431509) !important;
-}
-#view-collection .log-v2-tabs button.active {
-  border-color: #3f1207 !important;
-}
+   cooler golden-brown they had).
+   NOTE: the maroon tab recoloring below no longer applies - tabs now use
+   the Living Dex toggle's light/blue palette set above - so only the
+   toolbar/panel border-color lines remain active here. */
 #view-collection .log-v2-toolbar-wrap,
 #view-collection .log-overview-panel,
 #view-collection .log-stats-panel {
