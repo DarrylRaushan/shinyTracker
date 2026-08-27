@@ -4579,7 +4579,7 @@ flex: 0 0 auto;
      .log-grid-screen actually has something to scroll - the old
      percentage-based rows never grew past 100% in practice, so nothing
      ever overflowed and rows 3+ were unreachable. */
-  grid-auto-rows: 96px;
+  grid-auto-rows: 114px;
   gap: 6px;
   flex: 0 0 auto;
   width: 100%;
@@ -4605,8 +4605,8 @@ flex: 0 0 auto;
   border-color: var(--blue);
 }
 .log-grid-tile-sprite {
-  width: 58px;
-  height: 58px;
+  width: 78px;
+  height: 78px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4621,7 +4621,7 @@ flex: 0 0 auto;
 .log-grid-tile-name {
   font-family: var(--mono);
   font-weight: 800;
-  font-size: 9px;
+  font-size: 10.5px;
   color: var(--ink);
   text-align: center;
   line-height: 1.1;
@@ -4629,7 +4629,7 @@ flex: 0 0 auto;
 }
 .log-grid-tile-num {
   font-family: var(--mono);
-  font-size: 7px;
+  font-size: 8.5px;
   color: var(--green-dark);
 }
 .log-grid-empty {
