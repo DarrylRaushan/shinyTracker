@@ -4028,6 +4028,67 @@ encounters: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-w
 time: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
 odds: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg>'
 };
+// Small glyphs shown inside the Active Hunts tag-row pills (Game/Method/
+// Odds) so each tag is scannable by shape/color before reading its text.
+// Game and Odds get one consistent icon each; Method gets a per-method
+// icon+color+blurb via METHOD_META below, since the method is what most
+// changes hunting strategy and is worth telling apart at a glance.
+// Small glyphs shown inside the Active Hunts info bar (Game/Method/Odds).
+// Game and Odds get one fixed two-tone icon each; Method gets a
+// per-method icon+color+blurb via METHOD_META below, since the method is
+// what most changes hunting strategy and is worth telling apart at a
+// glance across a list of cards.
+var TAG_ICON_GAME = '<svg viewBox="0 0 24 24"><g stroke="#c99a2e" stroke-width="1.5" stroke-linecap="round"><line x1="7.5" y1="1.6" x2="7.5" y2="3.4"/><line x1="1.6" y1="7.5" x2="3.4" y2="7.5"/><line x1="3.3" y1="3.3" x2="4.6" y2="4.6"/><line x1="10.4" y1="4.6" x2="11.7" y2="3.3"/><line x1="3.3" y1="11.7" x2="4.6" y2="10.4"/></g><circle cx="7.5" cy="7.5" r="3.4" fill="#f4c542"/><path d="M20 13.2a7 7 0 0 1-8.8-8.9 7.6 7.6 0 1 0 8.8 8.9z" fill="#37455c"/></svg>';
+var TAG_ICON_ODDS = '<svg viewBox="0 0 24 24" fill="#e0a52e"><path d="M8 2c.4 2.7 1 4 4 4-3 0-3.6 1.3-4 4-.4-2.7-1-4-4-4 3 0 3.6-1.3 4-4z"/><path d="M17.5 11c.3 2 .8 2.6 2.7 3-1.9.4-2.4 1-2.7 3-.3-2-.8-2.6-2.7-3 1.9-.4 2.4-1 2.7-3z"/></svg>';
+// Splits a "X/Y" game name onto two lines (one version per line) so it
+// reads clearly in the narrow info-bar cell; games without a "/" (Legends
+// Arceus, Platinum, Pokémon GO...) just render on one line as-is.
+function gameLabelHtml(game) {
+if (!game || game.indexOf('/') === -1) return escapeHtml(game || '');
+return game.split('/').map(function(part) {
+return escapeHtml(part.trim());
+}).join('<br>');
+}
+// Per-method icon, accent color, and a one-line explainer shown when the
+// Method tag is tapped - keyed to match the METHODS/METHOD_ODDS_RULES
+// list above. Colors are grouped loosely by "family" of technique
+// (reset/static = cool blue-gray, breeding = pink/purple, chaining =
+// teal/violet/orange, event-only = warmer reds/purples) so a list of
+// cards sorts into recognizable clusters by strategy at a glance.
+var METHOD_META = {
+"Random Encounter": { color: "#6b7684", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="9" cy="7.5" rx="2.3" ry="3.1"/><ellipse cx="16" cy="14.5" rx="2.3" ry="3.1"/></svg>', desc: "Wild encounters found on foot - tall grass, caves, or surfing." },
+"Soft Reset": { color: "#3f9e52", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 2.6 5.9"/><path d="M4 17v-5h5"/></svg>', desc: "Resetting the game before a fixed encounter to reroll its shininess." },
+"Static Encounter": { color: "#4b5a75", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>', desc: "A fixed, one-time encounter - a legendary, gift Pokémon, or similar." },
+"Egg / Breeding": { color: "#e07aa8", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 4 6.5 9 6.5 12.5A6.5 6.5 0 0 1 5.5 15.5C5.5 12 8 7 12 3z"/></svg>', desc: "Hatching eggs from a Day Care pair to roll for a shiny baby." },
+"Masuda Method": { color: "#a869e0", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4 4 6.5 9 6.5 12.5A6.5 6.5 0 0 1 5.5 15.5C5.5 12 8 7 12 3z"/><path d="M9 18.6l1.6 1.6L14 16.6" stroke-width="1.6"/></svg>', desc: "Breeding two parents from different-language games for better odds." },
+"Chain Fishing": { color: "#1f9e9e", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8.5 8.5"/><path d="M12.5 12.5c1.5 1.5 1.5 4-1 5-2.7 1.1-4-1-4-3"/><circle cx="18" cy="6" r="1.3" fill="currentColor" stroke="none"/></svg>', desc: "Fishing the same spot again and again without breaking the chain." },
+"Poké Radar / DexNav Chain": { color: "#7c5ce0", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12L18 7"/></svg>', desc: "Shaking patches of grass in sequence to build a chain without breaking it." },
+"SOS Chaining": { color: "#d98a2b", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="8" height="8" rx="3"/><rect x="13" y="8" width="8" height="8" rx="3"/></svg>', desc: "Calling allies to keep a chain going for boosted shiny odds." },
+"Horde Hunting": { color: "#a8611f", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="8" r="1.9"/><circle cx="17" cy="8" r="1.9"/><circle cx="12" cy="8" r="1.9"/><path d="M4 18c0-2.8 2.2-5 5-5h6c2.8 0 5 2.2 5 5"/></svg>', desc: "Battling groups of 5 wild Pokémon at once for more shiny rolls per encounter." },
+"Friend Safari": { color: "#3f9e4c", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c4-3 7-7 7-11a7 7 0 0 0-14 0c0 4 3 8 7 11z"/><path d="M12 12V6"/></svg>', desc: "Hunting a Friend Safari zone, which has boosted shiny odds by default." },
+"Dynamax Adventure": { color: "#8b3fd6", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 14h6l-1 7 9-12h-6l1-6z"/></svg>', desc: "Path of Legends dens - odds improve the more times you run it." },
+"Ultra Wormhole": { color: "#4a3fbf", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 6.5c-3 0-5 1.8-5 4s2 3 3.7 3 2.8-1 2.8-2.4-1-1.9-2-1.9"/></svg>', desc: "Chasing Ultra Wormholes in Ultra Sun/Moon for a boosted shiny chance." },
+"Outbreak (Mass/Massive)": { color: "#d64545", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>', desc: "Clearing a mass/massive outbreak's spawns to raise its hidden shiny chance." },
+"Max Raid Battle": { color: "#b8202e", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>', desc: "Battling Max/Gigantamax Raid Dens, each den with its own shiny chance per run." },
+"Other": { color: "#8a7a68", icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1.2 1-1.2 1.9"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg>', desc: "A hunting method not covered by the presets above." }
+};
+function methodMetaOf(method) {
+return METHOD_META.hasOwnProperty(method) ? METHOD_META[method] : METHOD_META["Other"];
+}
+// Colors the odds tag on a green->yellow->red ramp by how rare/long this
+// hunt's odds are relative to the OTHER hunts currently in progress (not
+// an absolute scale) - reuses the same hue math as the capture gauge so
+// the ramp reads consistently with the rest of the card. With fewer than
+// two hunts to compare there's nothing to rank against, so it falls back
+// to a neutral mid-ramp color.
+function oddsTagColors(denom, allDenoms) {
+if (allDenoms.length < 2) return oddsGaugeColors(50);
+var min = Math.min.apply(null, allDenoms);
+var max = Math.max.apply(null, allDenoms);
+if (max === min) return oddsGaugeColors(50);
+var t = (denom - min) / (max - min);
+return oddsGaugeColors(t * 100);
+}
 function renderHunts() {
 var wrap = document.getElementById('hunts-list');
 wrap.innerHTML = '';
@@ -4035,6 +4096,7 @@ if (state.hunts.length === 0) {
 wrap.innerHTML = '<div class="empty"><div class="glyph">✧</div><p class="lead">No hunts in progress.</p><p>Start one to begin logging encounters, odds, and time spent.</p><button type="button" class="primary empty-cta" data-action="new-hunt">Start a Hunt</button></div>';
 return;
 }
+var allDenoms = state.hunts.map(function(h) { return h.denom; });
 sortHuntsForDisplay(state.hunts).forEach(function(hunt) {
 var el = document.createElement('div');
 el.className = 'hunt-card';
@@ -4052,6 +4114,10 @@ var barStyle = 'width:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';
 var markerStyle = 'left:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';--bar-c2:' + barColors[1] + ';';
 var typePillsHtml = info && info.types.length ? typeBadges(info.types) : '<span class="tag">Unknown Type</span>';
 var genChipHtml = info && info.gen ? ('<span class="hunt-dex-gen-chip">GEN ' + info.gen + '</span>') : '';
+var methodMeta = methodMetaOf(hunt.method);
+var oddsColors = oddsTagColors(hunt.denom, allDenoms);
+var methodTagStyle = '--method-color:' + methodMeta.color + ';';
+var oddsTagStyle = '--odds-c1:' + oddsColors[0] + ';--odds-c2:' + oddsColors[1] + ';';
 el.innerHTML =
 '<div class="hunt-dex-flap">' +
 '<div class="hunt-dex-flap-crease-wrap"><div class="hunt-dex-flap-crease"></div></div>' +
@@ -4078,21 +4144,36 @@ el.innerHTML =
 '<span class="hunt-dex-status ' + (hunt.running ? 'is-tracking' : 'is-paused') + '">' + (hunt.running ? '<span class="hunt-dex-rec-dot"></span> TRACKING' : 'PAUSED') + '</span>' +
 '</div>' +
 '<div class="hunt-dex-main">' +
+'<div class="hunt-dex-portrait-stage">' +
 '<div class="hunt-dex-portrait-wrap">' +
 '<div class="hunt-dex-portrait-glow" aria-hidden="true"></div>' +
 '<div class="hunt-dex-portrait-shadow" aria-hidden="true"></div>' +
 '<div class="hunt-dex-portrait">' + spriteMarkup(hunt.pokemon) + '</div>' +
 (hunt.shinyCharm ? '<span class="hunt-dex-charm-badge" title="Shiny Charm">✨</span>' : '') +
 '</div>' +
+'<div class="hunt-dex-reticle" aria-hidden="true">' +
+'<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">' +
+'<circle class="hunt-dex-reticle-ring" cx="85" cy="85" r="70"/>' +
+'<line class="hunt-dex-reticle-tick" x1="85" y1="6" x2="85" y2="20"/>' +
+'<line class="hunt-dex-reticle-tick" x1="85" y1="150" x2="85" y2="164"/>' +
+'<line class="hunt-dex-reticle-tick" x1="6" y1="85" x2="20" y2="85"/>' +
+'<line class="hunt-dex-reticle-tick" x1="150" y1="85" x2="164" y2="85"/>' +
+'<line class="hunt-dex-reticle-tick-minor" x1="127.2" y1="42.8" x2="118" y2="52"/>' +
+'<line class="hunt-dex-reticle-tick-minor" x1="42.8" y1="42.8" x2="52" y2="52"/>' +
+'<line class="hunt-dex-reticle-tick-minor" x1="127.2" y1="127.2" x2="118" y2="118"/>' +
+'<line class="hunt-dex-reticle-tick-minor" x1="42.8" y1="127.2" x2="52" y2="118"/>' +
+'</svg>' +
+'</div>' +
+'</div>' +
 '<div class="hunt-dex-id-block">' +
 '<div class="hunt-dex-type-row">' + typePillsHtml + genChipHtml + '</div>' +
 '<div class="hunt-dex-name">' + escapeHtml(hunt.pokemon) + '</div>' +
-'<div class="tag-row">' +
-'<span class="tag">' + escapeHtml(hunt.game) + '</span>' +
-'<span class="tag">' + escapeHtml(hunt.method) + '</span>' +
-'<span class="tag tag-odds">1 in ' + hunt.denom + '</span>' +
 '</div>' +
 '</div>' +
+'<div class="hunt-info-bar">' +
+'<div class="hunt-info-cell hunt-info-game"><span class="hunt-info-icon">' + TAG_ICON_GAME + '</span><span class="hunt-info-label">' + gameLabelHtml(hunt.game) + '</span></div>' +
+'<div class="hunt-info-cell hunt-info-method" data-action="method-info" data-id="' + hunt.id + '" data-tip="' + escapeHtml(methodMeta.desc) + '" style="' + methodTagStyle + '" role="button" tabindex="0" title="Tap for method info"><span class="hunt-info-icon">' + methodMeta.icon + '</span><span class="hunt-info-label">' + escapeHtml(hunt.method) + '</span></div>' +
+'<div class="hunt-info-cell hunt-info-odds" style="' + oddsTagStyle + '"><span class="hunt-info-icon">' + TAG_ICON_ODDS + '</span><span class="hunt-info-label">1 in ' + hunt.denom + '</span></div>' +
 '</div>' +
 '<div class="hunt-dex-readout">' +
 '<div class="cell"><span class="cell-icon">' + HUNT_READOUT_ICONS.encounters + '</span><div class="num">' + hunt.encounters + '</div><div class="lbl">Encounters</div></div>' +
@@ -8197,6 +8278,10 @@ if (btn.dataset.action === 'new-hunt') {
 openNewHuntModal();
 return;
 }
+if (btn.dataset.action === 'method-info') {
+toggleMethodTip(btn);
+return;
+}
 var id = btn.dataset.id;
 var hunt = state.hunts.find(function(h) {
 return h.id === id;
@@ -8230,10 +8315,39 @@ runHuntAction(action, hunt, id, btn);
 document.getElementById('hunts-list').addEventListener('keydown', function(e) {
 if (e.key !== 'Enter' && e.key !== ' ') return;
 var lens = e.target.closest('[data-action="new-hunt"]');
-if (!lens) return;
+if (lens) {
 e.preventDefault();
 openNewHuntModal();
+return;
+}
+var methodTag = e.target.closest('[data-action="method-info"]');
+if (methodTag) {
+e.preventDefault();
+toggleMethodTip(methodTag);
+}
 });
+// Toggles the one-line method explainer bubble anchored to a tapped
+// Method tag. Only one bubble is ever open at a time, and tapping the
+// same tag again (or anywhere outside it) closes it.
+function toggleMethodTip(tagEl) {
+var already = tagEl.querySelector('.hunt-method-tip');
+document.querySelectorAll('.hunt-method-tip').forEach(function(el) {
+el.remove();
+});
+if (already) return;
+var tip = document.createElement('div');
+tip.className = 'hunt-method-tip';
+tip.textContent = tagEl.dataset.tip || '';
+tagEl.appendChild(tip);
+setTimeout(function() {
+document.addEventListener('click', function closeTip(ev) {
+if (tagEl.contains(ev.target)) return;
+var stillThere = tagEl.querySelector('.hunt-method-tip');
+if (stillThere) stillThere.remove();
+document.removeEventListener('click', closeTip);
+}, { once: false });
+}, 0);
+}
 function runHuntAction(action, hunt, id, btn) {
 if (action === 'add-encounter' || action === 'add-encounter-5') {
 hunt.encounters += (action === 'add-encounter-5' ? 5 : 1);
