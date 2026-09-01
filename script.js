@@ -4047,7 +4047,7 @@ function gameLabelHtml(game) {
 if (!game || game.indexOf('/') === -1) return escapeHtml(game || '');
 return game.split('/').map(function(part) {
 return escapeHtml(part.trim());
-}).join('<br>');
+}).join(' / ');
 }
 // Per-method icon, accent color, and a one-line explainer shown when the
 // Method tag is tapped - keyed to match the METHODS/METHOD_ODDS_RULES
@@ -4112,7 +4112,7 @@ var screenStyle = '--type-color:' + typeHex + ';--type-rgb:' + typeRgb + ';';
 var barColors = oddsGaugeColors(pct);
 var barStyle = 'width:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';--bar-c2:' + barColors[1] + ';';
 var markerStyle = 'left:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';--bar-c2:' + barColors[1] + ';';
-var typePillsHtml = info && info.types.length ? typeBadges(info.types) : '<span class="tag">Unknown Type</span>';
+var typePillsHtml = info && info.types.length ? typeBadges(info.types, 80) : '<span class="tag">Unknown Type</span>';
 var genChipHtml = info && info.gen ? ('<span class="hunt-dex-gen-chip">GEN ' + info.gen + '</span>') : '';
 var methodMeta = methodMetaOf(hunt.method);
 var oddsColors = oddsTagColors(hunt.denom, allDenoms);
@@ -4158,10 +4158,6 @@ el.innerHTML =
 '<line class="hunt-dex-reticle-tick" x1="85" y1="150" x2="85" y2="164"/>' +
 '<line class="hunt-dex-reticle-tick" x1="6" y1="85" x2="20" y2="85"/>' +
 '<line class="hunt-dex-reticle-tick" x1="150" y1="85" x2="164" y2="85"/>' +
-'<line class="hunt-dex-reticle-tick-minor" x1="127.2" y1="42.8" x2="118" y2="52"/>' +
-'<line class="hunt-dex-reticle-tick-minor" x1="42.8" y1="42.8" x2="52" y2="52"/>' +
-'<line class="hunt-dex-reticle-tick-minor" x1="127.2" y1="127.2" x2="118" y2="118"/>' +
-'<line class="hunt-dex-reticle-tick-minor" x1="42.8" y1="127.2" x2="52" y2="118"/>' +
 '</svg>' +
 '</div>' +
 '</div>' +
@@ -4226,8 +4222,33 @@ el.innerHTML =
 '<div class="hunt-dex-grille"><span></span><span></span><span></span><span></span><span></span></div>' +
 '</div>';
 wrap.appendChild(el);
+fitHuntInfoBar(el.querySelector('.hunt-info-bar'));
 });
 syncHuntFrameHeight();
+}
+// Shrinks the info-bar's font size (and pill padding) in small steps until
+// its content fits on one line without wrapping or truncating - used so
+// long game names like "Ultra Sun / Ultra Moon" stay readable instead of
+// getting cut off with an ellipsis.
+function fitHuntInfoBar(barEl) {
+if (!barEl) return;
+var labels = barEl.querySelectorAll('.hunt-info-label');
+var cells = barEl.querySelectorAll('.hunt-info-cell');
+var scale = 1;
+var minScale = 0.6;
+labels.forEach(function(l) { l.style.fontSize = ''; });
+cells.forEach(function(c) { c.style.padding = ''; });
+var attempts = 0;
+while (barEl.scrollWidth > barEl.clientWidth + 1 && scale > minScale && attempts < 24) {
+scale -= 0.03;
+labels.forEach(function(l) { l.style.fontSize = (13 * scale).toFixed(1) + 'px'; });
+cells.forEach(function(c) {
+var vPad = Math.max(4, 6 * scale).toFixed(1);
+var hPad = Math.max(5, 10 * scale).toFixed(1);
+c.style.padding = vPad + 'px ' + hPad + 'px';
+});
+attempts++;
+}
 }
 // Keeps the mobile hunts scroll frame (and the sliver of the next page
 // that peeks in beside it) pinned to the real, rendered height of one
@@ -4246,7 +4267,10 @@ root.style.removeProperty('--hunt-frame-height');
 var huntFrameResizeTimer = null;
 window.addEventListener('resize', function() {
 clearTimeout(huntFrameResizeTimer);
-huntFrameResizeTimer = setTimeout(syncHuntFrameHeight, 150);
+huntFrameResizeTimer = setTimeout(function() {
+syncHuntFrameHeight();
+document.querySelectorAll('.hunt-info-bar').forEach(fitHuntInfoBar);
+}, 150);
 });
 function escapeHtml(s) {
 return String(s).replace(/[&<>"']/g, function(c) {
