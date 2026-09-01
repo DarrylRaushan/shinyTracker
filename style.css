@@ -949,8 +949,8 @@ z-index: 1;
 }
 .hunt-dex-portrait-wrap {
 position: relative;
-width: 172px;
-height: 172px;
+width: 135px;
+height: 135px;
 flex-shrink: 0;
 display: flex;
 align-items: center;
@@ -982,8 +982,8 @@ z-index: 1;
 }
 .hunt-dex-portrait-stage {
 position: relative;
-width: 380px;
-height: 380px;
+width: 300px;
+height: 300px;
 flex-shrink: 0;
 display: flex;
 align-items: center;
@@ -1073,13 +1073,13 @@ margin-bottom: 5px;
 }
 .hunt-dex-gen-chip {
 font-family: var(--mono);
-font-size: 9.5px;
+font-size: 12px;
 font-weight: 800;
 letter-spacing: 0.5px;
 color: #1f5c8a;
 background: linear-gradient(180deg, #eaf5ff, #d3e9fb);
 border: 1.5px solid #9dc7e8;
-padding: 2.5px 8px;
+padding: 4px 11px;
 border-radius: 999px;
 box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 1px rgba(31, 92, 138, 0.15);
 }
@@ -1113,31 +1113,29 @@ letter-spacing: 0.2px;
    layout the card style is based on. */
 .hunt-info-bar {
 display: flex;
-align-items: stretch;
+align-items: center;
+gap: 6px;
+flex-wrap: nowrap;
 margin-top: 10px;
-background: linear-gradient(180deg, #fffdf4, #f7ecc8);
-border: 2px solid var(--line);
-border-radius: 14px;
-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 2px 4px rgba(43, 35, 32, 0.18);
-overflow: hidden;
 }
 .hunt-info-cell {
-flex: 1;
+flex: 0 1 auto;
 display: flex;
 align-items: center;
 gap: 6px;
 min-width: 0;
-padding: 7px 8px;
-border-right: 1px solid rgba(43, 35, 32, 0.22);
-}
-.hunt-info-cell:last-child {
-border-right: none;
+font-family: var(--mono);
+font-weight: 800;
+letter-spacing: 0.3px;
+color: var(--ink);
+background: linear-gradient(180deg, #ffffff, #f3f3f3);
+border: 1.5px solid #d8d5cc;
+padding: 6px 10px;
+border-radius: 999px;
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 1px 1px rgba(43, 35, 32, 0.12);
 }
 .hunt-info-icon {
-flex: none;
-width: 22px;
-height: 22px;
-display: inline-flex;
+display: none;
 }
 .hunt-info-icon svg {
 width: 100%;
@@ -1147,13 +1145,14 @@ display: block;
 .hunt-info-label {
 font-family: var(--body);
 font-weight: 800;
-font-size: 11.5px;
+font-size: 13px;
 line-height: 1.22;
 letter-spacing: 0.1px;
 color: var(--ink);
 min-width: 0;
 overflow: hidden;
 text-overflow: ellipsis;
+white-space: nowrap;
 }
 .hunt-info-method .hunt-info-label,
 .hunt-info-odds .hunt-info-label {
@@ -1972,9 +1971,9 @@ align-items: center;
 justify-content: center;
 position: relative;
 flex-shrink: 0;
-width: 63px;
-height: 22px;
-margin-right: 6px;
+width: 80px;
+height: 28px;
+margin-right: 7px;
 vertical-align: middle;
 }
 .type-badge-icon img {
@@ -3541,12 +3540,12 @@ display: none;
 display: flex;
 }
 .hunt-dex-portrait-wrap {
-width: 163px;
-height: 163px;
+width: 128px;
+height: 128px;
 }
 .hunt-dex-portrait-stage {
-width: 340px;
-height: 340px;
+width: 270px;
+height: 270px;
 }
 .hunt-dex-readout .num {
 font-size: 17px;
@@ -3680,12 +3679,12 @@ gap: 0;
 padding: 0;
 }
 .hunt-dex-portrait-wrap {
-width: 135px;
-height: 135px;
+width: 105px;
+height: 105px;
 }
 .hunt-dex-portrait-stage {
-width: 240px;
-height: 240px;
+width: 190px;
+height: 190px;
 }
 .hunt-dex-id-block {
 width: 100%;
@@ -12308,8 +12307,8 @@ max-height: 50vh;
    above got the colors and shapes right but left them flat; this adds the
    actual depth back in without touching layout, sizing, or wrapping. */
 .log-v2-tabs button {
-background: linear-gradient(180deg, #7a1c1c, #5c1212);
-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 4px rgba(0, 0, 0, 0.35);
+background: repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.22) 24px, rgba(184, 148, 79, 0.22) 25px), #efe6cc;
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 .log-v2-tabs button.active {
 background: linear-gradient(180deg, #fffdf6, #fff2cf);
@@ -12345,6 +12344,7 @@ transform: translateY(2px);
    mock shows them red, not green. Scoped to .log-v2-shell only so the
    original green nav buttons used by other shells are untouched. */
 .log-v2-shell .log-dex-nav-btn {
+height: 48px;
 background: linear-gradient(180deg, #e83d3d, #ae1515);
 border-color: #6f0e0e;
 box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 3px 0 #6f0e0e, 0 5px 6px rgba(43, 35, 32, 0.35);
@@ -12369,15 +12369,20 @@ transform: translateY(3px);
 .log-v2-progress-module .log-dex-pill-leds {
 display: none;
 }
-.log-v2-tabs button {
-color: #f7e8c5 !important;
-background: linear-gradient(180deg, #7a1c1c, #5c1212) !important;
+#log-dex-shell.log-v2-shell .log-v2-tabs button {
+color: #8a7a52 !important;
+background:
+repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.22) 24px, rgba(184, 148, 79, 0.22) 25px),
+#efe6cc !important;
+border-color: #b8944f !important;
 text-transform: uppercase;
 font-family: var(--hud);
 }
-.log-v2-tabs button.active {
+#log-dex-shell.log-v2-shell .log-v2-tabs button.active {
 color: var(--red-dark) !important;
-background: linear-gradient(180deg, #fffdf6, #fff2cf) !important;
+background:
+repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.3) 24px, rgba(184, 148, 79, 0.3) 25px),
+#fdf9ec !important;
 }
 .log-v2-shell .log-v2-toolbar .log-dex-grid-btn,
 .log-v2-utility-btn {
@@ -12677,10 +12682,10 @@ padding: 2px 3px;
   justify-content: center;
   gap: 6px;
   min-height: 40px;
-  border: 3px solid #510e14 !important;
+  border: 3px solid #b8944f !important;
   border-bottom: 0 !important;
   border-radius: 10px 10px 0 0;
-  box-shadow: inset 3px 3px rgba(156,77,52,.48);
+  box-shadow: inset 2px 2px rgba(184, 148, 79, 0.25);
 }
 
 #view-collection .log-v2-tabs button:first-child {
@@ -12716,23 +12721,44 @@ padding: 2px 3px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin: -13px 13px 0;
+  margin: 6px 13px 0;
   padding: 2px 10px 6px;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
-  /* Same green-tinted glass/touchscreen treatment as the Overview and
-     Stats panels: diagonal glare + faint scanline texture over a green
-     LCD-tinted base, so all three tabs read as one consistent lit
-     display rather than the Log tab standing out as plain parchment. */
+  overflow: visible;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.16) 20%, rgba(255, 255, 255, 0) 38%),
-    repeating-linear-gradient(180deg, rgba(43, 35, 32, 0.035) 0px, rgba(43, 35, 32, 0.035) 1px, transparent 1px, transparent 3px),
-    linear-gradient(145deg, #eef8e5, #cfe6c4);
+    repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.3) 24px, rgba(184, 148, 79, 0.3) 25px),
+    #fdf9ec;
   box-shadow:
-    inset 0 3px 10px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
-    4px 5px #65070d;
+    inset 0 3px 10px rgba(0, 0, 0, 0.1),
+    0 4px 0 -1px #f2e8cc,
+    0 6px 8px rgba(43, 35, 32, 0.25);
+}
+
+#view-collection .log-v2-toolbar-wrap::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -6px;
+  right: -6px;
+  height: 22px;
+  background: #fdf9ec;
+  z-index: 3;
+  pointer-events: none;
+}
+
+#view-collection .log-v2-toolbar-wrap::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, transparent 50%, #e6d9ae 50%);
+  box-shadow: -1px -1px 3px rgba(43, 35, 32, 0.2);
+  border-radius: 0 0 13px 0;
+  pointer-events: none;
 }
 
 /* Overview, Stats, and the Log toolbar (Search/Newest/All + HOF/Edit/
@@ -12819,23 +12845,52 @@ padding: 2px 3px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  margin: -4px 42px 0;
+  margin: 6px 42px 0;
   padding: 3px 10px 8px;
   height: 202px;
   overflow-y: auto;
+  overflow-x: visible;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
-  /* Exact same screen treatment as .log-dex-screen above (flat tinted
-     base + scanline overlay + matching inset shadow), same green LCD
-     tint (var(--screen)) as the screen above, so it reads as a
-     continuation of the same display rather than a separate one. */
   background:
-    repeating-linear-gradient(180deg, rgba(43, 35, 32, 0.035) 0px, rgba(43, 35, 32, 0.035) 1px, transparent 1px, transparent 3px),
-    var(--screen);
+    repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.3) 24px, rgba(184, 148, 79, 0.3) 25px),
+    #fdf9ec;
   box-shadow:
-    inset 0 3px 10px rgba(0, 0, 0, 0.22),
-    inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+    inset 0 3px 10px rgba(0, 0, 0, 0.1),
+    0 4px 0 -1px #f2e8cc,
+    0 6px 8px rgba(43, 35, 32, 0.25);
+}
+
+/* Flip-notepad spiral rings straddling the top edge, like the page is
+   punched through a wire binding held by the device above. A solid
+   paper-colored backdrop sits behind the ring dots (and spans past the
+   panel's own edges) so no gap of the shell's underlying color shows
+   through between the tab bar above and the page below. */
+#view-collection .log-v2-shell .log-overview-panel::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -6px;
+  right: -6px;
+  height: 22px;
+  background: #fdf9ec;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Folded bottom-right corner, like a notepad page about to flip. */
+#view-collection .log-v2-shell .log-overview-panel::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, transparent 50%, #e6d9ae 50%);
+  box-shadow: -1px -1px 3px rgba(43, 35, 32, 0.2);
+  border-radius: 0 0 13px 0;
+  pointer-events: none;
 }
 
 #view-collection .log-overview-top-row {
@@ -12929,7 +12984,7 @@ padding: 2px 3px;
   position: relative;
   margin-top: -6px;
   padding: 6px 10px 12px;
-  border: 2px solid #b8944f;
+  border: 2px dashed #b8944f;
   border-radius: 8px;
   background: #fffef7;
   overflow: hidden;
@@ -13068,22 +13123,46 @@ padding: 2px 3px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  margin: -13px 13px 0;
+  margin: 6px 13px 0;
   padding: 8px 16px 9px;
   height: 202px;
   overflow-y: auto;
+  overflow-x: visible;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
-  /* Same exact screen treatment as the Overview panel (and .log-dex-screen
-     above) - flat green-tinted base + scanline overlay + matching inset
-     shadow - so Overview/Stats/Log all read as one consistent display. */
   background:
-    repeating-linear-gradient(180deg, rgba(43, 35, 32, 0.035) 0px, rgba(43, 35, 32, 0.035) 1px, transparent 1px, transparent 3px),
-    var(--screen);
+    repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.3) 24px, rgba(184, 148, 79, 0.3) 25px),
+    #fdf9ec;
   box-shadow:
-    inset 0 3px 10px rgba(0, 0, 0, 0.22),
-    inset 0 0 0 2px rgba(0, 0, 0, 0.05);
+    inset 0 3px 10px rgba(0, 0, 0, 0.1),
+    0 4px 0 -1px #f2e8cc,
+    0 6px 8px rgba(43, 35, 32, 0.25);
+}
+
+#view-collection .log-v2-shell .log-stats-panel::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: -6px;
+  right: -6px;
+  height: 22px;
+  background: #fdf9ec;
+  z-index: 3;
+  pointer-events: none;
+}
+
+#view-collection .log-v2-shell .log-stats-panel::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, transparent 50%, #e6d9ae 50%);
+  box-shadow: -1px -1px 3px rgba(43, 35, 32, 0.2);
+  border-radius: 0 0 13px 0;
+  pointer-events: none;
 }
 
 #view-collection .log-stats-rows {
@@ -13569,9 +13648,9 @@ padding: 2px 3px;
   border-bottom: 0 !important;
   border-radius: 13px 13px 0 0 !important;
   background:
-    repeating-linear-gradient(180deg, rgba(43, 35, 32, 0.035) 0px, rgba(43, 35, 32, 0.035) 1px, transparent 1px, transparent 3px),
-    var(--screen) !important;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.18) !important;
+    repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.3) 24px, rgba(184, 148, 79, 0.3) 25px),
+    #fdf9ec !important;
+  box-shadow: inset 0 2px 6px rgba(184, 148, 79, 0.15) !important;
   box-sizing: border-box !important;
   position: relative !important;
   z-index: 5 !important;
