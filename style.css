@@ -988,6 +988,11 @@ flex-shrink: 0;
 display: flex;
 align-items: center;
 justify-content: center;
+/* Visual-only enlargement of the ring+sprite: transform doesn't affect
+layout, so .hunt-dex-main/.hunt-dex-screen keep their original box size
+and nothing else on the card shifts. Nudged up slightly so the bigger
+sprite's feet clear the NORMAL/GEN chip row below instead of touching it. */
+transform: scale(1.19) translateY(-6%);
 }
 .hunt-dex-reticle {
 position: absolute;
@@ -12723,29 +12728,23 @@ padding: 2px 3px;
   justify-content: center;
   margin: 6px 13px 0;
   padding: 2px 10px 6px;
+  /* Fixed to the same margin-box height as the Overview/Stats panels
+     (202px content box + these same 6px/0 top/bottom margins = 208px)
+     so the shared .log-tab-panel-stack grid cell never grows or shrinks
+     when switching tabs or opening the Search/Sort/Filter "page" below -
+     that page now scrolls inside this fixed box instead of expanding it. */
+  height: 202px;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
-  overflow: visible;
+  overflow-y: auto;
+  overflow-x: hidden;
   background:
     repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.3) 24px, rgba(184, 148, 79, 0.3) 25px),
     #fdf9ec;
   box-shadow:
     inset 0 3px 10px rgba(0, 0, 0, 0.1),
-    0 4px 0 -1px #f2e8cc,
     0 6px 8px rgba(43, 35, 32, 0.25);
-}
-
-#view-collection .log-v2-toolbar-wrap::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: -6px;
-  right: -6px;
-  height: 22px;
-  background: #fdf9ec;
-  z-index: 3;
-  pointer-events: none;
 }
 
 #view-collection .log-v2-toolbar-wrap::after {
@@ -12791,26 +12790,15 @@ padding: 2px 3px;
   visibility: hidden;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-14px) scaleY(0.94);
-  transform-origin: top center;
-  transition: opacity 0.22s ease, transform 0.24s cubic-bezier(0.34, 1.15, 0.64, 1);
 }
 
 #log-dex-shell[data-log-tab="log"] .log-v2-toolbar-wrap {
   visibility: visible;
   pointer-events: auto;
   opacity: 1;
-  transform: translateY(0) scaleY(1);
 }
 
-/* Sliding shutter: rather than the Overview/Stats/Log content just
-   fading in as a second, separately-appearing screen, each panel starts
-   tucked up behind the (opaque, higher-stacked - see .log-v2-tabs'
-   z-index above) tab bar and slides/scales down into place on
-   activation. Sells "this is the Card screen's own cover panel opening"
-   instead of "a second display switching on" - same transform-origin
-   and offset as the Log toolbar's version above, so all three tabs
-   share one consistent opening motion. */
+/* Tabs switch instantly - no slide/scale/fade animation between panels. */
 .log-overview-panel,
 .log-stats-panel {
   overflow-y: auto;
@@ -12818,9 +12806,6 @@ padding: 2px 3px;
   visibility: hidden;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(-14px) scaleY(0.94);
-  transform-origin: top center;
-  transition: opacity 0.22s ease, transform 0.24s cubic-bezier(0.34, 1.15, 0.64, 1);
 }
 
 #log-dex-shell[data-log-tab="overview"] .log-overview-panel,
@@ -12828,7 +12813,6 @@ padding: 2px 3px;
   visibility: visible;
   pointer-events: auto;
   opacity: 1;
-  transform: translateY(0) scaleY(1);
 }
 
 #view-collection .log-v2-shell .log-v2-toolbar { gap: 6px; margin: 6px 0 0; }
@@ -12853,30 +12837,21 @@ padding: 2px 3px;
   border: 4px solid #7c663c;
   border-top: 0;
   border-radius: 0 0 17px 17px;
+  /* Ruled-paper line pitch (24px band + 1px rule = 25px repeat). The
+     lines are drawn from the panel's own top edge (y=0), which doesn't
+     know where the genus/fact-cell text actually sits, so the two
+     rarely land on each other. --notepad-line-offset shifts the whole
+     rule pattern down (positive px) or up (negative px) without
+     touching the pitch, so it can be nudged until the rules sit under
+     the text baselines. Starts at 0 = old, unshifted behavior. */
+  --notepad-line-offset: 0px;
   background:
     repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.3) 24px, rgba(184, 148, 79, 0.3) 25px),
     #fdf9ec;
+  background-position: 0 var(--notepad-line-offset);
   box-shadow:
     inset 0 3px 10px rgba(0, 0, 0, 0.1),
-    0 4px 0 -1px #f2e8cc,
     0 6px 8px rgba(43, 35, 32, 0.25);
-}
-
-/* Flip-notepad spiral rings straddling the top edge, like the page is
-   punched through a wire binding held by the device above. A solid
-   paper-colored backdrop sits behind the ring dots (and spans past the
-   panel's own edges) so no gap of the shell's underlying color shows
-   through between the tab bar above and the page below. */
-#view-collection .log-v2-shell .log-overview-panel::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: -6px;
-  right: -6px;
-  height: 22px;
-  background: #fdf9ec;
-  z-index: 3;
-  pointer-events: none;
 }
 
 /* Folded bottom-right corner, like a notepad page about to flip. */
@@ -13136,20 +13111,7 @@ padding: 2px 3px;
     #fdf9ec;
   box-shadow:
     inset 0 3px 10px rgba(0, 0, 0, 0.1),
-    0 4px 0 -1px #f2e8cc,
     0 6px 8px rgba(43, 35, 32, 0.25);
-}
-
-#view-collection .log-v2-shell .log-stats-panel::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: -6px;
-  right: -6px;
-  height: 22px;
-  background: #fdf9ec;
-  z-index: 3;
-  pointer-events: none;
 }
 
 #view-collection .log-v2-shell .log-stats-panel::after {
@@ -13171,12 +13133,16 @@ padding: 2px 3px;
   gap: 5px;
 }
 
-/* Section headers ("BY METHOD" / "BY GAME" / "BY GENERATION") above each
-   breakdown's bar rows in the collection-wide Stats summary - see
-   breakdownSection() in script.js. */
+/* Section headers ("BASE STATS" / "TYPE MATCHUPS" / "BY METHOD" /
+   "BY GAME" / "BY GENERATION") above each block of stat/breakdown rows
+   in both the per-catch Stats tab and the collection-wide Stats summary
+   - see breakdownSection() / renderLogOverviewAndStats() in script.js.
+   Kept uniform (no per-position border/padding bump) so every header
+   in this tab reads at the same size and the same green, regardless of
+   whether it's first in the list or follows another block. */
 #view-collection .log-stats-section-label {
   font-family: var(--pixel);
-  font-size: 8.5px;
+  font-size: 10px;
   letter-spacing: 0.3px;
   color: #347630;
   margin: 6px 0 1px;
@@ -13184,7 +13150,7 @@ padding: 2px 3px;
   border-top: 2px dashed #b8944f;
 }
 #view-collection .log-stats-section-label:first-child {
-  margin-top: 0;
+  margin-top: 8px;
   padding-top: 0;
   border-top: 0;
 }
@@ -13252,7 +13218,7 @@ padding: 2px 3px;
   justify-content: space-between;
   font-family: var(--pixel);
   font-size: 10px;
-  color: #5c2a12;
+  color: #347630;
 }
 
 /* Type Matchups rows (see computeTypeMatchups/matchupRow in script.js) -
@@ -13287,34 +13253,41 @@ padding: 2px 3px;
   margin-right: 0;
 }
 
-/* Indented/recessed well look for both row containers: swap their
-   raised drop-shadow for an inset shadow hugging the top-left inside
-   edge (like light falls into a carved-in slot), with a soft light
-   rim on the bottom-right so it still reads as a groove, not a flat
-   hole. The buttons inside keep their own raised/embossed styling. */
+/* Buttons are drawn flat, right on the notepad page - no embossed
+   pill/groove housing. The toolbar/utility rows are just plain
+   transparent strips (no recessed background or inset shadow), and each
+   button underneath is a thin ink-outline shape with a flat fill,
+   reading as something sketched onto the paper rather than a raised
+   physical key. */
 #view-collection .log-v2-shell .log-v2-toolbar,
 #view-collection .log-v2-utility-row {
-  background: linear-gradient(180deg, #ecdcae, #fffdf4 40%);
-  box-shadow:
-    inset 0 4px 8px rgba(43, 20, 10, 0.35),
-    inset 0 2px 3px rgba(43, 20, 10, 0.25),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.6);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
+/* Matches the notepad language already established on the Overview/
+   Stats tabs (see .log-overview-flavor-row / .log-stats-total /
+   .log-stats-section-label): a dashed tan rule rather than a solid
+   drawn box, flat cream fill, same ink-brown/green text colors. Default
+   (unselected) buttons stay dashed/outline-only, like the passive
+   dashed dividers elsewhere; selected/active ones switch to a solid
+   border + filled background, the same way the Overview panel itself
+   is solid-bordered while its internal dividers are dashed. */
 #view-collection .log-v2-shell .log-v2-toolbar .log-dex-grid-btn,
 #view-collection .log-v2-utility-btn {
-  border: 2px solid #a18a57;
-  border-radius: 12px;
-  color: #3a281a;
-  background: linear-gradient(180deg, #fffdf4, #f4e5bc);
-  box-shadow: inset 2px 2px #fffef7, inset -2px -2px #d6c08a, 0 3px 0 #a88d55, 0 4px 5px rgba(43,35,32,.18);
+  border: 2px dashed #b8944f;
+  border-radius: 8px;
+  color: #5c2a12;
+  background: #fffef7;
+  box-shadow: none;
 }
 
 #view-collection .log-v2-shell .log-v2-toolbar .log-dex-grid-btn.toolbar-red {
-  color: #fff6da;
-  border-color: #761218;
-  background: linear-gradient(160deg, #db3032, #9c121a);
-  box-shadow: inset 3px 3px #ef625c, inset -3px -4px #790710, 0 3px 0 #72070e, 0 4px 5px rgba(43,35,32,.26);
+  color: #fdf9ec;
+  border: 2px solid #761218;
+  background: #b41d20;
+  box-shadow: none;
 }
 
 #view-collection .log-v2-utility-btn {
@@ -13323,10 +13296,218 @@ padding: 2px 3px;
 
 #view-collection .log-v2-utility-btn[aria-pressed="true"],
 #view-collection .log-v2-utility-btn.active {
-  color: #fff6d8;
-  border-color: #74591b;
-  background: linear-gradient(180deg, #d2a433, #9d7110);
-  box-shadow: inset 2px 2px #e9c557, inset -2px -2px #79590d, 0 3px 0 #72540b;
+  color: #3a281a;
+  border: 2px solid #9d7110;
+  background: #e8ae25;
+  box-shadow: none;
+}
+
+/* Search/Sort/Filter popovers reuse the generic .dex-select-panel/
+   .dex-select-option classes shared with the Pokedex-screen dropdowns
+   elsewhere in the app (green screen, black border, mono font) - which
+   reads as a totally different floating UI dropped onto the notepad.
+   Re-skinned here to look like a torn-off flap of the same ruled paper:
+   same cream/ruled-line fill and dashed tan border as the panel it
+   opens from, ink-brown pixel-font text, and no gap between button and
+   panel so it reads as attached, not a separate floating card. */
+#view-collection .log-v2-shell .dex-select-panel {
+  margin-top: -2px;
+  background:
+    repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(184, 148, 79, 0.3) 24px, rgba(184, 148, 79, 0.3) 25px),
+    #fdf9ec;
+  border: 2px dashed #b8944f;
+  border-radius: 0 10px 10px 10px;
+  box-shadow: 0 6px 8px rgba(43, 35, 32, 0.2);
+}
+
+#view-collection .log-v2-shell .dex-select-option {
+  font-family: var(--pixel);
+  font-size: 10px;
+  letter-spacing: 0.2px;
+  color: #5c2a12;
+  border-radius: 6px;
+}
+
+#view-collection .log-v2-shell .dex-select-option::before {
+  color: #b41d20;
+}
+
+#view-collection .log-v2-shell .dex-select-option:hover {
+  background: rgba(184, 148, 79, 0.2);
+}
+
+#view-collection .log-v2-shell .dex-select-option.active {
+  background: rgba(180, 29, 32, 0.12);
+  color: #b41d20;
+}
+
+#view-collection .log-v2-shell .log-key-input {
+  background: #fffef7;
+  border: 2px dashed #b8944f;
+  color: #5c2a12;
+}
+
+#view-collection .log-v2-shell .log-filter-group-label {
+  font-family: var(--pixel);
+  color: #347630;
+}
+
+#view-collection .log-v2-shell .log-filter-group select {
+  font-family: var(--pixel);
+  font-size: 9px;
+  border: 2px dashed #b8944f;
+  background: #fffef7;
+  color: #5c2a12;
+}
+
+/* ============================================================
+   Log toolbar: Search/Sort/Filter as a dedicated notebook page
+   ------------------------------------------------------------
+   Instead of a dropdown, tapping Search/Sort/Filter now flips
+   this card over to a page of its own: the tapped button becomes
+   a slim "back" tab, and the real options lay out as full-width
+   ruled-paper lines below it - a page of the notebook dedicated
+   to that control, closed the same way it opened (tap the tab
+   again - the existing toggle JS already does this, so none of
+   this needs script changes).
+
+   The page takes over the toolbar-wrap's full footprint (the
+   same shared grid cell Overview/Stats use) instead of just its
+   own row, so there's real room for a page of lines rather than
+   a cramped strip - and since every ancestor up to the shell is
+   height:auto, it still only ever grows the notepad, never spills
+   past it. */
+#view-collection .log-v2-shell .log-v2-toolbar-wrap:has(.log-dex-toolbar .dex-select-wrap.open) .log-v2-utility-row,
+#view-collection .log-v2-shell .log-v2-toolbar-wrap:has(.log-dex-toolbar .dex-select-wrap.open) .log-v2-livingdex-row {
+  display: none;
+}
+#view-collection .log-v2-shell .log-dex-toolbar:has(.dex-select-wrap.open) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+#view-collection .log-v2-shell .log-dex-toolbar:has(.dex-select-wrap.open) .dex-select-wrap:not(.open) {
+  display: none;
+}
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open {
+  display: contents;
+}
+
+/* The tapped button becomes the page's "back" tab instead of
+   vanishing - its real text collapses to font-size:0 and a
+   per-control label takes over via ::before, so tapping it (still
+   the same element/handler) both labels the page and closes it. */
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open > .log-dex-grid-btn {
+  flex: 0 0 auto;
+  width: 100%;
+  height: auto;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 9px 10px;
+  margin-bottom: 4px;
+  font-size: 0;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(180deg, #fdf9ec, #f3ecd8);
+  box-shadow: inset 0 -2px 0 rgba(184, 148, 79, 0.5);
+  transform: none !important;
+}
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open > .log-dex-grid-btn span {
+  display: none;
+}
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open > .log-dex-grid-btn::before {
+  display: inline-block;
+  font-family: var(--pixel);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: #5c2a12;
+}
+#view-collection .log-v2-shell .log-dex-toolbar #log-search-wrap.open > .log-dex-grid-btn::before {
+  content: "Search";
+}
+#view-collection .log-v2-shell .log-dex-toolbar #log-sort-wrap.open > .log-dex-grid-btn::before {
+  content: "Sort By";
+}
+#view-collection .log-v2-shell .log-dex-toolbar #log-filter-wrap.open > .log-dex-grid-btn::before {
+  content: "Filter";
+}
+
+/* The page itself - full-width, top-aligned, no floating card
+   chrome of its own since the toolbar box already provides that. */
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open > .dex-select-panel {
+  display: block;
+  position: static;
+  grid-column: 1 / -1;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0 4px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Sort's options read as a handwritten checklist: one ruled line
+   each, checkbox glyph always showing (not just on hover/active
+   like the floating-menu version), ticked when it's the current
+   choice. */
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open .dex-select-option {
+  padding: 9px 4px;
+  border-bottom: 1px solid rgba(184, 148, 79, 0.35);
+  border-radius: 0;
+}
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open .dex-select-option:last-child {
+  border-bottom: none;
+}
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open .dex-select-option::before {
+  content: "\2610";
+  opacity: 1;
+  transform: none;
+  font-size: 13px;
+  color: #b8944f;
+}
+#view-collection .log-v2-shell .log-dex-toolbar .dex-select-wrap.open .dex-select-option.active::before {
+  content: "\2611";
+  color: #b41d20;
+}
+
+/* Search's page: one big fill-in-the-blank line instead of a
+   boxed input. */
+#view-collection .log-v2-shell .log-dex-toolbar #log-search-wrap.open .log-key-input {
+  border: none;
+  border-bottom: 2px dashed #b8944f;
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 4px;
+  font-size: 14px;
+}
+
+/* Filter's page: each Game/Method/Generation picker reads as its
+   own ruled line (label left, dropdown right) instead of a
+   stacked mini-form. */
+#view-collection .log-v2-shell .log-dex-toolbar #log-filter-wrap.open .log-filter-group {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 4px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(184, 148, 79, 0.35);
+}
+#view-collection .log-v2-shell .log-dex-toolbar #log-filter-wrap.open .log-filter-group select {
+  flex: 1 1 auto;
+  max-width: 58%;
+}
+#view-collection .log-v2-shell .log-dex-toolbar #log-filter-wrap.open .log-filter-clear {
+  width: 100%;
+  margin-top: 10px;
 }
 
 #view-collection .log-v2-progress-module { margin: 10px 0 0; }
@@ -13404,7 +13585,7 @@ padding: 2px 3px;
 #view-collection .log-v2-livingdex-row {
   display: flex;
   justify-content: center;
-  margin: 8px 13px 0;
+  margin: 16px 13px 0;
 }
 
 #view-collection .log-v2-shell .log-dex-nav {
@@ -13458,15 +13639,10 @@ padding: 2px 3px;
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(145deg, #fffdf6, #f5e9c7);
-  border: 2px solid #570a10;
+  background: #fffef7;
+  border: 2px solid #5c2a12;
   border-radius: 50%;
-  box-shadow:
-    inset 2px 2px #fffef7,
-    inset -3px -3px #d6c18a,
-    2px 3px #65060b,
-    0 0 10px 2px rgba(255, 190, 60, 0.55),
-    0 4px 14px -2px rgba(255, 120, 200, 0.45);
+  box-shadow: none;
   padding: 5px;
   cursor: pointer;
   pointer-events: auto;
@@ -13479,57 +13655,6 @@ padding: 2px 3px;
      a much quicker snap-down transition defined on :active itself below,
      so pressing feels instant but releasing feels springy. */
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  animation: livingdex-underglow 3.2s ease-in-out infinite;
-}
-
-/* Diagonal shimmer sweep across the button face, echoing the sparkle a
-   shiny Pokémon gets in-game - a soft white band that slides through on
-   a loop. Sits on its own stacking layer (isolation: isolate above) so
-   it can pass over the pokeball icon without fighting z-index elsewhere
-   on the page. */
-#view-collection .log-v2-shell .log-dex-nav-menu-btn::after {
-  content: "";
-  position: absolute;
-  inset: -60%;
-  background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.85) 50%, transparent 58%);
-  transform: translateX(-130%) rotate(8deg);
-  animation: livingdex-shimmer 3.2s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Soft rainbow-cycling glow underneath the button (the "underlight"),
-   layered on top of - not replacing - its existing raised-bevel shadow. */
-@keyframes livingdex-underglow {
-  0%, 100% {
-    box-shadow:
-      inset 2px 2px #fffef7,
-      inset -3px -3px #d6c18a,
-      2px 3px #65060b,
-      0 0 10px 2px rgba(255, 190, 60, 0.55),
-      0 4px 14px -2px rgba(255, 120, 200, 0.45);
-  }
-  33% {
-    box-shadow:
-      inset 2px 2px #fffef7,
-      inset -3px -3px #d6c18a,
-      2px 3px #65060b,
-      0 0 10px 2px rgba(120, 200, 255, 0.55),
-      0 4px 14px -2px rgba(160, 255, 170, 0.45);
-  }
-  66% {
-    box-shadow:
-      inset 2px 2px #fffef7,
-      inset -3px -3px #d6c18a,
-      2px 3px #65060b,
-      0 0 10px 2px rgba(255, 120, 220, 0.55),
-      0 4px 14px -2px rgba(255, 220, 120, 0.45);
-  }
-}
-
-@keyframes livingdex-shimmer {
-  0%, 35% { transform: translateX(-130%) rotate(8deg); }
-  55%, 100% { transform: translateX(130%) rotate(8deg); }
 }
 
 #view-collection .log-v2-shell .log-dex-nav-menu-btn:hover {
@@ -13541,9 +13666,9 @@ padding: 2px 3px;
    springy cubic-bezier takes back over on release to bounce it back past
    1.0 before settling - the actual "press" feel. */
 #view-collection .log-v2-shell .log-dex-nav-menu-btn:active {
-  transform: scale(0.86) rotate(-4deg);
+  transform: scale(0.9) rotate(-4deg);
   transition: transform 0.08s ease-out;
-  box-shadow: inset 2px 2px #d6c18a, 2px 1px #65060b;
+  box-shadow: none;
 }
 
 #view-collection .log-v2-shell .log-dex-nav-menu-svg {
@@ -13569,11 +13694,11 @@ padding: 2px 3px;
   #view-collection .log-v2-utility-row { gap: 4px; padding: 2px 6px 5px; margin: 4px 0 0; }
   #view-collection .log-v2-utility-btn { height: 22px; }
   #view-collection .log-v2-shell .log-v2-toolbar .log-dex-grid-btn,
-  #view-collection .log-v2-utility-btn { border-radius: 8px; box-shadow: inset 1px 1px #fffef7, inset -1px -1px #d6c08a, 0 2px 0 #a88d55; }
+  #view-collection .log-v2-utility-btn { border-radius: 8px; box-shadow: none; }
   #view-collection .log-v2-progress-module { margin: 7px 0 0; }
   #view-collection .log-v2-progress-module .log-dex-pill { height: 46px; padding: 0 9px; border-width: 3px; border-radius: 12px; }
   #view-collection .log-v2-progress-track { height: 11px; width: 68px; }
-  #view-collection .log-v2-livingdex-row { margin-top: 4px; }
+  #view-collection .log-v2-livingdex-row { margin-top: 10px; }
   #view-collection .log-v2-shell .log-dex-nav { column-gap: 10px; row-gap: 0; margin: 5px 6px 12px; }
   #view-collection .log-v2-shell .log-dex-nav-btn { min-height: 26px; border-width: 2px; border-radius: 7px; }
   #view-collection #log-screen-prev.log-dex-nav-btn,
@@ -13748,8 +13873,4 @@ padding: 2px 3px;
 #view-collection .log-overview-panel,
 #view-collection .log-stats-panel {
   border-color: #5c2a12 !important;
-}
-#view-collection .log-v2-shell .log-v2-toolbar .log-dex-grid-btn,
-#view-collection .log-v2-utility-btn {
-  border-color: #b8944f !important;
 }
