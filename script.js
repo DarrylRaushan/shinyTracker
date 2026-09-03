@@ -4089,6 +4089,12 @@ if (max === min) return oddsGaugeColors(50);
 var t = (denom - min) / (max - min);
 return oddsGaugeColors(t * 100);
 }
+// Once a hunt card has rendered at its natural (content-driven) height, that
+// height is remembered here and re-applied on every future renderHunts()
+// call, so the card stays a fixed, unmoving size as encounters/timer/text
+// update instead of reflowing the shell. Deliberately NOT a hardcoded guess
+// (that clipped real content before) - it's measured from the actual DOM.
+var HUNT_CARD_LOCKED_HEIGHT = null;
 function renderHunts() {
 var wrap = document.getElementById('hunts-list');
 wrap.innerHTML = '';
@@ -4224,6 +4230,22 @@ el.innerHTML =
 wrap.appendChild(el);
 fitHuntInfoBar(el.querySelector('.hunt-info-bar'));
 });
+var cardEls = wrap.querySelectorAll('.hunt-card');
+if (cardEls.length) {
+if (HUNT_CARD_LOCKED_HEIGHT == null) {
+// First render: card has no inline height yet, so this is its true
+// natural size (CSS min-height plus whatever the content needs).
+HUNT_CARD_LOCKED_HEIGHT = cardEls[0].offsetHeight;
+} else {
+// Rare case: a taller card shows up later (e.g. a longer game/method
+// name that wraps). Grow the lock rather than clip it.
+cardEls.forEach(function(c) {
+c.style.height = '';
+if (c.offsetHeight > HUNT_CARD_LOCKED_HEIGHT) HUNT_CARD_LOCKED_HEIGHT = c.offsetHeight;
+});
+}
+cardEls.forEach(function(c) { c.style.height = HUNT_CARD_LOCKED_HEIGHT + 'px'; });
+}
 syncHuntFrameHeight();
 }
 // Shrinks the info-bar's font size (and pill padding) in small steps until
@@ -4757,7 +4779,7 @@ return '<div class="log-stats-row" data-stat="' + key + '">' +
 '<span class="log-stats-row-value">' + val + '</span>' +
 '</div>';
 }).join('');
-statsRowsEl.innerHTML = rows || 'No stat data available.';
+statsRowsEl.innerHTML = rows ? ('<div class="log-stats-section-label">BASE STATS</div>' + rows) : 'No stat data available.';
 if (rows) {
 statsRowsEl.innerHTML += '<div class="log-stats-total"><span>TOTAL</span><span>' + total + '</span></div>';
 // Best/Weakest stat only means something when there's more than one
