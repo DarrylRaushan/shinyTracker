@@ -623,6 +623,15 @@ if (GEN_DATA[i].gen === gen) return GEN_DATA[i].region;
 }
 return null;
 }
+// The dexline's decorative corner flourish needs a different reach depending
+// on how wide the pill is: a wide dual-type pill's tip sits far enough out
+// that a short horizontal run + 45deg diagonal looks right, but the same
+// shape applied to a single-type pill (tip much closer to center) way
+// overshoots toward the card corners. Kept as two explicit shapes instead of
+// one that tries to serve both.
+function dexlineFlourishPoints(types) {
+  return (types && types.length > 1) ? '88,12 70,12 38,44' : '88,12 48,12 18,28';
+}
 function typeBadges(types, size) {
 if (!types || !types.length) return '<span class="type-badge type-unknown">?</span>';
 return types.map(function(t) {
@@ -711,6 +720,33 @@ return buckets;
 function energyIcon(color, type) {
 return type ? typeCircleMarkup(type, 28) : '<span class="tcg-energy" style="background:' + color + '"></span>';
 }
+// Ornate gold medallion icons for the "Time Hunted" (clock) and "Odds of
+// Encounter" (d20) attack rows - replaces the type-colored energy dot on
+// just those two rows with a fixed, hunt-agnostic badge, ticked bezel and
+// all, matching the rest of this card's engraved-metal chrome.
+var ICON_TIME_MEDALLION = '<svg class="tcg-medallion-icon" viewBox="0 0 34 34" width="38" height="38" xmlns="http://www.w3.org/2000/svg">' +
+'<circle cx="17" cy="17" r="15.5" fill="#1a1512" stroke="var(--yellow)" stroke-width="1.4"/>' +
+'<circle cx="17" cy="17" r="12.2" fill="none" stroke="var(--yellow)" stroke-width="0.8" opacity="0.55"/>' +
+'<g stroke="var(--yellow)" stroke-width="1" opacity="0.85">' +
+'<line x1="17.00" y1="3.70" x2="17.00" y2="1.70"/><line x1="22.09" y1="4.71" x2="22.86" y2="2.86"/><line x1="26.40" y1="7.60" x2="27.82" y2="6.18"/><line x1="29.29" y1="11.91" x2="31.14" y2="11.14"/><line x1="30.30" y1="17.00" x2="32.30" y2="17.00"/><line x1="29.29" y1="22.09" x2="31.14" y2="22.86"/><line x1="26.40" y1="26.40" x2="27.82" y2="27.82"/><line x1="22.09" y1="29.29" x2="22.86" y2="31.14"/><line x1="17.00" y1="30.30" x2="17.00" y2="32.30"/><line x1="11.91" y1="29.29" x2="11.14" y2="31.14"/><line x1="7.60" y1="26.40" x2="6.18" y2="27.82"/><line x1="4.71" y1="22.09" x2="2.86" y2="22.86"/><line x1="3.70" y1="17.00" x2="1.70" y2="17.00"/><line x1="4.71" y1="11.91" x2="2.86" y2="11.14"/><line x1="7.60" y1="7.60" x2="6.18" y2="6.18"/><line x1="11.91" y1="4.71" x2="11.14" y2="2.86"/>' +
+'</g>' +
+'<line x1="17" y1="17" x2="17" y2="9.5" stroke="var(--yellow)" stroke-width="1.7" stroke-linecap="round"/>' +
+'<line x1="17" y1="17" x2="21.5" y2="17" stroke="var(--yellow)" stroke-width="1.4" stroke-linecap="round"/>' +
+'<circle cx="17" cy="17" r="1.4" fill="var(--yellow)"/>' +
+'</svg>';
+var ICON_ODDS_MEDALLION = '<svg class="tcg-medallion-icon" viewBox="0 0 34 34" width="38" height="38" xmlns="http://www.w3.org/2000/svg">' +
+'<circle cx="17" cy="17" r="15.5" fill="#1a1512" stroke="var(--yellow)" stroke-width="1.4"/>' +
+'<circle cx="17" cy="17" r="12.2" fill="none" stroke="var(--yellow)" stroke-width="0.8" opacity="0.55"/>' +
+'<g stroke="var(--yellow)" stroke-width="1" opacity="0.85">' +
+'<line x1="17.00" y1="3.70" x2="17.00" y2="1.70"/><line x1="22.09" y1="4.71" x2="22.86" y2="2.86"/><line x1="26.40" y1="7.60" x2="27.82" y2="6.18"/><line x1="29.29" y1="11.91" x2="31.14" y2="11.14"/><line x1="30.30" y1="17.00" x2="32.30" y2="17.00"/><line x1="29.29" y1="22.09" x2="31.14" y2="22.86"/><line x1="26.40" y1="26.40" x2="27.82" y2="27.82"/><line x1="22.09" y1="29.29" x2="22.86" y2="31.14"/><line x1="17.00" y1="30.30" x2="17.00" y2="32.30"/><line x1="11.91" y1="29.29" x2="11.14" y2="31.14"/><line x1="7.60" y1="26.40" x2="6.18" y2="27.82"/><line x1="4.71" y1="22.09" x2="2.86" y2="22.86"/><line x1="3.70" y1="17.00" x2="1.70" y2="17.00"/><line x1="4.71" y1="11.91" x2="2.86" y2="11.14"/><line x1="7.60" y1="7.60" x2="6.18" y2="6.18"/><line x1="11.91" y1="4.71" x2="11.14" y2="2.86"/>' +
+'</g>' +
+'<polygon points="17.00,6.00 26.53,11.50 26.53,22.50 17.00,28.00 7.47,22.50 7.47,11.50" fill="none" stroke="var(--yellow)" stroke-width="1.4" stroke-linejoin="round"/>' +
+'<polyline points="17.00,6.00 17.00,17.00 26.53,11.50" fill="none" stroke="var(--yellow)" stroke-width="1" opacity="0.85"/>' +
+'<polyline points="17.00,17.00 26.53,22.50" fill="none" stroke="var(--yellow)" stroke-width="1" opacity="0.85"/>' +
+'<polyline points="17.00,17.00 17.00,28.00" fill="none" stroke="var(--yellow)" stroke-width="1" opacity="0.85"/>' +
+'<polyline points="17.00,17.00 7.47,22.50" fill="none" stroke="var(--yellow)" stroke-width="1" opacity="0.85"/>' +
+'<polyline points="17.00,17.00 7.47,11.50" fill="none" stroke="var(--yellow)" stroke-width="1" opacity="0.85"/>' +
+'</svg>';
 // Plain inline SVGs for the TCG stats table (replaces 🎮/🎯/✨) - emoji
 // render as full-color glyphs from whatever font the OS picks, which
 // looks inconsistent next to the rest of this hand-drawn UI. These are
@@ -4232,18 +4268,17 @@ fitHuntInfoBar(el.querySelector('.hunt-info-bar'));
 });
 var cardEls = wrap.querySelectorAll('.hunt-card');
 if (cardEls.length) {
-if (HUNT_CARD_LOCKED_HEIGHT == null) {
-// First render: card has no inline height yet, so this is its true
-// natural size (CSS min-height plus whatever the content needs).
-HUNT_CARD_LOCKED_HEIGHT = cardEls[0].offsetHeight;
-} else {
-// Rare case: a taller card shows up later (e.g. a longer game/method
-// name that wraps). Grow the lock rather than clip it.
+// Clear any inline height left over from a previous render so every
+// card is measured at its true natural size (CSS min-height plus
+// whatever the current content needs) - otherwise a card that was
+// once taller (e.g. a long game/method name that wrapped) would keep
+// stretching every other card forever, even after that content is
+// gone.
+cardEls.forEach(function(c) { c.style.height = ''; });
+HUNT_CARD_LOCKED_HEIGHT = 0;
 cardEls.forEach(function(c) {
-c.style.height = '';
 if (c.offsetHeight > HUNT_CARD_LOCKED_HEIGHT) HUNT_CARD_LOCKED_HEIGHT = c.offsetHeight;
 });
-}
 cardEls.forEach(function(c) { c.style.height = HUNT_CARD_LOCKED_HEIGHT + 'px'; });
 }
 syncHuntFrameHeight();
@@ -9567,6 +9602,91 @@ console.error('Restore failed', e);
 alert('Restore failed - check your connection and try again.');
 });
 }
+// Wires up drag/swipe-to-flip on a .tcg-flip scene: dragging the card
+// left or right rotates it live under the pointer, following the swipe
+// direction, and releasing past the halfway point snaps it the rest of
+// the way to front or back (whichever face that direction leads to);
+// releasing short of halfway springs it back. A plain tap (no horizontal
+// movement) does nothing here, so taps on interactive content inside the
+// front face - like the "confirm catch" sprite - still work normally.
+function setupTcgFlipSwipe(flipEl) {
+  if (!flipEl) return;
+  var inner = flipEl.querySelector('.tcg-flip-inner');
+  if (!inner) return;
+
+  var base = 0;              // settled rotation: 0 = front, 180 = back
+  var dragging = false;
+  var moved = false;
+  var startX = 0;
+  var startRotation = 0;
+  var activePointerId = null;
+  var suppressClickUntil = 0;
+  var DRAG_THRESHOLD = 6;    // px of horizontal movement before it counts as a swipe
+  var SENSITIVITY = 0.6;     // degrees rotated per px dragged
+
+  function applyRotation(deg, animated) {
+    inner.style.transition = animated ? '' : 'none';
+    inner.style.transform = 'rotateY(' + deg + 'deg)';
+  }
+
+  function clampToOneFlip(target) {
+    var min = startRotation - 180;
+    var max = startRotation + 180;
+    if (target < min) return min;
+    if (target > max) return max;
+    return target;
+  }
+
+  var modalEl = flipEl.closest('.modal');
+
+  function settle(target) {
+    var mod = ((Math.round(target / 180) * 180) % 360 + 360) % 360;
+    base = mod === 180 ? 180 : 0;
+    applyRotation(base, true);
+    flipEl.classList.toggle('is-flipped', base === 180);
+    if (modalEl) modalEl.classList.toggle('showing-tcg-back', base === 180);
+  }
+
+  flipEl.addEventListener('pointerdown', function(e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dragging = true;
+    moved = false;
+    startX = e.clientX;
+    startRotation = base;
+    activePointerId = e.pointerId;
+    try { flipEl.setPointerCapture(activePointerId); } catch (err) {}
+  });
+
+  flipEl.addEventListener('pointermove', function(e) {
+    if (!dragging || e.pointerId !== activePointerId) return;
+    var deltaX = e.clientX - startX;
+    if (!moved && Math.abs(deltaX) > DRAG_THRESHOLD) moved = true;
+    if (!moved) return;
+    applyRotation(clampToOneFlip(startRotation + deltaX * SENSITIVITY), false);
+  });
+
+  function finishDrag(e) {
+    if (!dragging || e.pointerId !== activePointerId) return;
+    dragging = false;
+    try { flipEl.releasePointerCapture(activePointerId); } catch (err) {}
+    if (!moved) return;
+    var deltaX = e.clientX - startX;
+    settle(clampToOneFlip(startRotation + deltaX * SENSITIVITY));
+    // A drag just happened, so swallow the synthetic click that follows
+    // it (otherwise it can land on the confirm sprite underneath).
+    suppressClickUntil = Date.now() + 300;
+  }
+
+  flipEl.addEventListener('pointerup', finishDrag);
+  flipEl.addEventListener('pointercancel', finishDrag);
+
+  flipEl.addEventListener('click', function(e) {
+    if (Date.now() < suppressClickUntil) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }, true);
+}
 function openFoundModal(hunt) {
 
   var info = speciesInfo(hunt.pokemon);
@@ -9589,7 +9709,10 @@ function openFoundModal(hunt) {
     '<img class="tcg-credit-seticon" src="images/region-balls/' + setBallFile + '" alt="' + escapeHtml(genSetInfo.region) + ' ball" onerror="this.style.display=\'none\'">' : '';
 
   var overlay = openModal(
-    '<div class="tcg-card" style="--type-color:' + typeColor + '">' +
+    '<div class="tcg-flip" id="tcg-flip">' +
+      '<div class="tcg-flip-inner">' +
+
+      '<div class="tcg-card" style="--type-color:' + typeColor + '">' +
       '<div class="tcg-inner">' +
 
         '<div class="tcg-header">' +
@@ -9619,16 +9742,16 @@ function openFoundModal(hunt) {
           '</div>' +
         '</div>' +
 
-        '<div class="tcg-dexline">' + dexNumStr + '&nbsp;•&nbsp;' + typeBadges(types) + '</div>' +
+        '<div class="tcg-dexline-wrap">' +'<span class="tcg-dexline-flourish tcg-dexline-flourish-left"><svg width="90" height="31" viewBox="0 0 90 31" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="' + dexlineFlourishPoints(types) + '" stroke="var(--line)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>' +'<div class="tcg-dexline">' +'<span class="tcg-dexline-fill">' + dexNumStr + '&nbsp;•&nbsp;' + typeBadges(types) + '</span>' +'</div>' +'<span class="tcg-dexline-flourish tcg-dexline-flourish-right"><svg width="90" height="31" viewBox="0 0 90 31" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="' + dexlineFlourishPoints(types) + '" stroke="var(--line)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>' +'</div>' +
         '<div class="tcg-dates">Began ' + fmtDate(hunt.createdAt) + '&nbsp;•&nbsp;Caught ' + dateEndedStr + '</div>' +
 
         '<div class="tcg-attack">' +
-          '<div class="tcg-attack-cost">' + energyIcon(null, types[0]) + '</div>' +
+          '<div class="tcg-attack-cost">' + ICON_TIME_MEDALLION + '</div>' +
           '<div class="tcg-attack-name">Time Hunted</div>' +
           '<div class="tcg-attack-dmg">' + timeHunted + '</div>' +
         '</div>' +
         '<div class="tcg-attack">' +
-          '<div class="tcg-attack-cost">' + energyIcon(null, types[1] || types[0]) + '</div>' +
+          '<div class="tcg-attack-cost">' + ICON_ODDS_MEDALLION + '</div>' +
           '<div class="tcg-attack-name">Odds of Encounter</div>' +
           '<div class="tcg-attack-dmg">' + oddsStr + '</div>' +
         '</div>' +
@@ -9665,6 +9788,18 @@ function openFoundModal(hunt) {
           '</div>' +
         '</div>' +
 
+        '<span class="tcg-flip-hint">Swipe to flip ↔</span>' +
+
+      '</div>' +
+      '</div>' +
+
+      '<div class="tcg-card tcg-card-back" style="--type-color:' + typeColor + '">' +
+        '<div class="tcg-inner tcg-back-inner">' +
+          '<img class="tcg-back-image" id="tcg-back-image" src="images/game-symbols/tcg.jpg" alt="" style="display:none;">' +
+          '<div class="tcg-back-placeholder" id="tcg-back-placeholder">Add an image here</div>' +
+        '</div>' +
+      '</div>' +
+
       '</div>' +
     '</div>',
 
@@ -9672,6 +9807,20 @@ function openFoundModal(hunt) {
   );
 
   hydrateTypeCircleIcons(overlay);
+  setupTcgFlipSwipe(overlay.querySelector('#tcg-flip'));
+
+  var backImg = overlay.querySelector('#tcg-back-image');
+  var backPlaceholder = overlay.querySelector('#tcg-back-placeholder');
+  if (backImg && backPlaceholder) {
+    backImg.addEventListener('load', function() {
+      backImg.style.display = '';
+      backPlaceholder.style.display = 'none';
+    });
+    backImg.addEventListener('error', function() {
+      backImg.style.display = 'none';
+      backPlaceholder.style.display = '';
+    });
+  }
 
   function confirmFound() {
 
@@ -9800,7 +9949,10 @@ function openLogEntryCardModal(entry) {
     '<img class="tcg-credit-seticon" src="images/region-balls/' + setBallFile + '" alt="' + escapeHtml(genSetInfo.region) + ' ball" onerror="this.style.display=\'none\'">' : '';
 
   var overlay = openModal(
-    '<div class="tcg-card" style="--type-color:' + typeColor + '">' +
+    '<div class="tcg-flip" id="tcg-flip">' +
+      '<div class="tcg-flip-inner">' +
+
+      '<div class="tcg-card" style="--type-color:' + typeColor + '">' +
       '<div class="tcg-inner">' +
 
         '<div class="tcg-header">' +
@@ -9830,16 +9982,16 @@ function openLogEntryCardModal(entry) {
           '</div>' +
         '</div>' +
 
-        '<div class="tcg-dexline">' + dexNumStr + '&nbsp;•&nbsp;' + typeBadges(types) + '</div>' +
+        '<div class="tcg-dexline-wrap">' +'<span class="tcg-dexline-flourish tcg-dexline-flourish-left"><svg width="90" height="31" viewBox="0 0 90 31" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="' + dexlineFlourishPoints(types) + '" stroke="var(--line)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>' +'<div class="tcg-dexline">' +'<span class="tcg-dexline-fill">' + dexNumStr + '&nbsp;•&nbsp;' + typeBadges(types) + '</span>' +'</div>' +'<span class="tcg-dexline-flourish tcg-dexline-flourish-right"><svg width="90" height="31" viewBox="0 0 90 31" fill="none" xmlns="http://www.w3.org/2000/svg"><polyline points="' + dexlineFlourishPoints(types) + '" stroke="var(--line)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></span>' +'</div>' +
         '<div class="tcg-dates">Began ' + fmtDate(began) + '&nbsp;•&nbsp;Caught ' + fmtDate(ended) + '</div>' +
 
         '<div class="tcg-attack">' +
-          '<div class="tcg-attack-cost">' + energyIcon(null, types[0]) + '</div>' +
+          '<div class="tcg-attack-cost">' + ICON_TIME_MEDALLION + '</div>' +
           '<div class="tcg-attack-name">Time Hunted</div>' +
           '<div class="tcg-attack-dmg">' + timeSpentStr + '</div>' +
         '</div>' +
         '<div class="tcg-attack">' +
-          '<div class="tcg-attack-cost">' + energyIcon(null, types[1] || types[0]) + '</div>' +
+          '<div class="tcg-attack-cost">' + ICON_ODDS_MEDALLION + '</div>' +
           '<div class="tcg-attack-name">Odds of Encounter</div>' +
           '<div class="tcg-attack-dmg">' + oddsStr + '</div>' +
         '</div>' +
@@ -9876,6 +10028,18 @@ function openLogEntryCardModal(entry) {
           '</div>' +
         '</div>' +
 
+        '<span class="tcg-flip-hint">Swipe to flip ↔</span>' +
+
+      '</div>' +
+      '</div>' +
+
+      '<div class="tcg-card tcg-card-back" style="--type-color:' + typeColor + '">' +
+        '<div class="tcg-inner tcg-back-inner">' +
+          '<img class="tcg-back-image" id="tcg-back-image" src="images/game-symbols/tcg.jpg" alt="" style="display:none;">' +
+          '<div class="tcg-back-placeholder" id="tcg-back-placeholder">Add an image here</div>' +
+        '</div>' +
+      '</div>' +
+
       '</div>' +
     '</div>',
 
@@ -9883,6 +10047,23 @@ function openLogEntryCardModal(entry) {
   );
 
   hydrateTypeCircleIcons(overlay);
+  setupTcgFlipSwipe(overlay.querySelector('#tcg-flip'));
+
+  // The back starts as an empty placeholder; once something sets a real
+  // src on #tcg-back-image (e.g. entry.customImage, an upload flow, etc.)
+  // this swaps the placeholder text out for the actual picture.
+  var backImg = overlay.querySelector('#tcg-back-image');
+  var backPlaceholder = overlay.querySelector('#tcg-back-placeholder');
+  if (backImg && backPlaceholder) {
+    backImg.addEventListener('load', function() {
+      backImg.style.display = '';
+      backPlaceholder.style.display = 'none';
+    });
+    backImg.addEventListener('error', function() {
+      backImg.style.display = 'none';
+      backPlaceholder.style.display = '';
+    });
+  }
 
   fetchEvolvesFrom(entry.pokemon).then(function(fromName) {
     var evoEl = overlay.querySelector('#tcg-evo-line');
