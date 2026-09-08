@@ -3067,6 +3067,9 @@ grid-template-areas:
 
 .tcg-card {
   --type-color: var(--yellow);
+  /* Parchment tone for this card's containers only — scoped override of
+     --bg-panel so the rest of the app's white panels are untouched. */
+  --bg-panel: #f3ead0;
   position: relative;
   margin: -26px;
   padding: 12px;
@@ -3078,6 +3081,106 @@ grid-template-areas:
 @keyframes tcg-holo-sweep {
   0%, 100% { background-position: 0% 30%; }
   50% { background-position: 100% 70%; }
+}
+
+/* ---------- TCG-card flip: front/back reveal ---------- */
+/* .tcg-flip takes over the flex slot .tcg-card used to sit in directly
+   inside the modal, and carries the -26px bleed margin the card used to
+   apply to itself - now that .tcg-card is one layer deeper (absolutely
+   positioned inside .tcg-flip-inner) it no longer needs that margin. */
+.modal.modal-found .tcg-flip {
+  flex: 1;
+  min-height: 0;
+  margin: -26px;
+  perspective: 1600px;
+  touch-action: pan-y;
+}
+.tcg-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 700ms cubic-bezier(.4, .2, .2, 1);
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.tcg-flip.is-flipped .tcg-flip-inner {
+  transform: rotateY(180deg);
+}
+.tcg-flip-inner .tcg-card {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.tcg-card-back {
+  transform: rotateY(180deg);
+  padding: 0;
+  background: #10101a;
+  animation: none;
+}
+/* Higher specificity than the base .tcg-inner rule (rather than relying
+   on source order) so the back face reliably loses its border/padding
+   even if these rules get reordered later. */
+.tcg-card-back .tcg-inner {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.tcg-back-inner {
+  align-items: center;
+  justify-content: center;
+}
+.tcg-back-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0;
+  display: block;
+}
+.tcg-back-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 2px dashed var(--line);
+  border-radius: 10px;
+  font-family: var(--hud);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-dim);
+  text-align: center;
+  padding: 20px;
+}
+.tcg-flip-hint {
+  position: absolute;
+  z-index: 3;
+  bottom: 8px;
+  right: 8px;
+  font-family: var(--hud);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--ink-dim);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 3px 9px;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tcg-flip-inner { transition: none; }
+}
+
+.modal.modal-found.showing-tcg-back {
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
 }
 
 .tcg-inner {
@@ -3095,7 +3198,7 @@ grid-template-areas:
 
 .tcg-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px 2px; flex-shrink: 0; }
 .tcg-header-left { display: flex; flex-direction: column; gap: 4px; }
-.tcg-name { font-family: var(--hud); font-size: 21px; font-weight: 800; letter-spacing: 0.2px; margin: 0; color: #000; }
+.tcg-name { font-family: "Roboto Slab", var(--hud), serif; font-size: 22px; font-weight: 800; letter-spacing: -0.3px; margin: 0; color: #000; }
 .modal h3.tcg-name { color: #000; margin: 0; }
 .tcg-evo-stage { display: inline-block; width: fit-content; font-family: var(--hud); font-size: 9.5px; font-weight: 800; letter-spacing: 0.4px; text-transform: uppercase; color: var(--ink-dim); background: var(--bg-panel-raised); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
 .tcg-evo-line { font-size: 10.5px; font-weight: 700; font-style: italic; color: var(--ink-dim); }
@@ -3111,7 +3214,7 @@ grid-template-areas:
 }
 
 .tcg-hp-label { font-family: var(--hud); font-size: 10.5px; font-weight: 800; color: var(--ink-dim); letter-spacing: 0.4px; text-align: right; }
-.tcg-hp-value { font-family: var(--hud); font-size: 21px; font-weight: 800; color: var(--ink); text-align: right; }
+.tcg-hp-value { font-family: "Roboto Slab", var(--hud), serif; font-size: 22px; font-weight: 800; letter-spacing: -0.3px; color: var(--ink); text-align: right; }
 .tcg-hp-icon {
   width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
   border: 2px solid var(--line);
@@ -3121,7 +3224,7 @@ grid-template-areas:
 }
 
 .tcg-subbar {
-  background: linear-gradient(180deg, #fdfdfd, #efece4);
+  background: linear-gradient(180deg, #f6efdc, #e9dcc0);
   border: 2px solid var(--line); border-radius: 8px;
   padding: 5px 10px; margin: 2px 2px 10px;
   font-size: 11.5px; font-weight: 700; color: var(--ink-dim);
@@ -3235,32 +3338,65 @@ grid-template-areas:
 .tcg-spark.s3 { bottom: 10%; left: 18%; animation-delay: 1.3s; font-size: 18px; }
 @keyframes tcg-twinkle { 0%,100% { opacity:.65; transform: scale(.85) rotate(0); } 50% { opacity:1; transform: scale(1.3) rotate(15deg); } }
 
-.tcg-dexline {
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  font-size: 10.5px; font-weight: 700; color: var(--ink-dim);
-  margin: 0 6px 6px; flex-shrink: 0;
+.tcg-dexline-wrap {
+  position: relative; z-index: 6; align-self: center; width: fit-content;
+  margin: -15px auto 8px; flex-shrink: 0;
 }
+.tcg-dexline {
+  padding: 2px;
+  background: var(--yellow);
+  clip-path: polygon(0% 50%, 16px 0%, calc(100% - 16px) 0%, 100% 50%, calc(100% - 16px) 100%, 16px 100%);
+  box-shadow: 0 2px 0 rgba(0,0,0,.35);
+}
+.tcg-dexline-fill {
+  display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: nowrap;
+  font-size: 10.5px; font-weight: 800; color: #f4ead0; letter-spacing: 0.3px;
+  padding: 4px 18px;
+  background: var(--line);
+  clip-path: polygon(0% 50%, 15px 0%, calc(100% - 15px) 0%, 100% 50%, calc(100% - 15px) 100%, 15px 100%);
+}
+.tcg-dexline .type-badge-icon {
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,.4));
+  margin-right: -8px;
+}
+.tcg-dexline-flourish {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  pointer-events: none;
+}
+.tcg-dexline-flourish svg { display: block; overflow: visible; }
+.tcg-dexline-flourish-left { right: calc(100% - 1px); }
+.tcg-dexline-flourish-right { left: calc(100% - 1px); transform: translateY(-50%) scaleX(-1); }
 
 .tcg-dates {
   font-size: 10.5px; font-weight: 700; color: var(--ink-dim);
   margin: -4px 6px 10px; flex-shrink: 0;
+  text-align: center;
 }
 
-.tcg-attack { display: flex; align-items: center; gap: 10px; margin: 0 4px 8px; padding-top: 8px; border-top: 1.5px dashed rgba(43,35,32,.25); flex-shrink: 0; }
-.tcg-attack:first-of-type { border-top: none; padding-top: 0; }
-.tcg-attack-cost { display: flex; gap: 4px; flex-shrink: 0; width: 64px; }
-.tcg-energy {
-  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-  border: 1.5px solid var(--line); box-shadow: inset 0 1px 1px rgba(255,255,255,.6), 0 1px 0 rgba(43,35,32,.2);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; line-height: 1;
+.tcg-attack {
+  display: flex; align-items: center; gap: 14px;
+  margin: 0 4px 8px; padding: 3px 20px 3px 5px;
+  background: linear-gradient(180deg, #332920, #1a1512);
+  border: 2px solid var(--yellow);
+  clip-path: polygon(24px 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 24px 100%, 14.8px 96.2%, 7px 85.4%, 1.8px 69.1%, 0px 50%, 1.8px 30.9%, 7px 14.6%, 14.8px 3.8%);
+  box-shadow: 0 2px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  flex-shrink: 0;
 }
-.tcg-attack-name { font-family: var(--hud); font-weight: 700; font-size: 13px; color: var(--ink); flex: 1; }
-.tcg-attack-dmg { font-family: var(--hud); font-weight: 800; font-size: 17px; color: var(--ink); text-align: right; }
+.tcg-attack-cost { display: flex; gap: 4px; flex-shrink: 0; width: 38px; height: 38px; justify-content: center; align-items: center; }
+.tcg-medallion-icon { display: block; flex-shrink: 0; }
+.tcg-energy {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  background: radial-gradient(circle at 35% 30%, #4a3a1a, #1a1512);
+  border: 2px solid var(--yellow); box-shadow: inset 0 1px 2px rgba(255,255,255,.15), 0 1px 2px rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; line-height: 1;
+}
+.tcg-attack-name { font-family: var(--hud); font-weight: 700; font-size: 13px; color: #f4ead0; flex: 1; letter-spacing: 0.2px; }
+.tcg-attack-dmg { font-family: var(--hud); font-weight: 800; font-size: 19px; color: #fff9ec; text-align: right; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
 
 .tcg-wr {
   display: flex;
-  background: linear-gradient(180deg, #fdfdfd, #efece4); border: 2px solid var(--line); border-radius: 8px;
+  background: linear-gradient(180deg, #f6efdc, #e9dcc0); border: 2px solid var(--line); border-radius: 8px;
   overflow: visible; margin: 4px 4px 0; flex-shrink: 0;
 }
 .tcg-wrr-cell { flex: 1; padding: 3px 10px; display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; overflow: visible; }
@@ -3270,7 +3406,7 @@ grid-template-areas:
 
 .tcg-stats-table {
   width: calc(100% - 8px); margin: 8px 4px 0; border-collapse: separate; border-spacing: 0;
-  background: linear-gradient(180deg, #fdfdfd, #efece4); border: 2px solid var(--line); border-radius: 10px;
+  background: linear-gradient(180deg, #f6efdc, #e9dcc0); border: 2px solid var(--line); border-radius: 10px;
   overflow: hidden; flex-shrink: 0; table-layout: fixed;
 }
 .tcg-stats-table tr + tr td { border-top: 1.5px solid rgba(43,35,32,.2); }
