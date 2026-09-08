@@ -3049,13 +3049,22 @@ grid-template-areas:
 
 
 .modal.modal-found {
-  border-color: var(--yellow);
-  box-shadow: 0 8px 0 rgba(43, 35, 32, 0.25), 0 0 0 4px rgba(255, 203, 5, 0.25);
+  border: none;
+  box-shadow: none;
   height: 92vh;
   max-height: 92vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  /* .tcg-flip's front/back faces fully cover this modal (they bleed to
+     its edges via the -26px margin below), so this background only ever
+     showed for an instant at the edge-on midpoint of a swipe-drag - both
+     faces briefly invisible via backface-visibility, revealing the plain
+     white modal background underneath. Transparent here removes that
+     flash and lets the dimmed overlay show through instead, matching the
+     settled showing-tcg-back state below (which already went transparent,
+     just only once a drag had fully finished). */
+  background: transparent;
 }
 
 .modal.modal-found .tcg-card {
@@ -3072,11 +3081,9 @@ grid-template-areas:
   --bg-panel: #f3ead0;
   position: relative;
   margin: -26px;
-  padding: 12px;
+  padding: 10px;
   border-radius: 21px;
-  background: linear-gradient(115deg, #fff9df 0%, var(--type-color) 30%, #fff3c2 45%, var(--type-color) 68%, #fff9df 100%);
-  background-size: 220% 220%;
-  animation: tcg-holo-sweep 5.5s ease-in-out infinite;
+  background: var(--yellow);
 }
 @keyframes tcg-holo-sweep {
   0%, 100% { background-position: 0% 30%; }
