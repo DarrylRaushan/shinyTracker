@@ -9614,7 +9614,9 @@ function setupTcgFlipSwipe(flipEl) {
   var inner = flipEl.querySelector('.tcg-flip-inner');
   if (!inner) return;
 
-  var base = 0;              // settled rotation: 0 = front, 180 = back
+  var base = 0;              // settled rotation: any multiple of 180 (not
+                              // clamped to 0-360) - back face is wherever
+                              // base mod 360 === 180
   var dragging = false;
   var moved = false;
   var startX = 0;
@@ -9637,14 +9639,22 @@ function setupTcgFlipSwipe(flipEl) {
     return target;
   }
 
+  function isBackFace(rot) {
+    return (((rot % 360) + 360) % 360) === 180;
+  }
+
   var modalEl = flipEl.closest('.modal');
 
   function settle(target) {
-    var mod = ((Math.round(target / 180) * 180) % 360 + 360) % 360;
-    base = mod === 180 ? 180 : 0;
+    // Snap to the nearest multiple of 180 *from the dragged angle itself*
+    // (not normalized into 0-360 first), so the settle animation always
+    // continues in the same direction the drag was already going instead
+    // of occasionally reversing course and spinning the long way around.
+    base = Math.round(target / 180) * 180;
     applyRotation(base, true);
-    flipEl.classList.toggle('is-flipped', base === 180);
-    if (modalEl) modalEl.classList.toggle('showing-tcg-back', base === 180);
+    var back = isBackFace(base);
+    flipEl.classList.toggle('is-flipped', back);
+    if (modalEl) modalEl.classList.toggle('showing-tcg-back', back);
   }
 
   flipEl.addEventListener('pointerdown', function(e) {
@@ -9787,8 +9797,6 @@ function openFoundModal(hunt) {
             rarityGlyphMarkup(hunt.denom) +
           '</div>' +
         '</div>' +
-
-        '<span class="tcg-flip-hint">Swipe to flip ↔</span>' +
 
       '</div>' +
       '</div>' +
@@ -10027,8 +10035,6 @@ function openLogEntryCardModal(entry) {
             rarityGlyphMarkup(denom) +
           '</div>' +
         '</div>' +
-
-        '<span class="tcg-flip-hint">Swipe to flip ↔</span>' +
 
       '</div>' +
       '</div>' +
@@ -10329,4 +10335,3 @@ container.appendChild(s);
 
 // Populate the interface from local state immediately. Cloud sync can return
 // later and repaint once the first snapshot arrives.
-renderAll();
