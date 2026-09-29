@@ -4168,16 +4168,16 @@ var over = hunt.encounters >= hunt.denom;
 color = over ? '#ffc23d' : '#63bd41';
 return '<div class="hunt-dex-reticle' + (live ? ' is-live' : '') + '" style="--rt-prog:' + color + ';" aria-hidden="true">' +
 '<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">' +
-'<circle class="rt-prog-track" cx="85" cy="85" r="82.5"/>' +
-'<circle class="rt-prog" cx="85" cy="85" r="82.5" pathLength="100" transform="rotate(-90 85 85)" style="stroke:' + color + ';stroke-dasharray:' + shown + ' 100;"/>' +
+'<circle fill="none" class="rt-prog-track" cx="85" cy="85" r="82.5"/>' +
+'<circle fill="none" class="rt-prog" cx="85" cy="85" r="82.5" pathLength="100" transform="rotate(-90 85 85)" style="stroke:' + color + ';stroke-dasharray:' + shown + ' 100;"/>' +
 '<g class="rt-avg' + (over ? ' is-over' : '') + '" style="transform:rotate(' + avgDeg + 'deg);"><line x1="85" y1="0" x2="85" y2="7.4"/></g>' +
 '<g class="rt-prog-head" style="transform:rotate(' + (shown * 3.6) + 'deg);"><circle cx="85" cy="2.5" r="2.1" style="fill:' + color + ';"/></g>' +
-'<circle class="rt-scale" cx="85" cy="85" r="79" pathLength="72"/>' +
-'<circle class="rt-scale-major" cx="85" cy="85" r="79" pathLength="12"/>' +
-'<circle class="hunt-dex-reticle-ring" cx="85" cy="85" r="70"/>' +
-'<g class="rt-spin rt-ccw" style="' + ph(live ? 26 : 55) + '"><circle class="rt-brackets" cx="85" cy="85" r="74.5" pathLength="360"/></g>' +
-'<g class="rt-spin rt-cw" style="' + ph(live ? 18 : 40) + '"><circle class="rt-dashes" cx="85" cy="85" r="64" pathLength="360"/></g>' +
-'<g class="rt-spin rt-sweep" style="' + ph(live ? 3.2 : 10) + '">' + '<path class="rt-sweep-arc" style="opacity:.16" d="M131.84 32.98 A70 70 0 0 1 144.36 47.91"/><path class="rt-sweep-arc" style="opacity:.4" d="M144.36 47.91 A70 70 0 0 1 152.29 65.71"/><path class="rt-sweep-arc" style="opacity:.85" d="M152.29 65.71 A70 70 0 0 1 155.0 85.0"/>' + '<circle class="hunt-dex-reticle-dot" cx="155" cy="85" r="2.6"/></g>' +
+'<circle fill="none" class="rt-scale" cx="85" cy="85" r="79" pathLength="72"/>' +
+'<circle fill="none" class="rt-scale-major" cx="85" cy="85" r="79" pathLength="12"/>' +
+'<circle fill="none" class="hunt-dex-reticle-ring" cx="85" cy="85" r="70"/>' +
+'<g class="rt-spin rt-ccw" style="' + ph(live ? 26 : 55) + '"><circle fill="none" class="rt-brackets" cx="85" cy="85" r="74.5" pathLength="360"/></g>' +
+'<g class="rt-spin rt-cw" style="' + ph(live ? 18 : 40) + '"><circle fill="none" class="rt-dashes" cx="85" cy="85" r="64" pathLength="360"/></g>' +
+'<g class="rt-spin rt-sweep" style="' + ph(live ? 3.2 : 10) + '">' + '<path fill="none" class="rt-sweep-arc" style="opacity:.16" d="M131.84 32.98 A70 70 0 0 1 144.36 47.91"/><path fill="none" class="rt-sweep-arc" style="opacity:.4" d="M144.36 47.91 A70 70 0 0 1 152.29 65.71"/><path fill="none" class="rt-sweep-arc" style="opacity:.85" d="M152.29 65.71 A70 70 0 0 1 155.0 85.0"/>' + '<circle class="hunt-dex-reticle-dot" cx="155" cy="85" r="2.6"/></g>' +
 '<line class="hunt-dex-reticle-tick" x1="85" y1="6" x2="85" y2="20"/>' +
 '<line class="hunt-dex-reticle-tick" x1="85" y1="150" x2="85" y2="164"/>' +
 '<line class="hunt-dex-reticle-tick" x1="6" y1="85" x2="20" y2="85"/>' +
