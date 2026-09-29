@@ -6,16 +6,24 @@
     <title>Shiny Tracker</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&family=Share+Tech+Mono&family=Press+Start+2P&family=Roboto+Slab:wght@700;800&display=swap" rel="stylesheet">
-    <script type="module">
-      import { animate, stagger } from "https://cdn.jsdelivr.net/npm/motion@latest/+esm";
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&family=Share+Tech+Mono&family=Press+Start+2P&family=Roboto+Slab:wght@700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&family=Share+Tech+Mono&family=Press+Start+2P&family=Roboto+Slab:wght@700;800&display=swap" rel="stylesheet"></noscript>
+    <script type="module" async>
+      import { animate, stagger } from "https://cdn.jsdelivr.net/npm/motion@13.4.4/+esm";
       window.Motion = { animate: animate, stagger: stagger };
     </script>
-    <!-- Google's <model-viewer> web component: powers the Living Dex's "3D
-         View" toggle (see .dex-chip 3D click handling in script.js). Plain
-         custom element, no build step/React needed, so it drops straight
-         into this vanilla page the same way the sprite <img>s do. -->
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <!-- <model-viewer> (Living Dex "3D View") is no longer loaded here: script.js
+         injects it lazily (ensureModelViewer) so it doesn't compete with first paint. -->
+    <!-- Firebase: injected non-blocking (in order) so it never delays first render.
+         The config + initializeApp now live in script.js (connectToCloud). -->
+    <script>
+      ["app", "firestore"].forEach(function(n) {
+        var s = document.createElement("script");
+        s.src = "https://www.gstatic.com/firebasejs/10.12.2/firebase-" + n + "-compat.js";
+        s.async = false;
+        document.head.appendChild(s);
+      });
+    </script>
     <link rel="stylesheet" href="style.css?v=hunt-notepad-10">
   </head>
   <body>
@@ -524,27 +532,7 @@
       </div>
       </div>
     </div>
-    <!-- Firebase (used to sync your tracker data across devices via Firestore) -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-    <script>
-      // Firebase project config (Firebase console > Project settings > General).
-      var firebaseConfig = {
-        apiKey: "AIzaSyDX0UpFkZWQH98w8GuzU9PAD0UJRQte8do",
-        authDomain: "shinytracker-9128f.firebaseapp.com",
-        projectId: "shinytracker-9128f",
-        storageBucket: "shinytracker-9128f.firebasestorage.app",
-        messagingSenderId: "465878753061",
-        appId: "1:465878753061:web:8f17830985c56a2ec444cc",
-        measurementId: "G-77C8511J0P"
-      };
-      try {
-        firebase.initializeApp(firebaseConfig);
-      } catch (e) {
-        console.error('Firebase init failed - check firebaseConfig', e);
-      }
-    </script>
     <!-- Motion is loaded in the document head and powers the mobile carousel. -->
-    <script src="script.js?v=hunt-notepad-10"></script>
+    <script defer src="script.js?v=hunt-notepad-11"></script>
   </body>
 </html>
