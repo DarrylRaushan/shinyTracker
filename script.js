@@ -9768,9 +9768,22 @@ function setupTcgFlipSwipe(flipEl) {
   var DRAG_THRESHOLD = 6;    // px of horizontal movement before it counts as a swipe
   var SENSITIVITY = 0.6;     // degrees rotated per px dragged
 
+  var faceTimer = null;
   function applyRotation(deg, animated) {
     inner.style.transition = animated ? '' : 'none';
     inner.style.transform = 'rotateY(' + deg + 'deg)';
+    // iOS Safari lets parts of the front face (sprite, dex badge) show through
+    // the back and flicker, since backface-visibility isn't reliable there. So
+    // the face pointing away is also hidden outright via .face-back. While
+    // dragging it follows the angle live; for the settle animation it waits
+    // until the card is edge-on so the swap isn't visible.
+    var showBack = Math.cos(deg * Math.PI / 180) < 0;
+    clearTimeout(faceTimer);
+    if (animated) {
+      faceTimer = setTimeout(function() { flipEl.classList.toggle('face-back', showBack); }, 350);
+    } else {
+      flipEl.classList.toggle('face-back', showBack);
+    }
   }
 
   function clampToOneFlip(target) {
