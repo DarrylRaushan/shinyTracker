@@ -1,4 +1,5 @@
 
+
 (function() {
 var shown = 0;
 window.addEventListener('error', function(e) {
@@ -10752,8 +10753,10 @@ if (!gate) return;
 var userBtn = document.getElementById('btn-profile-user1');
 var guestBtn = document.getElementById('btn-profile-guest');
 var sub = document.getElementById('profile-gate-sub');
+document.body.classList.add('profile-gate-open');
 function closeGate() {
 gate.classList.add('is-hidden');
+document.body.classList.remove('profile-gate-open');
 }
 userBtn.addEventListener('click', closeGate);
 guestBtn.addEventListener('click', function() {
@@ -10789,10 +10792,14 @@ if (isGuest && k === STORE_KEY) return;
 return _origRemoveItem.apply(this, arguments);
 };
 } catch (e) {}
-document.body.classList.add('is-guest');
 renderAll();
+// Close the gate first, then reveal guest chrome + tips — avoids the
+// gate/tips/app stacking into one messy screen on mobile.
 closeGate();
-setTimeout(function() { if (window.startGuestTips) window.startGuestTips(); }, 350);
+document.body.classList.add('is-guest');
+setTimeout(function() {
+if (window.startGuestTips) window.startGuestTips();
+}, 400);
 } else {
 setTimeout(waitForData, 100);
 }
