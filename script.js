@@ -9755,6 +9755,7 @@ function setupTcgFlipSwipe(flipEl) {
   if (!flipEl) return;
   var inner = flipEl.querySelector('.tcg-flip-inner');
   if (!inner) return;
+  flipEl.classList.add('face-tracked');
 
   var base = 0;              // settled rotation: any multiple of 180 (not
                               // clamped to 0-360) - back face is wherever
