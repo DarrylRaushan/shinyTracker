@@ -3222,11 +3222,95 @@ grid-template-areas:
    apply to itself - now that .tcg-card is one layer deeper (absolutely
    positioned inside .tcg-flip-inner) it no longer needs that margin. */
 .modal.modal-found .tcg-flip {
-  flex: 1;
-  min-height: 0;
-  margin: -26px;
+  /* Real trading-card proportions (63 x 88), same as the card-back art, so
+     front and back are the same shape. Width keeps the old -26px bleed
+     (100% + 52px) but is capped so the height never exceeds the modal. */
+  position: relative;
+  flex: none;
+  align-self: center;
+  margin: auto 0;
+  width: min(calc(100% + 52px), calc((92vh + 52px) * 63 / 88));
+  aspect-ratio: 63 / 88;
+  container-type: inline-size;
   perspective: 1600px;
   touch-action: pan-y;
+}
+.modal.modal-found .tcg-flip-inner {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+}
+/* ---------- Front face: layout redesigned for the 63x88 card ----------
+   Real sizes (no scaling). Time Hunted / Odds sit side by side, the header
+   and credit line are one row each, and the sprite window takes whatever
+   height is left. Grid rows follow the markup order: header, art, dex line,
+   dates, [time, odds], weakness, stats table, credit. */
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto minmax(90px, 1fr) auto auto auto auto auto auto;
+  column-gap: 8px;
+  row-gap: 6px;
+  padding: 12px;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-inner > * { grid-column: 1 / -1; min-width: 0; }
+
+/* Header: name + stage tag share a line, soft resets on the right */
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-header { padding: 0 2px; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-header-left {
+  flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-evo-line { flex-basis: 100%; }
+
+/* Sprite window: fills the leftover height */
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-art { margin: 0; max-height: none; min-height: 90px; }
+
+/* Dex number badge overlaps the bottom edge of the art, dates tuck under it */
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-dexline-wrap {
+  justify-self: center; align-self: center; margin: -20px 0 0;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-dates { margin: -2px 0 0; }
+
+/* Time Hunted / Odds: two half-width pills, icon left, label over value */
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-inner > .tcg-attack {
+  grid-column: auto;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-areas: "icon name" "icon dmg";
+  column-gap: 8px; row-gap: 0;
+  align-items: center; align-content: center;
+  padding: 5px 20px 5px 7px;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-cost { grid-area: icon; width: 34px; height: 34px; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-medallion-icon { width: 34px; height: 34px; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-name {
+  grid-area: name; flex: none; font-size: 11.5px; line-height: 1.2; color: var(--ink-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-dmg {
+  grid-area: dmg; text-align: left; font-size: 20px; line-height: 1.1; white-space: nowrap;
+}
+@container (max-width: 400px) {
+  .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-inner > .tcg-attack {
+    grid-template-columns: 28px minmax(0, 1fr); column-gap: 6px; padding: 5px 16px 5px 6px;
+  }
+  .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-cost,
+  .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-medallion-icon { width: 28px; height: 28px; }
+  .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-name { font-size: 10.5px; }
+  .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-dmg { font-size: 17px; }
+}
+
+/* Weakness / resistance and the stats table: full width, spacing from the grid */
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-wr { margin: 0; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-stats-table { width: 100%; margin: 0; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-stats-table td { padding: 6px 10px; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-stats-value { font-size: 13px; }
+
+/* Credit line: illustrator/generation on the left, card number on the right */
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-credit {
+  flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px;
 }
 .tcg-flip-inner {
   position: relative;
@@ -3252,7 +3336,9 @@ grid-template-areas:
 .tcg-card-back {
   transform: rotateY(180deg);
   padding: 0;
-  background: #10101a;
+  /* Transparent (was #10101a): the card-back image is shorter than this
+     face, so contain-fit left dark letterbox bars above and below it. */
+  background: transparent;
   animation: none;
 }
 /* Higher specificity than the base .tcg-inner rule (rather than relying
@@ -3269,10 +3355,14 @@ grid-template-areas:
   justify-content: center;
 }
 .tcg-back-image {
+  /* Width-fit with natural height, so the <img> box hugs the artwork
+     instead of being a taller box with empty bars inside it. */
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 100%;
   object-fit: contain;
-  border-radius: 0;
+  /* Rounds off the artwork's square white corners (matches the card frame). */
+  border-radius: 22px;
   display: block;
 }
 .tcg-back-placeholder {
@@ -3477,15 +3567,15 @@ grid-template-areas:
 }
 .tcg-dexline {
   padding: 2px;
-  background: var(--yellow);
+  background: var(--line);
   clip-path: polygon(0% 50%, 16px 0%, calc(100% - 16px) 0%, 100% 50%, calc(100% - 16px) 100%, 16px 100%);
   box-shadow: 0 2px 0 rgba(0,0,0,.35);
 }
 .tcg-dexline-fill {
   display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: nowrap;
-  font-size: 10.5px; font-weight: 800; color: #f4ead0; letter-spacing: 0.3px;
+  font-size: 10.5px; font-weight: 800; color: var(--ink); letter-spacing: 0.3px;
   padding: 4px 18px;
-  background: var(--line);
+  background: linear-gradient(180deg, #f6efdc, #e9dcc0);
   clip-path: polygon(0% 50%, 15px 0%, calc(100% - 15px) 0%, 100% 50%, calc(100% - 15px) 100%, 15px 100%);
 }
 .tcg-dexline .type-badge-icon {
@@ -3507,14 +3597,22 @@ grid-template-areas:
 }
 
 .tcg-attack {
+  position: relative;
   display: flex; align-items: center; gap: 14px;
-  margin: 0 4px 8px; padding: 3px 20px 3px 5px;
-  background: linear-gradient(180deg, #332920, #1a1512);
-  border: 2px solid var(--yellow);
+  margin: 0 4px 8px; padding: 5px 22px 5px 7px;
+  /* The outer shape is the outline colour; ::before below is the cream fill,
+     inset 2px with the same shape, so the outline follows the curved left end
+     and pointed right end (a plain border gets cut off by the clip-path). */
+  background: var(--line);
   clip-path: polygon(24px 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 24px 100%, 14.8px 96.2%, 7px 85.4%, 1.8px 69.1%, 0px 50%, 1.8px 30.9%, 7px 14.6%, 14.8px 3.8%);
-  box-shadow: 0 2px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
   flex-shrink: 0;
 }
+.tcg-attack::before {
+  content: ""; position: absolute; inset: 2px; z-index: 0; pointer-events: none;
+  background: linear-gradient(180deg, #f6efdc, #e9dcc0);
+  clip-path: polygon(22px 0%, calc(100% - 13px) 0%, 100% 50%, calc(100% - 13px) 100%, 22px 100%, 13.3px 96.2%, 5.7px 85.4%, 0.9px 69.1%, 0px 50%, 0.9px 30.9%, 5.7px 14.6%, 13.3px 3.8%);
+}
+.tcg-attack > * { position: relative; z-index: 1; }
 .tcg-attack-cost { display: flex; gap: 4px; flex-shrink: 0; width: 38px; height: 38px; justify-content: center; align-items: center; }
 .tcg-medallion-icon { display: block; flex-shrink: 0; }
 .tcg-energy {
@@ -3524,8 +3622,16 @@ grid-template-areas:
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; line-height: 1;
 }
-.tcg-attack-name { font-family: var(--hud); font-weight: 700; font-size: 13px; color: #f4ead0; flex: 1; letter-spacing: 0.2px; }
-.tcg-attack-dmg { font-family: var(--hud); font-weight: 800; font-size: 19px; color: #fff9ec; text-align: right; text-shadow: 0 1px 2px rgba(0,0,0,.5); }
+.tcg-attack-name { font-family: var(--hud); font-weight: 700; font-size: 13px; color: var(--ink); flex: 1; letter-spacing: 0.2px; }
+.tcg-attack-dmg { font-family: var(--hud); font-weight: 800; font-size: 19px; color: var(--ink); text-align: right; }
+/* Medallion icons: light face + dark ink detail so they read on the cream bars */
+.tcg-attack .tcg-medallion-icon circle:nth-of-type(1) { fill: #fff9df; stroke: var(--yellow); }
+.tcg-attack .tcg-medallion-icon circle:nth-of-type(2) { stroke: var(--line); }
+.tcg-attack .tcg-medallion-icon circle:nth-of-type(3) { fill: var(--line); }
+.tcg-attack .tcg-medallion-icon g,
+.tcg-attack .tcg-medallion-icon line,
+.tcg-attack .tcg-medallion-icon polygon,
+.tcg-attack .tcg-medallion-icon polyline { stroke: var(--line); }
 
 .tcg-wr {
   display: flex;
