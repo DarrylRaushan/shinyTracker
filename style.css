@@ -998,7 +998,8 @@ transform: scale(1.19) translateY(-6%);
 position: absolute;
 inset: 0;
 pointer-events: none;
-z-index: 2;
+/* Below the sprite (.hunt-dex-portrait is z-index 1) so the ring never covers it. */
+z-index: 0;
 animation: huntDexReticlePulse 2.4s ease-in-out infinite;
 }
 .hunt-dex-reticle svg {
@@ -1244,6 +1245,9 @@ align-items: center;
 gap: 6px;
 flex-wrap: nowrap;
 margin-top: 10px;
+/* nudged up a touch without shifting anything below it */
+position: relative;
+top: -6px;
 }
 .hunt-info-cell {
 flex: 0 1 auto;
@@ -14138,4 +14142,319 @@ padding: 2px 3px;
 #view-collection .log-overview-panel,
 #view-collection .log-stats-panel {
   border-color: #5c2a12 !important;
+}
+
+/* =====================================================================
+   HUNT CARD BOTTOM REDESIGN (size-neutral: the card shell keeps its
+   original height - spacing below is tuned so the new info bar + LCD
+   panel fit the same vertical space the old pills + readout + gauge used;
+   the compact values live in the max-width:600px block at the end)
+   (1) Spec strip: Game / Method / Odds as labelled segments (small caption
+       above the value, colored accent edge, value wraps to 2 lines instead
+       of truncating with an ellipsis).
+   (2) LCD panel: Encounters is the hero number, Time + Odds stack beside it,
+       and the odds bar lives inside the panel as a segmented LED gauge with
+       a 1x-average notch. Placed last so it wins over the earlier sizing/
+       media-query rules for these same classes.
+   ===================================================================== */
+.hunt-info-bar {
+align-items: stretch;
+gap: 5px;
+margin-top: 10px;
+}
+.hunt-info-bar .hunt-info-cell {
+flex-direction: column;
+align-items: flex-start;
+justify-content: center;
+gap: 1px;
+padding: 5px 8px 6px 9px;
+border-radius: 9px;
+background: rgba(255, 255, 255, 0.66);
+border: 1px solid rgba(43, 35, 32, 0.16);
+border-left: 3px solid var(--cell-accent, #8d9a86);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+min-width: 0;
+}
+.hunt-info-bar .hunt-info-cell::before {
+font-family: var(--mono);
+font-weight: 700;
+font-size: 7px;
+line-height: 1;
+letter-spacing: 1.3px;
+text-transform: uppercase;
+color: #6d7c66;
+}
+.hunt-info-bar .hunt-info-game { flex: 1.3 1 0; }
+.hunt-info-bar .hunt-info-method { flex: 1.1 1 0; --cell-accent: var(--method-color, #8d9a86); }
+.hunt-info-bar .hunt-info-odds { flex: 0 0 auto; --cell-accent: var(--odds-c1, #b9a24a); }
+.hunt-info-game::before { content: "Game"; }
+.hunt-info-method::before { content: "Method"; }
+.hunt-info-odds::before { content: "Odds"; }
+.hunt-info-bar .hunt-info-cell .hunt-info-label {
+display: -webkit-box;
+-webkit-box-orient: vertical;
+-webkit-line-clamp: 2;
+white-space: normal;
+overflow: hidden;
+text-overflow: clip;
+font-size: 12px;
+line-height: 1.15;
+}
+.hunt-info-bar .hunt-info-odds .hunt-info-label {
+white-space: nowrap;
+-webkit-line-clamp: 1;
+}
+
+.hunt-dex-readout {
+display: block;
+margin-top: 8px;
+padding: 8px 12px 7px;
+border-radius: 12px;
+background: linear-gradient(180deg, #14231a, #0d1611);
+box-shadow: inset 0 0 0 1px rgba(157, 255, 176, 0.18), inset 0 0 18px rgba(0, 0, 0, 0.5);
+overflow: hidden;
+}
+.hunt-dex-readout::after {
+content: "";
+position: absolute;
+inset: 0;
+border-radius: inherit;
+background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 3px);
+pointer-events: none;
+}
+.hunt-dex-readout .hdx-top {
+display: flex;
+align-items: stretch;
+}
+.hunt-dex-readout .cell {
+flex: none;
+text-align: left;
+border-right: none;
+}
+.hunt-dex-readout .cell-hero {
+flex: 1 1 46%;
+padding-right: 10px;
+border-right: 1px solid rgba(157, 255, 176, 0.18);
+display: flex;
+flex-direction: column;
+justify-content: center;
+}
+.hunt-dex-readout .hdx-side {
+flex: 1 1 54%;
+padding-left: 12px;
+display: flex;
+flex-direction: column;
+justify-content: center;
+gap: 6px;
+min-width: 0;
+}
+.hunt-dex-readout .hdx-side .cell {
+display: flex;
+flex-direction: column;
+gap: 1px;
+}
+.hunt-dex-readout .lbl {
+display: flex;
+align-items: center;
+gap: 4px;
+margin: 0;
+font-size: 7.5px;
+letter-spacing: 1px;
+color: #5c9e6a;
+}
+.hunt-dex-readout .cell-icon {
+display: inline-flex;
+width: 10px;
+height: 10px;
+margin: 0;
+opacity: 0.9;
+}
+.hunt-dex-readout .num {
+font-size: 15px;
+line-height: 1.1;
+white-space: nowrap;
+}
+.hunt-dex-readout .cell-hero .num {
+font-size: clamp(24px, 8.5vw, 32px);
+line-height: 1.05;
+margin-top: 2px;
+}
+.hunt-dex-readout .hunt-dex-gauge {
+margin-top: 7px;
+}
+.hunt-dex-readout .hunt-dex-bar-track {
+margin-top: 0;
+height: 9px;
+border-radius: 3px;
+background: rgba(157, 255, 176, 0.07);
+background-image: none;
+border: 1px solid rgba(157, 255, 176, 0.28);
+}
+.hunt-dex-readout .hunt-dex-bar-inner {
+border-radius: 2px;
+-webkit-mask-image: repeating-linear-gradient(90deg, #000 0, #000 calc(5% - 1.5px), transparent calc(5% - 1.5px), transparent 5%);
+mask-image: repeating-linear-gradient(90deg, #000 0, #000 calc(5% - 1.5px), transparent calc(5% - 1.5px), transparent 5%);
+}
+.hunt-dex-readout .hunt-dex-bar-marker {
+width: 3px;
+height: 15px;
+border-radius: 2px;
+border: none;
+background: #eaffef;
+box-shadow: 0 0 6px rgba(234, 255, 239, 0.9), 0 0 2px var(--bar-c2, #63bd41);
+}
+.hunt-dex-bar-avg {
+position: absolute;
+top: -3px;
+bottom: -3px;
+width: 2px;
+margin-left: -1px;
+border-radius: 1px;
+background: #b9a24a;
+opacity: 0.8;
+}
+.hunt-dex-bar-avg.is-over {
+background: #ffc23d;
+opacity: 1;
+box-shadow: 0 0 5px #ffc23d;
+}
+.hunt-dex-readout .hunt-dex-bar-caption {
+margin-top: 5px;
+font-size: 8px;
+letter-spacing: 0.8px;
+color: #5c9e6a;
+text-transform: uppercase;
+}
+
+/* Mobile: slimmer readout panel; the height it frees up is handed back as
+   spacing (bar/panel margins + screen bottom padding) so the shell stays the
+   same size */
+@media (max-width: 600px) {
+.hunt-info-bar { margin-top: 10px; }
+.hunt-info-bar .hunt-info-cell { padding: 3px 8px 4px 9px; gap: 1px; }
+.hunt-info-bar .hunt-info-cell::before { font-size: 6.5px; }
+.hunt-info-bar .hunt-info-cell .hunt-info-label { font-size: 11px; line-height: 1.05; }
+.hunt-dex-readout { margin-top: 8px; padding: 4px 10px 3px; border-radius: 10px; }
+.hunt-dex-readout .cell-hero { padding-right: 8px; }
+.hunt-dex-readout .hdx-side { gap: 1px; padding-left: 10px; }
+.hunt-dex-readout .lbl { font-size: 6.5px; line-height: 1; letter-spacing: 0.9px; }
+.hunt-dex-readout .cell-icon { width: 8px; height: 8px; }
+.hunt-dex-readout .num { font-size: 12px; line-height: 1; }
+.hunt-dex-readout .cell-hero .num { font-size: clamp(18px, 6vw, 22px); line-height: 1; margin-top: 0; }
+.hunt-dex-readout .hunt-dex-gauge { margin-top: 3px; }
+.hunt-dex-readout .hunt-dex-bar-track { height: 6px; }
+.hunt-dex-readout .hunt-dex-bar-marker { height: 10px; }
+.hunt-dex-bar-avg { top: -2px; bottom: -2px; }
+.hunt-dex-screen { padding-bottom: 11px; }
+.hunt-dex-readout .hunt-dex-bar-caption { margin-top: 2px; font-size: 6.5px; line-height: 1; letter-spacing: 0.7px; }
+}
+
+/* Time Spent / Odds So Far: larger + brighter; panel box height unchanged
+   (padding/gauge gaps trimmed by the same amount the text grew) */
+@media (max-width: 600px) {
+.hunt-dex-readout { padding: 2px 10px 2px; }
+.hunt-dex-readout .hdx-side { gap: 0px; }
+.hunt-dex-readout .hdx-side .lbl { font-size: 8px; line-height: 1; color: #86dc9a; letter-spacing: 0.7px; }
+.hunt-dex-readout .hdx-side .cell-icon { width: 8px; height: 8px; }
+.hunt-dex-readout .hdx-side .num { font-size: 15px; line-height: 1; }
+.hunt-dex-readout .hunt-dex-gauge { margin-top: 2px; }
+.hunt-dex-readout .hunt-dex-bar-caption { margin-top: 1px; }
+}
+
+/* Encounters / Time Spent / Odds So Far values sit under their label TEXT (indented past
+   the icon = icon width 8px + label gap 4px), not under the icon */
+@media (max-width: 600px) {
+.hunt-dex-readout .hdx-side { padding-left: 8px; }
+.hunt-dex-readout .hdx-side .num,
+.hunt-dex-readout .cell-hero .num { padding-left: 12px; }
+}
+
+/* Encounters number nudged down a bit (visual offset only - no layout/height change) */
+@media (max-width: 600px) {
+.hunt-dex-readout .cell-hero .num { position: relative; top: 4px; }
+}
+
+/* Readout container: flat info panel printed directly on the LCD - flat solid
+   fill, no inset/sunken shadow. Colors only - spacing and
+   layout are untouched. The Odds So Far value
+   keeps its dynamic green->red color from JS, darkened for contrast. */
+.hunt-dex-readout {
+color: #2b3a2e;
+/* Rails: full-width ink rules top and bottom, short ticks at the four ends */
+background:
+linear-gradient(#2b2320, #2b2320) top / 100% 2px no-repeat,
+linear-gradient(#2b2320, #2b2320) bottom / 100% 2px no-repeat,
+linear-gradient(#2b2320, #2b2320) left top / 2px 8px no-repeat,
+linear-gradient(#2b2320, #2b2320) right top / 2px 8px no-repeat,
+linear-gradient(#2b2320, #2b2320) left bottom / 2px 8px no-repeat,
+linear-gradient(#2b2320, #2b2320) right bottom / 2px 8px no-repeat,
+#cfe5c9;
+box-shadow: none;
+border-radius: 0;
+/* Top rail raised 3px: panel edge moves up by the margin, padding hands the
+   same 3px back so the text and everything below stay where they were */
+margin-top: 5px;
+padding-top: 11px;
+/* Bottom rail lowered 5px the same way: padding adds the room, negative
+   margin lets the panel extend into the screen's own bottom padding so
+   nothing below it moves */
+padding-bottom: 12px;
+margin-bottom: -5px;
+}
+/* Mobile: the padding trimmed here (3px total) is spent on bigger contents so
+   the rails stay exactly where they are while the text fills the panel */
+@media (max-width: 600px) {
+.hunt-dex-readout {
+padding-top: 4px;
+padding-bottom: 5px;
+}
+.hunt-dex-readout .hdx-side .num { font-size: 11px; }
+.hunt-dex-readout .cell-hero .num { font-size: clamp(14px, 4.4vw, 17px); }
+.hunt-dex-readout .hunt-dex-bar-track { height: 7px; }
+.hunt-dex-readout .hunt-dex-bar-marker { height: 11px; }
+.hunt-dex-readout .hunt-dex-bar-caption { font-size: 7px; }
+}
+.hunt-dex-readout::after {
+background: none;
+}
+.hunt-dex-readout .cell-hero {
+border-right: 2px dotted rgba(43, 35, 32, 0.4);
+}
+.hunt-dex-readout .lbl,
+.hunt-dex-readout .hdx-side .lbl {
+color: #55705c;
+}
+.hunt-dex-readout .cell-icon {
+color: #55705c;
+opacity: 1;
+}
+.hunt-dex-readout .num {
+font-family: var(--pixel);
+color: #2b3a2e;
+text-shadow: none;
+}
+/* Press Start 2P is one em wide per glyph, so sizes are stepped down to fit */
+.hunt-dex-readout .hdx-side .num { font-size: 11px; }
+.hunt-dex-readout .cell-hero .num { font-size: clamp(16px, 4vw, 20px); }
+.hunt-dex-readout .hdx-side .cell:last-child .num {
+filter: brightness(0.62) saturate(1.5);
+}
+.hunt-dex-readout .hunt-dex-bar-track {
+background: rgba(43, 35, 32, 0.07);
+border-color: rgba(43, 35, 32, 0.32);
+}
+.hunt-dex-readout .hunt-dex-bar-marker {
+background: #2b2320;
+box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.8);
+}
+.hunt-dex-bar-avg {
+background: #a5760a;
+opacity: 0.9;
+}
+.hunt-dex-bar-avg.is-over {
+background: #e08a00;
+box-shadow: 0 0 4px rgba(224, 138, 0, 0.6);
+}
+.hunt-dex-readout .hunt-dex-bar-caption {
+color: #55705c;
 }
