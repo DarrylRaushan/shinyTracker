@@ -1026,6 +1026,72 @@ opacity: 0.6;
 .hunt-dex-reticle-dot {
 fill: #63bd41;
 }
+/* ---- Target ring extras: tick scale, lock-on brackets, radar sweep ---- */
+.hunt-dex-reticle svg {
+filter: drop-shadow(0 0 2px rgba(99, 189, 65, 0.45));
+}
+.rt-scale,
+.rt-scale-major {
+fill: none;
+stroke: #63bd41;
+}
+.rt-scale {
+stroke-width: 3;
+stroke-dasharray: 0.12 0.88;
+stroke-dashoffset: 0.06;
+opacity: 0.55;
+}
+.rt-scale-major {
+stroke-width: 5.5;
+stroke-dasharray: 0.045 0.955;
+stroke-dashoffset: 0.0225;
+opacity: 0.9;
+}
+.rt-brackets {
+fill: none;
+stroke: #63bd41;
+stroke-width: 2;
+stroke-linecap: round;
+stroke-dasharray: 46 44;
+opacity: 0.85;
+}
+.rt-dashes {
+fill: none;
+stroke: #63bd41;
+stroke-width: 1;
+stroke-dasharray: 5 5;
+opacity: 0.4;
+}
+.rt-sweep-arc {
+fill: none;
+stroke: #63bd41;
+stroke-width: 3.2;
+stroke-linecap: round;
+}
+.rt-chevron {
+fill: #63bd41;
+opacity: 0.85;
+}
+.rt-pip {
+fill: #eaf7e2;
+stroke: #63bd41;
+stroke-width: 1.2;
+}
+.hunt-dex-reticle .rt-spin {
+transform-box: view-box;
+transform-origin: 85px 85px;
+}
+.rt-cw { animation: huntDexReticleSpin 40s linear infinite; }
+.rt-ccw { animation: huntDexReticleSpin 55s linear infinite reverse; }
+.rt-sweep { animation: huntDexReticleSpin 10s linear infinite; opacity: 0.35; }
+/* Live hunt: everything spins up and the sweep goes full brightness. */
+.hunt-dex-reticle.is-live .rt-cw { animation-duration: 18s; }
+.hunt-dex-reticle.is-live .rt-ccw { animation-duration: 26s; }
+.hunt-dex-reticle.is-live .rt-sweep { animation-duration: 3.2s; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+.hunt-dex-reticle,
+.hunt-dex-reticle .rt-spin { animation: none !important; }
+}
 @keyframes huntDexReticleSpin {
 from { transform: rotate(0deg); }
 to { transform: rotate(360deg); }
