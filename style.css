@@ -1,3 +1,4 @@
+
 :root{--bg: #30adff;
 --log-v2-toolbar-cols: 1.25fr 1fr 1fr;
 --log-v2-toolbar-cols-mobile: 1.15fr 1fr 1fr;
@@ -53,29 +54,20 @@ html.modal-open body {
 overflow: hidden;
 height: 100%;
 }
-body.bg-hunts {
-background-image: url("images/bg-dex.png");
-background-size: cover;
-background-position: center;
-background-repeat: no-repeat;
-background-attachment: fixed;
-background-color: #30adff;
-}
-body.bg-log {
-background-image: url("images/bg-dex.png");
-background-size: cover;
-background-position: center;
-background-repeat: no-repeat;
-background-attachment: fixed;
-background-color: #30adff;
-}
+body.bg-hunts,
+body.bg-log,
 body.bg-dex {
 background-image: url("images/bg-dex.png");
 background-size: cover;
 background-position: center;
 background-repeat: no-repeat;
 background-attachment: fixed;
-background-color: #239cd0;
+/* Grass-matched fallback so a solid blue bar never peeks under the art
+   (common when background-attachment:fixed is ignored on mobile). */
+background-color: #5cb85c;
+}
+html {
+background-color: #5cb85c;
 }
 #stars {
 position: fixed;
@@ -2816,8 +2808,6 @@ inset 0 3px 8px rgba(0, 0, 0, 0.28),
 width: 100%;
 height: 100%;
 object-fit: contain;
-image-rendering: pixelated;
-image-rendering: crisp-edges;
 }
 .hunt-radar-orb .fallback-letter {
 font-family: var(--hud);
@@ -3538,7 +3528,7 @@ grid-template-areas:
   border: 2px solid var(--line); box-shadow: 0 2px 4px rgba(43,35,32,.3);
   align-items: center; justify-content: center; overflow: hidden;
 }
-.tcg-preevo img { width: 85%; height: 85%; object-fit: contain; image-rendering: pixelated; }
+.tcg-preevo img { width: 85%; height: 85%; object-fit: contain; }
 .tcg-preevo .fallback-letter { font-family: var(--hud); font-size: 16px; font-weight: 800; color: var(--ink); }
 
 .tcg-sprite-wrap {
@@ -3551,7 +3541,7 @@ grid-template-areas:
 .tcg-sprite-wrap:active { transform: scale(0.97); }
 @keyframes tcg-sprite-pop { 0% { transform: scale(.5) rotate(-8deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 .tcg-sprite-wrap img {
-  width: min(78%, 260px); height: min(78%, 260px); object-fit: contain; image-rendering: pixelated;
+  width: min(78%, 260px); height: min(78%, 260px); object-fit: contain;
   filter: drop-shadow(0 6px 8px rgba(43,35,32,.3));
 }
 .tcg-sprite-wrap .fallback-letter {
@@ -9849,15 +9839,13 @@ flex: 1 1 auto;
 width: 100%;
 min-height: 0;
 display: flex;
-/* flex-start (not center) so the sprite - and the name row right after
-   it - sit near the top of this box instead of centering vertically
-   inside it, which was leaving a big dead gap below them. This container
-   defaults to flex-direction:row, so align-items (not justify-content)
-   is the vertical axis here. */
-align-items: flex-start;
+/* flex-end sits the sprite just above the name instead of floating at
+   the top of the chip with a large empty gap underneath. */
+align-items: flex-end;
 justify-content: center;
 position: relative;
 z-index: 1;
+padding-bottom: 2px;
 }
 .dex-chip-sprite img {
 max-width: 82%;
@@ -9883,56 +9871,20 @@ transition: filter 0.3s ease;
    classifies each species - see that function for the exact tier rules.
    A 2-stage line's final evo (e.g. Raichu) is deliberately left at the
    normal scale, unboosted. */
-.dex-chip.dex-chip-stage-boost .dex-chip-sprite img {
-transform: scale(2.2);
-/* Default transform-origin (center) grows the enlarged sprite equally
-   up and down, so the extra size from the boost above was bleeding
-   downward into the name text below it. Anchoring the origin below
-   center (rather than all the way at the bottom) makes the boost grow
-   more upward than downward without overshooting and floating the
-   sprite too high in the chip. */
-transform-origin: 50% 65%;
+/* Base forms only (exclude finals that also carry stage-boost). */
+.dex-chip.dex-chip-stage-boost:not(.dex-chip-stage-boost-final) .dex-chip-sprite img {
+transform: scale(2.2) translateY(14%);
+transform-origin: 50% 70%;
 }
-/* Middle evolutions (stage 1+, not yet final - e.g. Charmeleon) sit
-   between basic and final in the boost hierarchy: basic and final forms
-   both stay at the 2.2 scale above (see applyEvoStageBoosts in script.js
-   for why those two ended up landing on the same number - their sprites'
-   own baked-in padding naturally makes finals read bigger than basics at
-   an identical scale, so no separate value was needed for either end),
-   but a middle evo needs a nudge past that shared 2.2 to actually read as
-   "bigger than basic" instead of blending in with it. */
+/* Middle / 1st-stage evolutions (e.g. Charmeleon, Ivysaur). */
 .dex-chip.dex-chip-stage-boost-mid .dex-chip-sprite img {
-transform: scale(2.6);
+transform: scale(2.6) translateY(12%);
+transform-origin: 50% 70%;
+}
+/* Final-evo boost for 3+-stage lines (all gens, pixel sprites). */
+.dex-chip.dex-chip-stage-boost-final .dex-chip-sprite img {
+transform: scale(2.4);
 transform-origin: 50% 65%;
-}
-/* Paldea-only sprite downsize: gen 9 sprites read noticeably larger than
-   the other gen boxes at the shared scale above, so this scopes a smaller
-   set of scale values to just .dex-card[data-gen="9"] without touching
-   any other generation's sprite sizing. */
-.dex-card[data-gen="9"] .dex-chip-sprite img {
-transform: scale(1.05);
-}
-.dex-card[data-gen="9"] .dex-chip.dex-chip-stage-boost .dex-chip-sprite img {
-transform: scale(1.32);
-transform-origin: 50% 65%;
-}
-.dex-card[data-gen="9"] .dex-chip.dex-chip-stage-boost-mid .dex-chip-sprite img {
-transform: scale(1.7);
-transform-origin: 50% 65%;
-}
-/* Final-evo only (3+-stage lines) bumped up a step past the shared basic
-   scale above - dex-chip-stage-boost-final is an additional class added
-   in script.js (applyEvoStageBoosts) only for final-stage species, layered
-   on top of dex-chip-stage-boost so basics keep the normal size. */
-.dex-card[data-gen="9"] .dex-chip.dex-chip-stage-boost-final .dex-chip-sprite img {
-transform: scale(2.1);
-transform-origin: 50% 65%;
-}
-/* Smaller Paldea sprites would otherwise float near the top of the box
-   (inherited flex-start alignment), leaving a gap above the name - anchor
-   them to the bottom of the sprite area instead, right above the name. */
-.dex-card[data-gen="9"] .dex-chip-sprite {
-align-items: flex-end;
 }
 .dex-chip-sprite .fallback-letter {
 font-family: var(--hud);
@@ -11953,8 +11905,6 @@ max-height: 100%;
 width: auto;
 height: auto;
 object-fit: contain;
-image-rendering: pixelated;
-image-rendering: crisp-edges;
 filter: drop-shadow(0 0 5px rgba(110, 225, 255, 0.5));
 /* Visual-only upsize - change this to make the sprite bigger/smaller
    without touching .model3d-hud-sprite's width/height above (which
@@ -12156,8 +12106,6 @@ animation: none;
 width: 100%;
 height: auto;
 object-fit: contain;
-image-rendering: pixelated;
-image-rendering: crisp-edges;
 }
 .model3d-scan-sprite .fallback-letter {
 font-family: var(--mono);
@@ -14621,3 +14569,322 @@ box-shadow: 0 0 4px rgba(224, 138, 0, 0.6);
 .hunt-dex-readout .hunt-dex-bar-caption {
 color: #55705c;
 }
+
+/* ===== Profile gate (User1 / Guest) ===== */
+.profile-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(22, 32, 92, 0.94);
+  font-family: var(--body);
+}
+.profile-gate.is-hidden { display: none; }
+.profile-gate-card {
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  background: var(--bg-panel, #fff);
+  color: var(--ink, #2b2320);
+  border: 3px solid var(--line, #2b2320);
+  border-radius: var(--radius, 20px);
+  padding: 26px 22px 20px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.25);
+}
+.profile-gate-title {
+  margin: 0 0 4px;
+  font-family: var(--hud, sans-serif);
+  font-size: 28px;
+  font-weight: 800;
+}
+.profile-gate-sub {
+  margin: 0 0 18px;
+  color: var(--ink-dim, #8a7a68);
+  font-weight: 700;
+}
+.profile-gate-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.profile-gate-btn {
+  font-family: var(--hud, sans-serif);
+  font-size: 20px;
+  font-weight: 800;
+  padding: 12px 16px;
+  border: 3px solid var(--line, #2b2320);
+  border-radius: 14px;
+  cursor: pointer;
+  color: #fff;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+}
+.profile-gate-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+.profile-gate-btn:disabled { opacity: 0.6; cursor: default; }
+.profile-gate-user { background: var(--red, #ee1515); }
+.profile-gate-guest { background: var(--blue, #2a3aa0); }
+.profile-gate-note {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--ink-dim, #8a7a68);
+}
+/* Guest mode label — top bar, out of the way of the FABs. */
+.guest-badge {
+  display: none;
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--yellow, #ffcb05);
+  color: var(--ink, #2b2320);
+  border: 2px solid var(--line, #2b2320);
+  font-family: var(--hud, sans-serif);
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+body.is-guest .guest-badge { display: block; }
+
+/* ===== Guest FABs: one stacked pair, bottom-right ===== */
+.guest-help-btn,
+.guest-models-nudge {
+  display: none;
+  position: fixed;
+  right: 12px;
+  z-index: 9000;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid var(--line, #2b2320);
+  background: var(--yellow, #ffcb05);
+  color: var(--ink, #2b2320);
+  font-family: var(--hud, sans-serif);
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+  padding: 0;
+}
+/* Tips always available — bottom of the stack. */
+.guest-help-btn {
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  font-size: 20px;
+}
+body.is-guest .guest-help-btn { display: flex; }
+
+/* 3D models walkthrough — sits above tips, same size/style, only when offered. */
+.guest-models-nudge {
+  bottom: calc(12px + 40px + 10px + env(safe-area-inset-bottom, 0px));
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.3),
+    0 0 0 0 rgba(255, 203, 5, 0.55);
+  animation: guestModelsNudgePulse 1.5s ease-out infinite;
+}
+.guest-models-nudge.is-on {
+  display: flex;
+}
+@keyframes guestModelsNudgePulse {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 3px 0 rgba(0, 0, 0, 0.3),
+      0 0 0 0 rgba(255, 203, 5, 0.55);
+  }
+  55% {
+    transform: scale(1.06);
+    box-shadow:
+      0 3px 0 rgba(0, 0, 0, 0.3),
+      0 0 0 10px rgba(255, 203, 5, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 3px 0 rgba(0, 0, 0, 0.3),
+      0 0 0 0 rgba(255, 203, 5, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guest-models-nudge { animation: none; }
+}
+body:has(.overlay) .guest-models-nudge,
+body:has(.overlay) .guest-help-btn { display: none !important; }
+.guest-tip {
+  display: none;
+  position: fixed;
+  left: 50%;
+  bottom: calc(50px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 9500;
+  width: min(92vw, 360px);
+  padding: 14px 16px 12px;
+  background: var(--bg-panel, #fff);
+  color: var(--ink, #2b2320);
+  border: 3px solid var(--line, #2b2320);
+  border-radius: 16px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.28);
+  font-family: var(--body, sans-serif);
+}
+.guest-tip.is-open { display: block; }
+.guest-tip.guest-tip--top {
+  bottom: auto;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+}
+.guest-tip-step {
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: var(--ink-dim, #8a7a68);
+  margin-bottom: 2px;
+}
+.guest-tip-title {
+  font-family: var(--hud, sans-serif);
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.guest-tip-text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.guest-tip-actions { display: flex; align-items: center; gap: 8px; }
+.guest-tip-spacer { flex: 1; }
+.guest-tip-actions button {
+  font-family: var(--hud, sans-serif);
+  font-size: 14px;
+  font-weight: 800;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--line, #2b2320);
+  cursor: pointer;
+  background: #fff;
+  color: var(--ink, #2b2320);
+}
+.guest-tip-actions .guest-tip-next { background: var(--blue, #2a3aa0); color: #fff; }
+.guest-tip-actions .guest-tip-extra {
+  background: linear-gradient(180deg, #4a63e0, #1f37a0);
+  color: #fff;
+  border-color: var(--line, #2b2320);
+}
+.guest-tip-actions .guest-tip-extra[hidden] { display: none; }
+.guest-tip-actions .guest-tip-skip { border-color: transparent; background: transparent; color: var(--ink-dim, #8a7a68); padding-left: 0; }
+.guest-tip-actions .guest-tip-back[hidden] { display: none; }
+.guest-tip-highlight {
+  outline: 3px solid var(--yellow, #ffcb05) !important;
+  outline-offset: 3px;
+  animation: guestTipPulse 1.2s ease-in-out infinite;
+}
+@keyframes guestTipPulse {
+  0%, 100% { outline-color: var(--yellow, #ffcb05); outline-offset: 3px; }
+  50% { outline-color: #fff; outline-offset: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guest-tip-highlight { animation: none; }
+}
+.guest-modal-hint {
+  margin: 6px 0 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-panel-raised, #fff2b8);
+  border: 2px dashed var(--line, #2b2320);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* Floating tip on the TCG catch / log card — swipe to flip. */
+.tcg-flip-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%) translateY(8px);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 28px);
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(43, 35, 32, 0.92);
+  color: #fff8e6;
+  border: 2px solid rgba(255, 248, 230, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-family: var(--body, sans-serif);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.28s ease, transform 0.28s ease;
+}
+.tcg-flip-hint.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.tcg-flip-hint.is-hiding {
+  opacity: 0;
+  transform: translateX(-50%) translateY(6px);
+}
+.tcg-flip-hint-icon {
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+  opacity: 0.95;
+}
+.tcg-flip-hint-text {
+  min-width: 0;
+}
+.modal.modal-found {
+  position: relative;
+}
+/* Tips step aside while any pop-up window is open. */
+body:has(.overlay) .guest-tip,
+body:has(.overlay) .guest-help-btn { display: none !important; }
+
+/* ===== Guest nudges: keep pointing at the way to the Living Dex ===== */
+.guest-nudge {
+  outline: 3px solid var(--yellow, #ffcb05) !important;
+  outline-offset: 3px;
+  animation: guestTipPulse 1.2s ease-in-out infinite;
+}
+.guest-nudge-pill {
+  display: none;
+  position: fixed;
+  right: 10px;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  z-index: 9000;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 3px solid var(--line, #2b2320);
+  background: var(--yellow, #ffcb05);
+  color: var(--ink, #2b2320);
+  font-family: var(--hud, sans-serif);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+  animation: guestPillPulse 1.4s ease-in-out infinite;
+}
+.guest-nudge-pill.is-on { display: block; }
+@keyframes guestPillPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(255, 203, 5, 0.7); }
+  50% { transform: scale(1.06); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3), 0 0 0 10px rgba(255, 203, 5, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guest-nudge, .guest-nudge-pill { animation: none; }
+}
+body:has(.overlay) .guest-nudge-pill { display: none !important; }
+
+
+
