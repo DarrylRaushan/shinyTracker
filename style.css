@@ -1,4 +1,5 @@
 
+
 :root{--bg: #30adff;
 --log-v2-toolbar-cols: 1.25fr 1fr 1fr;
 --log-v2-toolbar-cols-mobile: 1.15fr 1fr 1fr;
@@ -30,6 +31,164 @@
    used for every other heading in the app. */
 --pixel: "Press Start 2P", "Share Tech Mono", monospace;
 }
+
+/* ===== Profile gate + guest chrome (early, so mobile always gets it) ===== */
+.profile-gate {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100000 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  background: rgba(22, 32, 92, 0.96) !important;
+  font-family: var(--body, "Nunito", system-ui, sans-serif);
+  box-sizing: border-box;
+}
+.profile-gate.is-hidden {
+  display: none !important;
+}
+.profile-gate-card {
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  background: #ffffff !important;
+  color: #2b2320 !important;
+  border: 3px solid #2b2320;
+  border-radius: 20px;
+  padding: 26px 22px 20px;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+.profile-gate-title {
+  margin: 0 0 4px;
+  font-family: var(--hud, "Baloo 2", sans-serif);
+  font-size: 28px;
+  font-weight: 800;
+  color: #2b2320 !important;
+}
+.profile-gate-sub {
+  margin: 0 0 18px;
+  color: #8a7a68 !important;
+  font-weight: 700;
+}
+.profile-gate-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.profile-gate-btn {
+  font-family: var(--hud, "Baloo 2", sans-serif);
+  font-size: 20px;
+  font-weight: 800;
+  padding: 12px 16px;
+  border: 3px solid #2b2320;
+  border-radius: 14px;
+  cursor: pointer;
+  color: #fff !important;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.profile-gate-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+.profile-gate-btn:disabled { opacity: 0.6; cursor: default; }
+.profile-gate-user { background: #ee1515 !important; }
+.profile-gate-guest { background: #2a3aa0 !important; }
+.profile-gate-note {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: #8a7a68 !important;
+}
+/* While the gate is open, hide the app + guest chrome so nothing bleeds through. */
+body:has(#profile-gate:not(.is-hidden)) .app,
+body:has(#profile-gate:not(.is-hidden)) .guest-tip,
+body:has(#profile-gate:not(.is-hidden)) .guest-badge,
+body:has(#profile-gate:not(.is-hidden)) .guest-help-btn,
+body:has(#profile-gate:not(.is-hidden)) .guest-models-nudge,
+body:has(#profile-gate:not(.is-hidden)) .guest-nudge-pill,
+body:has(#profile-gate:not(.is-hidden)) #stars {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Fallback when :has() is unavailable (older iOS): body.profile-gate-open */
+body.profile-gate-open .app,
+body.profile-gate-open .guest-tip,
+body.profile-gate-open .guest-badge,
+body.profile-gate-open .guest-help-btn,
+body.profile-gate-open .guest-models-nudge,
+body.profile-gate-open .guest-nudge-pill,
+body.profile-gate-open #stars {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+
+.guest-tip {
+  display: none;
+  position: fixed !important;
+  left: 50%;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 9500 !important;
+  width: min(92vw, 360px);
+  padding: 14px 16px 12px;
+  background: #ffffff !important;
+  color: #2b2320 !important;
+  border: 3px solid #2b2320;
+  border-radius: 16px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.28);
+  font-family: var(--body, "Nunito", system-ui, sans-serif);
+  box-sizing: border-box;
+}
+.guest-tip.is-open { display: block !important; }
+.guest-tip.guest-tip--top {
+  bottom: auto;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+}
+.guest-tip-step {
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  color: #8a7a68;
+  margin-bottom: 2px;
+}
+.guest-tip-title {
+  font-family: var(--hud, "Baloo 2", sans-serif);
+  font-size: 19px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  color: #2b2320 !important;
+}
+.guest-tip-text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #2b2320 !important;
+}
+.guest-tip-actions { display: flex; align-items: center; gap: 8px; }
+.guest-tip-spacer { flex: 1; }
+.guest-tip-actions button {
+  font-family: var(--hud, "Baloo 2", sans-serif);
+  font-size: 14px;
+  font-weight: 800;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 2px solid #2b2320;
+  cursor: pointer;
+  background: #fff;
+  color: #2b2320;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.guest-tip-actions .guest-tip-next { background: #2a3aa0 !important; color: #fff !important; }
+.guest-tip-actions .guest-tip-skip { border-color: transparent; background: transparent; color: #8a7a68; padding-left: 0; }
+.guest-tip-actions .guest-tip-back[hidden],
+.guest-tip-actions .guest-tip-extra[hidden] { display: none !important; }
+
+
 * {
 box-sizing: border-box;
 }
