@@ -1,5 +1,3 @@
-
-
 :root{--bg: #30adff;
 --log-v2-toolbar-cols: 1.25fr 1fr 1fr;
 --log-v2-toolbar-cols-mobile: 1.15fr 1fr 1fr;
@@ -15045,5 +15043,107 @@ body:has(.overlay) .guest-help-btn { display: none !important; }
 }
 body:has(.overlay) .guest-nudge-pill { display: none !important; }
 
+/* ===== Active Hunts: sleeker info bar + roomier readout (mobile) =====
+   Total height of (info bar + readout) is unchanged, so the red shell is static:
+     info bar     39.6px (2-line Game cell) -> 25.6px   (frees 14px)
+     readout      stat area   40 -> 48   (+8)
+                  gauge gap    2 ->  6   (+4)
+                  caption gap  1 ->  3   (+2)
+   The bar is a fixed height so every card is the same size whatever the game
+   name length. The readout keeps its original two-column arrangement
+   (Encounters left, Time Spent / Odds So Far stacked right) - three columns in
+   one row did not fit on narrow phones. */
+@media (max-width: 600px) {
+/* --- info bar: one slim strip, three sections, no tiny captions --- */
+.hunt-info-bar {
+box-sizing: border-box;
+height: 25.6px;
+align-items: stretch;
+gap: 0;
+padding: 0 2px;
+border-radius: 9px;
+background: rgba(255, 255, 255, 0.66);
+border: 1px solid rgba(43, 35, 32, 0.16);
+box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.hunt-info-bar .hunt-info-cell {
+flex-direction: row;
+align-items: center;
+justify-content: center;
+gap: 0;
+padding: 0 8px;
+border: none;
+border-radius: 0;
+background: none;
+box-shadow: none;
+text-align: center;
+}
+.hunt-info-bar .hunt-info-cell + .hunt-info-cell {
+border-left: 1px solid rgba(43, 35, 32, 0.16);
+}
+.hunt-info-bar .hunt-info-cell::before { display: none; }
+.hunt-info-bar .hunt-info-cell .hunt-info-label {
+font-size: 11px;
+line-height: 1.05;
+text-align: center;
+}
 
-
+/* --- readout: balanced two-column layout ---
+   Two near-equal columns split by the dotted divider, everything centered in its
+   column so the empty space is even on both sides. One type scale: labels + gauge
+   caption 8px | side values 11px | Encounters hero 18-24px (about 2x the side
+   values). Height budget is unchanged: stat area 48 (side stack: 8 label + 3 gap +
+   11 value = 22, x2 + 4 gap), gauge gap 5, caption gap 3 + 8px caption. */
+.hunt-dex-readout .hdx-top { height: 48px; }
+.hunt-dex-readout .cell-hero {
+flex: 1.15 1 0;
+min-width: 0;
+gap: 4px;
+padding: 0 8px;
+align-items: center;
+justify-content: center;
+text-align: center;
+}
+.hunt-dex-readout .hdx-side {
+flex: 1 1 0;
+min-width: 0;
+gap: 4px;
+padding: 0 0 0 8px;
+justify-content: center;
+}
+.hunt-dex-readout .hdx-side .cell {
+gap: 3px;
+align-items: center;
+text-align: center;
+}
+.hunt-dex-readout .lbl,
+.hunt-dex-readout .hdx-side .lbl {
+justify-content: center;
+font-size: 8px;
+line-height: 1;
+letter-spacing: 0.8px;
+gap: 3px;
+white-space: nowrap;
+}
+.hunt-dex-readout .cell-icon,
+.hunt-dex-readout .hdx-side .cell-icon { width: 8px; height: 8px; }
+.hunt-dex-readout .hdx-side .num {
+font-size: 11px;
+line-height: 1;
+padding-left: 0;
+}
+.hunt-dex-readout .cell-hero .num {
+font-size: clamp(18px, 6vw, 24px);
+line-height: 1;
+padding-left: 0;
+margin-top: 0;
+top: 0;
+}
+.hunt-dex-readout .hunt-dex-gauge { margin-top: 5px; }
+.hunt-dex-readout .hunt-dex-bar-caption {
+margin-top: 3px;
+font-size: 8px;
+line-height: 1;
+letter-spacing: 0.8px;
+}
+}

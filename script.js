@@ -1,5 +1,3 @@
-
-
 (function() {
 var shown = 0;
 window.addEventListener('error', function(e) {
@@ -3197,16 +3195,18 @@ var slug = String(base || '')
 if (!slug) return '';
 return suffix ? (slug + '-' + suffix) : slug;
 }
-// Ordered sprite URLs for hunt cards / log / TCG views.
-// Gen 1-5: static Black/White pixel sprites first (faster than animated
-// GIFs), with Showdown ani-shiny as optional flair backup.
-// Gen 6-8: Showdown animated, then static game renders.
-// Gen 9: Pokemon HOME only.
+// Ordered sprite URLs for hunt cards / log / TCG views (NOT the Living Dex,
+// which has its own dexEntrySpriteUrls).
+// Gen 1-5: Pokemon Black/White (2) animated pixel sprites (Showdown's
+// gen5ani / gen5ani-shiny), then static fallbacks. Gen 6-9 have no B/W
+// sprites, so they use Showdown's animated set (ani-shiny) instead.
 // normalSpriteUrls mirrors these paths for the shiny/normal toggle.
 function normalSpriteUrls(name) {
 var shinyUrls = shinySpriteUrls(name);
 return shinyUrls.map(function(u) {
 return u
+.replace('gen5ani-shiny', 'gen5ani')
+.replace('gen5-shiny', 'gen5')
 .replace('home-shiny', 'home')
 .replace('ani-shiny', 'ani')
 .replace('/shiny/', '/normal/')
@@ -3220,6 +3220,7 @@ var gen = pokemonGenOf(name);
 var base = 'https://img.pokemondb.net/sprites/';
 var sdSlug = showdownSlug(name);
 var showdownAni = sdSlug ? ['https://play.pokemonshowdown.com/sprites/ani-shiny/' + sdSlug + '.gif'] : [];
+var bw2Ani = sdSlug ? ['https://play.pokemonshowdown.com/sprites/gen5ani-shiny/' + sdSlug + '.gif'] : [];
 if (gen === 6 || gen === 7 || gen === 8) {
 var staticFallback =
 (gen === 6) ? [base + 'x-y/shiny/' + slug + '.png'] :
@@ -3228,17 +3229,18 @@ var staticFallback =
 return showdownAni.concat(staticFallback);
 }
 if (gen === 9 || gen === null) {
-return [base + 'home/shiny/' + slug + '.png'].concat(
+return showdownAni.concat(
+[base + 'home/shiny/' + slug + '.png'],
 sdSlug ? ['https://play.pokemonshowdown.com/sprites/home-shiny/' + sdSlug + '.png'] : []
 );
 }
-// Gen 1-5: Showdown gen5-shiny pixel PNG first (~40ms). pokemondb BW and
-// animated GIFs kept as backups only.
+// Gen 1-5: Showdown animated pixel GIF first; static gen5 / BW pixel PNGs
+// kept as backups only.
 var gen5 = sdSlug ? ['https://play.pokemonshowdown.com/sprites/gen5-shiny/' + sdSlug + '.png'] : [];
-return gen5.concat([
+return bw2Ani.concat(gen5, showdownAni, [
 base + 'black-white/shiny/' + slug + '.png',
 base + 'black-white-2/shiny/' + slug + '.png'
-], showdownAni);
+]);
 }
 // Maps the "(Alolan)"/"(Galarian)"/"(Hisuian)"/"(Paldean)" tag used in this
 // app's display names to the suffix PokeSprite itself uses in its
@@ -3651,7 +3653,7 @@ var GEN_SPRITE_SCALE = {
 6: 1.05,
 7: 1.05,
 8: 1.05,
-9: 0.95
+9: 1.05
 };
 var DEFAULT_SPRITE_SCALE = 1.45;
 // Builds the <img>+fallback-letter markup for a Pokemon's shiny sprite,
