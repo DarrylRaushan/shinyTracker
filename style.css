@@ -3250,10 +3250,17 @@ grid-template-areas:
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
-/* .face-back is toggled by setupTcgFlipSwipe (script.js) from the rotation angle:
-   the face pointing away is hidden outright, and the hidden front stops animating. */
-.tcg-flip.face-back .tcg-card:not(.tcg-card-back) { visibility: hidden; }
-.tcg-flip:not(.face-back) .tcg-card-back { visibility: hidden; }
+/* Hide the front outright whenever the back is showing (visibility is inherited,
+   so nothing inside it can leak through, whatever layers Safari gave it).
+   .face-back / .face-tracked come from setupTcgFlipSwipe (script.js), which
+   follows the rotation angle live. Without them (older script.js) it falls
+   back to .is-flipped, which is only set once a swipe has settled. */
+.tcg-flip.face-tracked.face-back .tcg-card:not(.tcg-card-back) { visibility: hidden; }
+.tcg-flip.is-flipped:not(.face-tracked) .tcg-card:not(.tcg-card-back) {
+  visibility: hidden;
+  transition: visibility 0s linear 0.35s;
+}
+.tcg-flip.is-flipped .tcg-card:not(.tcg-card-back) * { animation-play-state: paused; }
 .tcg-flip.face-back .tcg-card:not(.tcg-card-back) * { animation-play-state: paused; }
 
 /* ---------- Front face: layout redesigned for the 63x88 card ----------
