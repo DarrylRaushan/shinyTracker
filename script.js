@@ -4712,8 +4712,9 @@ var gameCount = Object.keys(games).length;
 var genCount = Object.keys(gens).length;
 var avgEncounters = Math.round(totalEncounters / list.length);
 
-flavorEl.textContent = 'Spanning ' + gameCount + (gameCount === 1 ? ' game' : ' games') +
-' and ' + genCount + (genCount === 1 ? ' generation.' : ' generations.');
+// No flavor/"Spanning..." container in the summary view: the flavor box is
+// left empty (and hidden by CSS) so the stats grid can use the whole panel.
+flavorEl.textContent = '';
 
 if (factsEl) {
 function factCell(label, valueHtml) {
@@ -4726,6 +4727,7 @@ var uniqueSpecies = {};
 list.forEach(function(e) { if (e.pokemon) uniqueSpecies[e.pokemon] = true; });
 var uniqueSpeciesCount = Object.keys(uniqueSpecies).length;
 
+factsEl.classList.add('is-summary');
 factsEl.innerHTML =
 factCell('TOTAL CAUGHT', String(list.length)) +
 factCell('UNIQUE SPECIES', String(uniqueSpeciesCount)) +
@@ -4859,6 +4861,7 @@ return escapeHtml(a.name) + (a.hidden ? ' <span class="log-overview-info-tag">(H
 }).join(' &middot; ') : '—';
 var eggLabel = (entry.eggGroups && entry.eggGroups.length) ?
 entry.eggGroups.map(escapeHtml).join(' &middot; ') : '—';
+factsEl.classList.remove('is-summary');
 factsEl.innerHTML =
 factCell('HEIGHT', heightVal) +
 factCell('WEIGHT', weightVal) +
@@ -5416,11 +5419,12 @@ if (mode === 'alpha') {
 arr.sort(function(a, b) {
 return a[1].localeCompare(b[1]);
 });
-} else if (mode === 'uncaught') {
+} else if (mode === 'uncaught' || mode === 'caught') {
+var caughtDir = (mode === 'caught') ? -1 : 1;
 arr.sort(function(a, b) {
 var ac = caughtMap[normName(a[1])] ? 1 : 0;
 var bc = caughtMap[normName(b[1])] ? 1 : 0;
-if (ac !== bc) return ac - bc;
+if (ac !== bc) return (ac - bc) * caughtDir;
 if (a[0] !== b[0]) return a[0] - b[0];
 return regionVariantWeight(a[1]) - regionVariantWeight(b[1]);
 });
@@ -6165,12 +6169,14 @@ setTimeout(function() { trail.remove(); }, 450);
 var DEX_SORT_LABELS = {
 dex: 'Dex Number',
 alpha: 'A–Z',
-uncaught: 'Uncaught First'
+uncaught: 'Uncaught First',
+caught: 'Caught First'
 };
 var DEX_SORT_SHORT_LABELS = {
 dex: 'Dex #',
 alpha: 'A–Z',
-uncaught: 'Uncaught'
+uncaught: 'Uncaught',
+caught: 'Caught'
 };
 // Re-orders chips already in the DOM to match dexSortMode, for whichever
 // generation(s) are currently expanded in the mobile Kalos carousel (the
@@ -6546,6 +6552,10 @@ var countEl = tile.querySelector('.kalos-gen-detail-progress-row .dex-card-count
 if (countEl) countEl.textContent = genCaught + ' / ' + gen.species.length;
 var expandedFillEl = tile.querySelector('.kalos-gen-detail-progress-fill');
 if (expandedFillEl) expandedFillEl.style.width = pct + '%';
+var expandedMarkerEl = tile.querySelector('.kalos-gen-detail-progress-marker');
+if (expandedMarkerEl) expandedMarkerEl.style.left = pct + '%';
+var expandedPctEl = tile.querySelector('.kalos-gen-detail-progress-pct');
+if (expandedPctEl) expandedPctEl.textContent = pct + '%';
 var headRingFillEl = tile.querySelector('.kalos-gen-detail-head-row .dex-gen-badge-ring .ring-fill');
 if (headRingFillEl) headRingFillEl.style.strokeDashoffset = genBadgeRingOffset(pct);
 var headRingEl = tile.querySelector('.kalos-gen-detail-head-row .dex-gen-badge-ring');
@@ -6553,6 +6563,21 @@ if (headRingEl) headRingEl.classList.toggle('is-complete', pct === 100);
 } else {
 var tileCountEl = tile.querySelector('.kalos-gen-tile-count');
 if (tileCountEl) tileCountEl.textContent = genCaught + ' / ' + gen.species.length;
+// Cartridge-style tiles (GBA / DS / 3DS / Switch) carry their own
+// percentage + count readout that also needs to follow the data.
+tile.querySelectorAll('.kalos-gba-progress, .kalos-ds-progress').forEach(function(progEl) {
+var strongEl = progEl.querySelector('strong');
+var smallEl = progEl.querySelector('small');
+if (strongEl) strongEl.textContent = pct + '%';
+if (smallEl) smallEl.textContent = genCaught + ' / ' + gen.species.length;
+});
+tile.querySelectorAll('.kalos-gba-completion').forEach(function(compEl) {
+compEl.style.setProperty('--complete', pct + '%');
+compEl.style.setProperty('--complete-rail', 'calc(' + pct + '% - 11px)');
+});
+tile.querySelectorAll('.kalos-gba-completion, .kalos-ds-completion').forEach(function(compEl) {
+compEl.setAttribute('aria-label', gen.region + ' completion ' + pct + ' percent');
+});
 var ringFillEl = tile.querySelector('.dex-gen-badge-ring .ring-fill');
 if (ringFillEl) ringFillEl.style.strokeDashoffset = genBadgeRingOffset(pct);
 var ringEl = tile.querySelector('.dex-gen-badge-ring');
@@ -8030,7 +8055,7 @@ chip.classList.toggle('caught', nowCaught);
 updateChipA11y(chip, nowCaught);
 if (nowCaught) animateCatchReveal(chip);
 updateDexCounters();
-if (allowResort && dexSortMode === 'uncaught') resortDexGrid();
+if (allowResort && (dexSortMode === 'uncaught' || dexSortMode === 'caught')) resortDexGrid();
 }
 // Cause-agnostic fix for "tapping a sprite yanks the whole page back to
 // the top" on iOS Safari, in two layers:

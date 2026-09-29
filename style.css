@@ -15147,3 +15147,71 @@ line-height: 1;
 letter-spacing: 0.8px;
 }
 }
+
+
+
+/* Collection summary ("X Shinies Caught"): no flavor container - the six
+   stats fill the panel as a 2x3 grid ON the panel's own ruled lines (one
+   single notepad pattern, no second painted layer).
+   Geometry: panel padding-top is 3px, the heading row is exactly 25px, so
+   the grid starts at y=28. --notepad-line-offset: 3px shifts the panel's
+   rules to y = 27, 52, 77 ... (24px into each 25px pitch, +3), i.e. one
+   rule under the heading and one under every 25px label/value line of the
+   50px grid rows. */
+#view-collection .log-overview-flavor-row:has(.log-overview-flavor:empty) {
+  display: none;
+}
+#view-collection .log-v2-shell .log-overview-panel:has(.log-overview-facts-grid.is-summary) {
+  --notepad-line-offset: 3px;
+}
+#view-collection .log-v2-shell .log-overview-panel:has(.log-overview-facts-grid.is-summary) .log-overview-top-row {
+  height: 25px;
+  min-height: 0;
+  margin-top: 0;
+  align-items: flex-start;
+}
+#view-collection .log-v2-shell .log-overview-panel:has(.log-overview-facts-grid.is-summary) .log-overview-heading-col {
+  transform: none;
+}
+#view-collection .log-v2-shell .log-overview-panel:has(.log-overview-facts-grid.is-summary) .log-overview-genus {
+  line-height: 24px;
+  white-space: nowrap;
+}
+#view-collection .log-v2-shell .log-overview-panel .log-overview-facts-grid.is-summary {
+  flex: none;
+  grid-template-rows: none;
+  grid-auto-rows: 50px;
+  margin: 0;
+  background: none;
+}
+#view-collection .log-v2-shell .log-overview-panel .log-overview-facts-grid.is-summary .log-overview-fact-cell {
+  display: block;
+  gap: 0;
+  padding: 0 8px 0 14px;
+  min-width: 0;
+  min-height: 0;
+  height: 50px;
+  border-top: 0;
+}
+#view-collection .log-overview-facts-grid.is-summary .log-overview-info-label-row {
+  height: 25px;
+  align-items: flex-end;
+  padding-bottom: 4px;
+  box-sizing: border-box;
+}
+#view-collection .log-overview-facts-grid.is-summary .log-overview-info-label {
+  font-size: 8px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+#view-collection .log-overview-facts-grid.is-summary .log-overview-info-value {
+  display: block;
+  height: 25px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 24px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
