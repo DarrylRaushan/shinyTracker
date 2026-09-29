@@ -4208,13 +4208,24 @@ p.addEventListener('animationend', function() { this.remove(); });
 ret.appendChild(p);
 }
 }
+// Keeps each hunt's sprite element alive across renderHunts() rebuilds so
+// the image isn't re-created (and visibly re-loaded/flashing) every tap.
+var _huntPortraitCache = {};
 function renderHunts() {
 var wrap = document.getElementById('hunts-list');
+// Remember where the person was scrolled (both the mobile snap-scroll
+// list and the page itself) - clearing innerHTML below collapses the
+// list, which otherwise resets both to the top / first hunt.
+var savedWrapScrollTop = wrap.scrollTop;
+var savedPageScrollY = window.scrollY;
 wrap.innerHTML = '';
 if (state.hunts.length === 0) {
 wrap.innerHTML = '<div class="empty"><div class="glyph">✧</div><p class="lead">No hunts in progress.</p><p>Start one to begin logging encounters, odds, and time spent.</p><button type="button" class="primary empty-cta" data-action="new-hunt">Start a Hunt</button></div>';
 return;
 }
+Object.keys(_huntPortraitCache).forEach(function(k) {
+if (!state.hunts.some(function(h) { return h.id === k; })) delete _huntPortraitCache[k];
+});
 var allDenoms = state.hunts.map(function(h) { return h.denom; });
 sortHuntsForDisplay(state.hunts).forEach(function(hunt) {
 var el = document.createElement('div');
@@ -4229,6 +4240,7 @@ var typeHex = primaryType ? (TYPE_COLORS[primaryType] || '#4caf50') : '#4caf50';
 var typeRgb = primaryType ? typeRgbTriple(primaryType) : '76,175,80';
 var screenStyle = '--type-color:' + typeHex + ';--type-rgb:' + typeRgb + ';';
 var barColors = oddsGaugeColors(pct);
+var rtAvgPct = (cumulativeProb(hunt.denom, hunt.denom) * 100).toFixed(1);
 var rtShown = (_rtPrevPct[hunt.id] != null) ? _rtPrevPct[hunt.id] : 0;
 _rtPrevPct[hunt.id] = pct;
 var barStyle = 'width:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';--bar-c2:' + barColors[1] + ';';
@@ -4285,23 +4297,20 @@ huntReticleHtml(hunt, pct, rtShown, barColors[1]) +
 '<div class="hunt-info-cell hunt-info-odds" style="' + oddsTagStyle + '"><span class="hunt-info-icon">' + TAG_ICON_ODDS + '</span><span class="hunt-info-label">1 in ' + hunt.denom + '</span></div>' +
 '</div>' +
 '<div class="hunt-dex-readout">' +
-'<div class="cell"><span class="cell-icon">' + HUNT_READOUT_ICONS.encounters + '</span><div class="num">' + hunt.encounters + '</div><div class="lbl">Encounters</div></div>' +
-'<div class="cell"><span class="cell-icon">' + HUNT_READOUT_ICONS.time + '</span><div class="num" data-timer-for="' + hunt.id + '">' + fmtTime(elapsedSeconds(hunt)) + '</div><div class="lbl">Time Spent</div></div>' +
-'<div class="cell"><span class="cell-icon">' + HUNT_READOUT_ICONS.odds + '</span><div class="num" style="color:' + barColors[1] + '">' + pct + '%</div><div class="lbl">Odds So Far</div></div>' +
+'<div class="hdx-top">' +
+'<div class="cell cell-hero"><div class="lbl"><span class="cell-icon">' + HUNT_READOUT_ICONS.encounters + '</span>Encounters</div><div class="num">' + hunt.encounters + '</div></div>' +
+'<div class="hdx-side">' +
+'<div class="cell"><div class="lbl"><span class="cell-icon">' + HUNT_READOUT_ICONS.time + '</span>Time Spent</div><div class="num" data-timer-for="' + hunt.id + '">' + fmtTime(elapsedSeconds(hunt)) + '</div></div>' +
+'<div class="cell"><div class="lbl"><span class="cell-icon">' + HUNT_READOUT_ICONS.odds + '</span>Odds So Far</div><div class="num" style="color:' + barColors[1] + '">' + pct + '%</div></div>' +
+'</div>' +
 '</div>' +
 '<div class="hunt-dex-gauge">' +
 '<div class="hunt-dex-bar-track">' +
 '<div class="hunt-dex-bar-inner"><div class="hunt-dex-bar-fill" style="' + barStyle + '"></div></div>' +
+'<div class="hunt-dex-bar-avg' + (hunt.encounters >= hunt.denom ? ' is-over' : '') + '" style="left:' + rtAvgPct + '%;"></div>' +
 '<div class="hunt-dex-bar-marker" style="' + markerStyle + '"></div>' +
 '</div>' +
 '<div class="hunt-dex-bar-caption"><span>P(shiny) BY NOW</span><span>' + hunt.encounters + ' / ' + hunt.denom + ' AVG</span></div>' +
-'</div>' +
-'<div class="hunt-dex-actions">' +
-'<button class="hunt-dex-btn hunt-dex-btn-ghost hunt-dex-btn-step" data-action="remove-encounter" data-id="' + hunt.id + '" title="Remove an encounter">−</button>' +
-'<button class="hunt-dex-btn hunt-dex-btn-ghost hunt-dex-btn-step" data-action="add-encounter" data-id="' + hunt.id + '" title="Add an encounter">+</button>' +
-'<button class="hunt-dex-btn hunt-dex-btn-ghost hunt-dex-btn-x5" data-action="add-encounter-5" data-id="' + hunt.id + '">+5</button>' +
-'<button class="hunt-dex-btn hunt-dex-btn-ghost hunt-dex-btn-timer" data-action="toggle-timer" data-id="' + hunt.id + '" title="' + (hunt.running ? 'Pause timer' : 'Start timer') + '">' + (hunt.running ? '⏸\uFE0E' : '▶\uFE0E') + '</button>' +
-'<button class="hunt-dex-btn hunt-dex-btn-found" data-action="mark-found" data-id="' + hunt.id + '">Caught!</button>' +
 '</div>' +
 '</div>' +
 '</div>' +
@@ -4334,6 +4343,17 @@ huntReticleHtml(hunt, pct, rtShown, barColors[1]) +
 '<div class="hunt-dex-pokeball-row"><button class="hunt-dex-pokeball-btn" data-action="mark-found" data-id="' + hunt.id + '" title="Mark as caught" aria-label="Mark as caught"><svg class="hunt-dex-pokeball-svg" viewBox="0 0 24 24" width="27" height="27" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#fff"/><path d="M3 12a9 9 0 0 1 18 0" fill="#ee1515"/><circle cx="12" cy="12" r="9" stroke="#000" stroke-width="1.8" fill="none"/><path d="M3 12H9M15 12H21" stroke="#000" stroke-width="1.8"/><circle cx="12" cy="12" r="2.6" fill="#fff" stroke="#000" stroke-width="1.8"/></svg></button></div>' +
 '<div class="hunt-dex-grille"><span></span><span></span><span></span><span></span><span></span></div>' +
 '</div>';
+// Reuse the already-loaded sprite node for this hunt instead of the
+// freshly built (not-yet-loaded) copy, as long as it's the same Pokemon.
+var portraitEl = el.querySelector('.hunt-dex-portrait');
+var cachedPortrait = _huntPortraitCache[hunt.id];
+if (portraitEl) {
+if (cachedPortrait && cachedPortrait.pokemon === hunt.pokemon) {
+portraitEl.parentNode.replaceChild(cachedPortrait.node, portraitEl);
+} else {
+_huntPortraitCache[hunt.id] = { pokemon: hunt.pokemon, node: portraitEl };
+}
+}
 wrap.appendChild(el);
 if (rtShown !== pct) {
 var rtP = el.querySelector('.rt-prog'), rtH = el.querySelector('.rt-prog-head');
@@ -4361,6 +4381,14 @@ if (c.offsetHeight > HUNT_CARD_LOCKED_HEIGHT) HUNT_CARD_LOCKED_HEIGHT = c.offset
 cardEls.forEach(function(c) { c.style.height = HUNT_CARD_LOCKED_HEIGHT + 'px'; });
 }
 syncHuntFrameHeight();
+// Put the scroll position back now that the cards exist again. Snap is
+// switched off for this one assignment so scroll-snap can't yank it
+// back to the first card before the value sticks.
+var prevSnap = wrap.style.scrollSnapType;
+wrap.style.scrollSnapType = 'none';
+wrap.scrollTop = savedWrapScrollTop;
+if (Math.abs(window.scrollY - savedPageScrollY) > 1) window.scrollTo(0, savedPageScrollY);
+wrap.style.scrollSnapType = prevSnap;
 }
 // Shrinks the info-bar's font size (and pill padding) in small steps until
 // its content fits on one line without wrapping or truncating - used so
