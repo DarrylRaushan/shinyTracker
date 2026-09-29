@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -24,9 +25,36 @@
         document.head.appendChild(s);
       });
     </script>
-    <link rel="stylesheet" href="style.css?v=hunt-notepad-12">
+    <link rel="stylesheet" href="style.css?v=hunt-notepad-20">
   </head>
   <body>
+    <div id="profile-gate" class="profile-gate" role="dialog" aria-modal="true" aria-label="Choose profile">
+      <div class="profile-gate-card">
+        <h1 class="profile-gate-title">Shiny Tracker</h1>
+        <p class="profile-gate-sub" id="profile-gate-sub">Who's playing?</p>
+        <div class="profile-gate-buttons">
+          <button type="button" class="profile-gate-btn profile-gate-user" id="btn-profile-user1" data-profile="user1">User1</button>
+          <button type="button" class="profile-gate-btn profile-gate-guest" id="btn-profile-guest" data-profile="guest">Guest</button>
+        </div>
+        <p class="profile-gate-note">Guest gets a copy of the data. Changes made as Guest are never saved.</p>
+      </div>
+    </div>
+    <div class="guest-badge" id="guest-badge" aria-hidden="true">Guest mode</div>
+    <button type="button" class="guest-nudge-pill" id="guest-log-nudge">Shiny Log &rsaquo;</button>
+    <button type="button" class="guest-help-btn" id="guest-help-btn" aria-label="Show tips" title="Show tips">?</button>
+    <button type="button" class="guest-models-nudge" id="guest-models-nudge" aria-label="How to view 3D models" title="How to view 3D models" hidden>3D</button>
+    <div class="guest-tip" id="guest-tip" role="dialog" aria-live="polite" aria-label="Guest tips">
+      <div class="guest-tip-step" id="guest-tip-step"></div>
+      <div class="guest-tip-title" id="guest-tip-title"></div>
+      <p class="guest-tip-text" id="guest-tip-text"></p>
+      <div class="guest-tip-actions">
+        <button type="button" class="guest-tip-skip" id="guest-tip-skip">Skip</button>
+        <span class="guest-tip-spacer"></span>
+        <button type="button" class="guest-tip-back" id="guest-tip-back">Back</button>
+        <button type="button" class="guest-tip-extra" id="guest-tip-extra" hidden>3D models</button>
+        <button type="button" class="guest-tip-next" id="guest-tip-next">Next</button>
+      </div>
+    </div>
     <div id="stars"></div>
     <div class="app">
       <div class="dex-clamshell" id="dex-clamshell" data-active="hunts">
@@ -533,6 +561,6 @@
       </div>
     </div>
     <!-- Motion is loaded in the document head and powers the mobile carousel. -->
-    <script defer src="script.js?v=hunt-notepad-12"></script>
+    <script defer src="script.js?v=hunt-notepad-20"></script>
   </body>
 </html>
