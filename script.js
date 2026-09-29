@@ -13,6 +13,18 @@ document.body.appendChild(banner);
 // try/catch though, so it threw on every snapshot and stopped the sync
 // from ever applying - which is what broke "Firestore loading info"
 // entirely.
+// Firebase project config (moved here from index.html - Firebase itself is now
+// loaded non-blocking, so initializeApp happens in connectToCloud() the moment
+// the SDK is actually available).
+var FIREBASE_CONFIG = {
+apiKey: "AIzaSyDX0UpFkZWQH98w8GuzU9PAD0UJRQte8do",
+authDomain: "shinytracker-9128f.firebaseapp.com",
+projectId: "shinytracker-9128f",
+storageBucket: "shinytracker-9128f.firebasestorage.app",
+messagingSenderId: "465878753061",
+appId: "1:465878753061:web:8f17830985c56a2ec444cc",
+measurementId: "G-77C8511J0P"
+};
 var STORE_KEY = 'shinyTrackerState';
 var state = load();
 function load() {
@@ -73,7 +85,8 @@ var _pushPendingAfterPull = false;
 function connectToCloud() {
 if (CLOUD_DOC) return true;
 try {
-if (!window.firebase || !firebase.apps || !firebase.apps.length || !firebase.firestore) return false;
+if (!window.firebase || !firebase.firestore) return false;
+if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
 db = firebase.firestore();
 CLOUD_DOC = db.collection('shinyTracker').doc('state');
 LEGACY_CLOUD_DOC = db.collection('shinyTracker').doc('mydata');
@@ -89,7 +102,7 @@ if (_cloudRetryTimer) return;
 _cloudRetryTimer = setTimeout(function() {
 _cloudRetryTimer = null;
 syncFromCloud();
-}, 1000);
+}, 250);
 }
 function normaliseCloudState(source) {
 source = source && typeof source === 'object' ? source : {};
@@ -3788,7 +3801,10 @@ setBodyBg(tab);
 // call renderAll() directly at their own call sites.
 function applyTabState(tab) {
 syncTabChrome(tab);
-if (tab === 'livingdex') lockKalosToggleFilterCardHeight();
+if (tab === 'livingdex') {
+if (_dexDirty) { _dexDirty = false; renderLivingDexNow(); }
+lockKalosToggleFilterCardHeight();
+}
 }
 function activateTab(tab) {
 applyTabState(tab);
@@ -4193,14 +4209,8 @@ el.innerHTML =
 '<div class="hunt-dex-portrait">' + spriteMarkup(hunt.pokemon) + '</div>' +
 (hunt.shinyCharm ? '<span class="hunt-dex-charm-badge" title="Shiny Charm">✨</span>' : '') +
 '</div>' +
-'<div class="hunt-dex-reticle" aria-hidden="true">' +
-'<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">' +
-'<circle class="hunt-dex-reticle-ring" cx="85" cy="85" r="70"/>' +
-'<line class="hunt-dex-reticle-tick" x1="85" y1="6" x2="85" y2="20"/>' +
-'<line class="hunt-dex-reticle-tick" x1="85" y1="150" x2="85" y2="164"/>' +
-'<line class="hunt-dex-reticle-tick" x1="6" y1="85" x2="20" y2="85"/>' +
-'<line class="hunt-dex-reticle-tick" x1="150" y1="85" x2="164" y2="85"/>' +
-'</svg>' +
+'<div class="hunt-dex-reticle' + (hunt.running ? ' is-live' : '') + '" aria-hidden="true">' +
+'<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg"><circle class="rt-scale" cx="85" cy="85" r="79" pathLength="72"/><circle class="rt-scale-major" cx="85" cy="85" r="79" pathLength="12"/><circle class="hunt-dex-reticle-ring" cx="85" cy="85" r="70"/><g class="rt-spin rt-ccw"><circle class="rt-brackets" cx="85" cy="85" r="74.5" pathLength="360"/></g><g class="rt-spin rt-cw"><circle class="rt-dashes" cx="85" cy="85" r="64" pathLength="360"/></g><g class="rt-spin rt-sweep"><path class="rt-sweep-arc" style="opacity:.16" d="M131.84 32.98 A70 70 0 0 1 144.36 47.91"/><path class="rt-sweep-arc" style="opacity:.4" d="M144.36 47.91 A70 70 0 0 1 152.29 65.71"/><path class="rt-sweep-arc" style="opacity:.85" d="M152.29 65.71 A70 70 0 0 1 155.0 85.0"/><circle class="hunt-dex-reticle-dot" cx="155" cy="85" r="2.6"/></g><line class="hunt-dex-reticle-tick" x1="85" y1="6" x2="85" y2="20"/><line class="hunt-dex-reticle-tick" x1="85" y1="150" x2="85" y2="164"/><line class="hunt-dex-reticle-tick" x1="6" y1="85" x2="20" y2="85"/><line class="hunt-dex-reticle-tick" x1="150" y1="85" x2="164" y2="85"/><polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(0 85 85)"/><polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(90 85 85)"/><polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(180 85 85)"/><polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(270 85 85)"/><circle class="rt-pip" cx="134.5" cy="134.5" r="2.1"/><circle class="rt-pip" cx="35.5" cy="134.5" r="2.1"/><circle class="rt-pip" cx="35.5" cy="35.5" r="2.1"/><circle class="rt-pip" cx="134.5" cy="35.5" r="2.1"/></svg>' +
 '</div>' +
 '</div>' +
 '<div class="hunt-dex-id-block">' +
@@ -6351,7 +6361,29 @@ animate(shinyBar, { filter: ['brightness(1)', 'brightness(1.9)', 'brightness(1)'
 }
 });
 }
+// Living Dex is the heaviest render (every species/gen) and lives on its own
+// hidden view, so it's no longer built during boot. renderLivingDex() now just
+// marks it dirty and builds it when the Living Dex tab is opened, or during idle
+// time shortly after first paint. Visible -> renders immediately as before.
+var _dexDirty = true;
+var _dexIdleScheduled = false;
 function renderLivingDex() {
+if (dexClamshell && dexClamshell.getAttribute('data-active') === 'livingdex') {
+_dexDirty = false;
+renderLivingDexNow();
+return;
+}
+_dexDirty = true;
+if (_dexIdleScheduled) return;
+_dexIdleScheduled = true;
+var run = function() {
+_dexIdleScheduled = false;
+if (_dexDirty) { _dexDirty = false; renderLivingDexNow(); }
+};
+if (window.requestIdleCallback) requestIdleCallback(run, { timeout: 2500 });
+else setTimeout(run, 400);
+}
+function renderLivingDexNow() {
 var caught = (dexMode === 'shiny') ?
 Object.assign({}, shinyCaughtSet(), state.livingDexShiny) :
 state.livingDex;
@@ -8637,7 +8669,19 @@ return candidates.filter(function(url, i) { return candidates.indexOf(url) === i
 // load failure instead of just erroring out, the same "ordered candidate
 // list" pattern smallSpriteMarkup/window.__spriteErr already use for
 // sprites.
+// Lazy-loads Google's <model-viewer> web component (was a <script> in the head).
+// Warmed in idle time after boot, and guaranteed before the first 3D modal.
+var _modelViewerRequested = false;
+function ensureModelViewer() {
+if (_modelViewerRequested) return;
+_modelViewerRequested = true;
+var s = document.createElement('script');
+s.type = 'module';
+s.src = 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+document.head.appendChild(s);
+}
 function open3DModelModal(displayName, dexNum, shiny, variant) {
+ensureModelViewer();
 var urls = pokemon3DModelUrls(dexNum, shiny, variant);
 if (!urls.length) return;
 var name = displayName || 'Pokémon';
@@ -10335,3 +10379,9 @@ container.appendChild(s);
 
 // Populate the interface from local state immediately. Cloud sync can return
 // later and repaint once the first snapshot arrives.
+renderAll();
+// Warm the 3D viewer after the page is up so the first 3D open is instant.
+setTimeout(function() {
+if (window.requestIdleCallback) requestIdleCallback(ensureModelViewer);
+else ensureModelViewer();
+}, 4000);
