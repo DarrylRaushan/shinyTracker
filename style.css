@@ -3231,7 +3231,6 @@ grid-template-areas:
   margin: auto 0;
   width: min(calc(100% + 52px), calc((92vh + 52px) * 63 / 88));
   aspect-ratio: 63 / 88;
-  container-type: inline-size;
   perspective: 1600px;
   touch-action: pan-y;
 }
@@ -3241,6 +3240,22 @@ grid-template-areas:
   width: auto;
   height: auto;
 }
+/* ---------- iOS Safari flip fixes ----------
+   Safari doesn't reliably apply the faces' backface-visibility to children
+   that have their own layers (sprite drop-shadow, animations, clip-paths), so
+   the front's sprite/badge showed through the back and flickered. */
+.tcg-flip-inner .tcg-card { transform: translateZ(1px); }
+.tcg-flip-inner .tcg-card-back { transform: rotateY(180deg) translateZ(1px); }
+.tcg-flip-inner .tcg-card * {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+/* .face-back is toggled by setupTcgFlipSwipe (script.js) from the rotation angle:
+   the face pointing away is hidden outright, and the hidden front stops animating. */
+.tcg-flip.face-back .tcg-card:not(.tcg-card-back) { visibility: hidden; }
+.tcg-flip:not(.face-back) .tcg-card-back { visibility: hidden; }
+.tcg-flip.face-back .tcg-card:not(.tcg-card-back) * { animation-play-state: paused; }
+
 /* ---------- Front face: layout redesigned for the 63x88 card ----------
    Real sizes (no scaling). Time Hunted / Odds sit side by side, the header
    and credit line are one row each, and the sprite window takes whatever
@@ -3292,7 +3307,7 @@ grid-template-areas:
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-dmg {
   grid-area: dmg; text-align: left; font-size: 20px; line-height: 1.1; white-space: nowrap;
 }
-@container (max-width: 400px) {
+@media (max-width: 430px) {
   .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-inner > .tcg-attack {
     grid-template-columns: 28px minmax(0, 1fr); column-gap: 6px; padding: 5px 16px 5px 6px;
   }
