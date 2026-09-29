@@ -3193,6 +3193,13 @@ grid-template-areas:
   background: transparent;
 }
 
+/* The modal box is 92vh tall and mostly transparent now that the card is
+   shorter than it, so its empty area was swallowing taps meant for the
+   backdrop (which closes on a tap directly on it). Let taps pass through the
+   box; only the card itself catches them. */
+.modal.modal-found { pointer-events: none; }
+.modal.modal-found .tcg-flip { pointer-events: auto; }
+
 .modal.modal-found .tcg-card {
   flex: 1;
   min-height: 0;
