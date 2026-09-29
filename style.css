@@ -3285,8 +3285,28 @@ grid-template-areas:
 }
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-inner > * { grid-column: 1 / -1; min-width: 0; }
 
-/* Header: name + stage tag share a line, soft resets on the right */
+/* Header: name + stage tag share a line, soft resets on the right.
+   Uses the Active Hunt page's pixel font (Press Start 2P), and larger sizes. */
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-header { padding: 0 2px; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-name {
+  font-family: var(--pixel); font-weight: 400; font-size: 15px; line-height: 1.4;
+  letter-spacing: 0.5px; text-transform: uppercase; overflow-wrap: anywhere;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-evo-stage {
+  font-family: var(--pixel); font-weight: 400; font-size: 8px; letter-spacing: 0.3px;
+  padding: 4px 7px; border-radius: 7px;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-evo-line { font-family: var(--pixel); font-size: 8px; line-height: 1.5; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-hp { gap: 8px; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-hp-label {
+  font-family: var(--pixel); font-weight: 400; font-size: 8px; letter-spacing: 0.3px; line-height: 1.4;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-hp-value {
+  font-family: var(--pixel); font-weight: 400; font-size: 19px; line-height: 1.3; letter-spacing: 0;
+}
+/* Round type icon: its size is set inline by the script, hence !important */
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-hp .type-circle-icon,
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-hp-icon { width: 46px !important; height: 46px !important; }
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-header-left {
   flex-direction: row; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0;
 }
@@ -3295,27 +3315,35 @@ grid-template-areas:
 /* Sprite window: fills the leftover height */
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-art { margin: 0; max-height: none; min-height: 90px; }
 
-/* Dex number badge overlaps the bottom edge of the art, dates tuck under it */
+/* Dex number badge: its side tips sit exactly on the bottom edge of the art
+   box (the decorative flourish lines off its sides are removed).
+   Pill is a fixed 34px tall (30px fill + 2px outline each side), so centring
+   it on the edge = pull it up by row gap (6px) + half its height (17px) + half
+   the art border (1.25px). */
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-dexline-wrap {
-  justify-self: center; align-self: center; margin: -20px 0 0;
+  justify-self: center; align-self: center; margin: calc(-6px - 17px - 1.25px) 0 0;
 }
-.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-dates { margin: -2px 0 0; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-dexline-fill {
+  box-sizing: border-box; height: 30px; padding-top: 0; padding-bottom: 0;
+}
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-dexline-flourish { display: none; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-dates { margin: 1px 0 0; }
 
 /* Time Hunted / Odds: two half-width pills, icon left, label over value */
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-inner > .tcg-attack {
   grid-column: auto;
   margin: 0;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 30px minmax(0, 1fr);
   grid-template-areas: "icon name" "icon dmg";
-  column-gap: 8px; row-gap: 0;
+  column-gap: 6px; row-gap: 0;
   align-items: center; align-content: center;
-  padding: 5px 20px 5px 7px;
+  padding: 5px 16px 5px 7px;
 }
-.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-cost { grid-area: icon; width: 34px; height: 34px; }
-.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-medallion-icon { width: 34px; height: 34px; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-cost { grid-area: icon; width: 30px; height: 30px; }
+.tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-medallion-icon { width: 30px; height: 30px; }
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-name {
-  grid-area: name; flex: none; font-size: 11.5px; line-height: 1.2; color: var(--ink-dim);
+  grid-area: name; flex: none; font-size: 11px; line-height: 1.2; color: var(--ink-dim);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .tcg-flip-inner .tcg-card:not(.tcg-card-back) .tcg-attack-dmg {
