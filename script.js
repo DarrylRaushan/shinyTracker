@@ -1,3 +1,4 @@
+
 (function() {
 var shown = 0;
 window.addEventListener('error', function(e) {
@@ -26,6 +27,10 @@ appId: "1:465878753061:web:8f17830985c56a2ec444cc",
 measurementId: "G-77C8511J0P"
 };
 var STORE_KEY = 'shinyTrackerState';
+// Guest mode: set when "Guest" is picked on the profile gate. While true, the
+// app works on an in-memory COPY of the data and nothing is written to
+// localStorage or Firestore, and incoming cloud updates are ignored.
+var isGuest = false;
 var state = load();
 function load() {
 var s = null;
@@ -43,6 +48,7 @@ if (!s.lastHuntPrefs) s.lastHuntPrefs = null;
 return s;
 }
 function save() {
+if (isGuest) return;
 try {
 localStorage.setItem(STORE_KEY, JSON.stringify(state));
 } catch (e) {}
@@ -74,6 +80,7 @@ var HISTORY_LIMIT = 30;
 var _cloudSaveTimer = null;
 var _cloudRetryTimer = null;
 var _cloudSyncStarted = false;
+var _cloudUnsubscribe = null;
 var _cloudMigrationAttempted = false;
 // Guards against a stale local copy (e.g. a device/PWA install that hasn't
 // been opened in a while, sitting on old localStorage) pushing its old data
@@ -83,6 +90,7 @@ var _cloudMigrationAttempted = false;
 var _cloudInitialPullDone = false;
 var _pushPendingAfterPull = false;
 function connectToCloud() {
+if (isGuest) return false;
 if (CLOUD_DOC) return true;
 try {
 if (!window.firebase || !firebase.firestore) return false;
@@ -123,6 +131,7 @@ clean.updatedAt = Date.now();
 return clean;
 }
 function applyCloudState(remote) {
+if (isGuest) return;
 var clean = normaliseCloudState(remote);
 if (cloudStateSignature(clean) === cloudStateSignature(state)) {
 markInitialPullDone();
@@ -144,6 +153,7 @@ pushToCloud();
 }
 }
 function pushToCloud() {
+if (isGuest) return;
 if (!connectToCloud()) {
 retryCloudConnection();
 return;
@@ -214,7 +224,7 @@ return;
 }
 if (_cloudSyncStarted) return;
 _cloudSyncStarted = true;
-CLOUD_DOC.onSnapshot(function(doc) {
+_cloudUnsubscribe = CLOUD_DOC.onSnapshot(function(doc) {
 if (!doc.exists) {
 // First use of the current direct-field document: safely import an older
 // payload document when present, otherwise seed it from local state.
@@ -3186,28 +3196,20 @@ var slug = String(base || '')
 if (!slug) return '';
 return suffix ? (slug + '-' + suffix) : slug;
 }
-// Ordered list of sprite URLs to try for a given Pokemon, based on its
-// generation. Gen 1-5 -> animated Black & White 2 gif first, then animated
-// Black & White gif, then falling back to the static Black & White shiny
-// if no animated sprite exists for that Pokemon in either set. Gen 6-8 ->
-// Pokemon Showdown's animated sprite CDN first (the same "3D model"
-// render-turntable style Project Pokemon's sprite index credits to the
-// community/pkparaiso - Showdown hosts an actively-maintained copy of
-// this same art at play.pokemonshowdown.com/sprites/ani-shiny/, which is
-// far more reliable to hotlink than a small fansite), falling back to the
-// static renders this app used before (X/Y for gen 6, Sun/Moon then
-// Ultra Sun/Ultra Moon for gen 7, HOME for gen 8) if a specific
-// Pokemon/form isn't in Showdown's set. Gen 9 -> Pokemon HOME. All shiny.
-// Mirrors shinySpriteUrls() but points at the non-shiny ("normal" form)
-// sprite paths instead, by swapping the shiny path segments used by each
-// source (pokemondb's /shiny/ folder, Showdown's ani-shiny set) for their
-// normal-form equivalents. Used to let the sprite mark toggle the card's
-// display between shiny and normal art - purely visual, no bearing on the
-// logged catch itself (which was still shiny).
+// Ordered sprite URLs for hunt cards / log / TCG views.
+// Gen 1-5: static Black/White pixel sprites first (faster than animated
+// GIFs), with Showdown ani-shiny as optional flair backup.
+// Gen 6-8: Showdown animated, then static game renders.
+// Gen 9: Pokemon HOME only.
+// normalSpriteUrls mirrors these paths for the shiny/normal toggle.
 function normalSpriteUrls(name) {
 var shinyUrls = shinySpriteUrls(name);
 return shinyUrls.map(function(u) {
-return u.replace('ani-shiny', 'ani').replace('/shiny/', '/normal/');
+return u
+.replace('home-shiny', 'home')
+.replace('ani-shiny', 'ani')
+.replace('/shiny/', '/normal/')
+.replace('/anim/shiny/', '/anim/normal/');
 });
 }
 function shinySpriteUrls(name) {
@@ -3215,36 +3217,27 @@ var slug = pokemonSlug(name);
 if (!slug) return [];
 var gen = pokemonGenOf(name);
 var base = 'https://img.pokemondb.net/sprites/';
-if (gen === 6 || gen === 7 || gen === 8) {
 var sdSlug = showdownSlug(name);
-var animated = sdSlug ? ['https://play.pokemonshowdown.com/sprites/ani-shiny/' + sdSlug + '.gif'] : [];
+var showdownAni = sdSlug ? ['https://play.pokemonshowdown.com/sprites/ani-shiny/' + sdSlug + '.gif'] : [];
+if (gen === 6 || gen === 7 || gen === 8) {
 var staticFallback =
 (gen === 6) ? [base + 'x-y/shiny/' + slug + '.png'] :
-(gen === 7) ? [base + 'sun-moon/shiny/' + slug + '.png', base + 'ultra-sun-ultra-moon/shiny/' + slug + '.png'] : [base + 'home/shiny/' + slug + '.png'];
-return animated.concat(staticFallback);
+(gen === 7) ? [base + 'sun-moon/shiny/' + slug + '.png', base + 'ultra-sun-ultra-moon/shiny/' + slug + '.png'] :
+[base + 'home/shiny/' + slug + '.png'];
+return showdownAni.concat(staticFallback);
 }
-if (gen === 9) {
-var sdSlug9 = showdownSlug(name);
-var animated9 = sdSlug9 ? ['https://play.pokemonshowdown.com/sprites/ani-shiny/' + sdSlug9 + '.gif'] : [];
-return animated9.concat([base + 'home/shiny/' + slug + '.png']);
+if (gen === 9 || gen === null) {
+return [base + 'home/shiny/' + slug + '.png'].concat(
+sdSlug ? ['https://play.pokemonshowdown.com/sprites/home-shiny/' + sdSlug + '.png'] : []
+);
 }
-// gen 1-5, and unknown/undated Pokemon: try pokemondb's Black/White 2
-// animated shiny sprite first (the set requested), then Black/White,
-// then the static Black/White shiny. Showdown's "ani-shiny" set (which
-// covers the whole dex, not just gen 6-8) is kept as a fallback after
-// those - img.pokemondb.net has been known to block hotlinked requests
-// (see their /sprites page: "linking directly to our images... uses
-// bandwidth and costs us money"), so if the pokemondb URLs 403 in a
-// given browser/network, Showdown still fills in rather than falling
-// all the way through to the letter placeholder.
-var slugForShowdown = showdownSlug(name);
-var showdownFallback = slugForShowdown ? ['https://play.pokemonshowdown.com/sprites/ani-shiny/' + slugForShowdown + '.gif'] : [];
-return [
-base + 'black-white-2/anim/shiny/' + slug + '.gif',
-base + 'black-white/anim/shiny/' + slug + '.gif'
-].concat(showdownFallback, [
-base + 'black-white/shiny/' + slug + '.png'
-]);
+// Gen 1-5: Showdown gen5-shiny pixel PNG first (~40ms). pokemondb BW and
+// animated GIFs kept as backups only.
+var gen5 = sdSlug ? ['https://play.pokemonshowdown.com/sprites/gen5-shiny/' + sdSlug + '.png'] : [];
+return gen5.concat([
+base + 'black-white/shiny/' + slug + '.png',
+base + 'black-white-2/shiny/' + slug + '.png'
+], showdownAni);
 }
 // Maps the "(Alolan)"/"(Galarian)"/"(Hisuian)"/"(Paldean)" tag used in this
 // app's display names to the suffix PokeSprite itself uses in its
@@ -3260,7 +3253,9 @@ var REGION_TAG_TO_POKESPRITE_SUFFIX = {
 // variant tags to PokeSprite's own suffixes so the pixel sprite actually
 // resolves instead of guaranteed-404ing on every single variant.
 function pokespriteSlug(name) {
-var m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(String(name || '').trim());
+name = String(name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+if (/^zygarde\s*50%/i.test(name)) return 'zygarde';
+var m = /^(.*?)\s*\(([^)]+)\)\s*$/.exec(name.trim());
 if (m) {
 var base = pokemonSlug(m[1]);
 var suffix = REGION_TAG_TO_POKESPRITE_SUFFIX[m[2].trim().toLowerCase()];
@@ -3268,48 +3263,22 @@ return suffix ? (base + '-' + suffix) : base;
 }
 return pokemonSlug(name);
 }
-// Ordered sprite URLs for the Living Dex species chips: the PokeSprite
-// pixel box sprite first (hotlinked from msikma/pokesprite on GitHub via
-// the jsdelivr CDN - not stored in this project, just referenced), using
-// the "pokemon-gen8" set which covers every base species plus regional
-// forms (Alolan/Galarian/Hisuian) through Legends: Arceus. Only Pokemon or
-// forms PokeSprite genuinely doesn't have pixel art for (mainly the
-// Paldean-exclusive species/forms, which postdate PokeSprite's last sync)
-// fall back to HOME's 3D render. Pass shiny=true for the Shiny Living Dex
-// tab to use the shiny variant.
+// Ordered sprite URLs for the Living Dex species chips.
+// All gens: Showdown gen5 / gen5-shiny pixel sprites (~40ms each). HOME
+// is only a last-resort fallback. Pass shiny=true for Shiny Living Dex.
 
 function dexEntrySpriteUrls(name, shiny) {
 var slug = pokemonSlug(name);
 if (!slug) return [];
-var pixelSlug = pokespriteSlug(name);
-var pixel = 'https://cdn.jsdelivr.net/gh/msikma/pokesprite@master/pokemon-gen8/' + (shiny ? 'shiny' : 'regular') + '/' + pixelSlug + '.png';
 var home = 'https://img.pokemondb.net/sprites/home/' + (shiny ? 'shiny' : 'normal') + '/' + slug + '.png';
 var sdSlug = showdownSlug(name);
-// PokeSprite's "pokemon-gen8" set predates Scarlet/Violet, so every
-// Paldean-dex species 404s on `pixel` above and used to fall straight
-// through to the big static 3D HOME render. Pokemon Showdown hosts its
-// own small Pokedex box-icon set (sprites/dex, sprites/dex-shiny) that
-// covers the whole dex including Gen 9 - same compact "box sprite"
-// look as the pixel set above, just not hand-drawn pixel art - so it's
-// slotted in here as a same-style second attempt before giving up and
-// falling back to the big 3D render.
-//
-// BUT: Showdown's "dex-shiny" folder isn't actually recolored for
-// newer species - its Gen 8/9 files are the same asset as the
-// non-shiny "dex" set (verified by matching file sizes on Showdown's
-// own sprite index), so including it as a shiny fallback was silently
-// showing normal colors on the Shiny Living Dex whenever the pixel
-// sprite 404'd (every Gen 9 species). Only used for the non-shiny
-// request, where it's accurate. When shiny is requested, skip straight
-// from the pixel attempt to Showdown's separate "home-shiny" set
-// (genuinely recolored, unlike dex-shiny) before the pokemondb HOME
-// fallback.
-if (shiny) {
-var showdownHomeShiny = sdSlug ? ['https://play.pokemonshowdown.com/sprites/home-shiny/' + sdSlug + '.png'] : [];
-return [pixel].concat(showdownHomeShiny, [home]);
+// All gens (including Gen 9): Showdown gen5 pixel sprites. HOME is only
+// a last-resort fallback if a form has no gen5 art.
+if (!sdSlug) {
+return [home];
 }
-var showdownBoxIcon = sdSlug ? ['https://play.pokemonshowdown.com/sprites/dex/' + sdSlug + '.png'] : [];
-return [pixel].concat(showdownBoxIcon, [home]);
+var pixel = 'https://play.pokemonshowdown.com/sprites/' + (shiny ? 'gen5-shiny' : 'gen5') + '/' + sdSlug + '.png';
+return [pixel, home];
 }
 // Live "evolves from" lookup via PokeAPI, used for the catch confirmation
 // card. This app doesn't carry a hand-built evolution chain table (that's
@@ -9694,6 +9663,10 @@ if (tabBtn) { tabBtn.click(); } else { activateTab('collection'); }
 }
 function loadHistoryList(overlay) {
 var list = overlay.querySelector('#dt-history-list');
+if (isGuest) {
+list.innerHTML = '<div class="dev-history-empty">History is not available in Guest mode.</div>';
+return;
+}
 if (!connectToCloud() || !HISTORY_COLLECTION) {
 list.innerHTML = '<div class="dev-history-empty">Cloud sync isn\'t connected right now.</div>';
 return;
@@ -9727,6 +9700,7 @@ list.innerHTML = '<div class="dev-history-empty">Couldn\'t load snapshot history
 });
 }
 function restoreHistorySnapshot(docId, overlay) {
+if (isGuest) return;
 if (!confirm('Restore this snapshot? Your current hunts and collection will be replaced with what was saved at that point.')) return;
 HISTORY_COLLECTION.doc(docId).get().then(function(doc) {
 if (!doc.exists) {
@@ -9751,6 +9725,37 @@ alert('Restore failed - check your connection and try again.');
 // releasing short of halfway springs it back. A plain tap (no horizontal
 // movement) does nothing here, so taps on interactive content inside the
 // front face - like the "confirm catch" sprite - still work normally.
+// Floating tip on the catch / log card: swipe or drag to flip it over.
+function showTcgFlipHint(overlay) {
+  if (!overlay || overlay.querySelector('.tcg-flip-hint')) return;
+  var host = overlay.querySelector('.modal') || overlay;
+  var tip = document.createElement('div');
+  tip.className = 'tcg-flip-hint';
+  tip.setAttribute('role', 'status');
+  tip.innerHTML = '<span class="tcg-flip-hint-icon" aria-hidden="true">⇄</span><span class="tcg-flip-hint-text">Swipe or drag the card to flip it</span>';
+  host.appendChild(tip);
+  requestAnimationFrame(function() {
+    tip.classList.add('is-visible');
+  });
+  var dismissed = false;
+  function dismiss() {
+    if (dismissed) return;
+    dismissed = true;
+    tip.classList.remove('is-visible');
+    tip.classList.add('is-hiding');
+    setTimeout(function() {
+      if (tip.parentNode) tip.parentNode.removeChild(tip);
+    }, 320);
+  }
+  // Hide once the user starts interacting with the card, or after a few seconds.
+  var flip = overlay.querySelector('.tcg-flip');
+  if (flip) {
+    flip.addEventListener('pointerdown', dismiss, { once: true });
+  }
+  tip.addEventListener('click', dismiss);
+  setTimeout(dismiss, 4500);
+}
+
 function setupTcgFlipSwipe(flipEl) {
   if (!flipEl) return;
   var inner = flipEl.querySelector('.tcg-flip-inner');
@@ -9972,6 +9977,7 @@ function openFoundModal(hunt) {
 
   hydrateTypeCircleIcons(overlay);
   setupTcgFlipSwipe(overlay.querySelector('#tcg-flip'));
+  showTcgFlipHint(overlay);
 
   var backImg = overlay.querySelector('#tcg-back-image');
   var backPlaceholder = overlay.querySelector('#tcg-back-placeholder');
@@ -10210,6 +10216,7 @@ function openLogEntryCardModal(entry) {
 
   hydrateTypeCircleIcons(overlay);
   setupTcgFlipSwipe(overlay.querySelector('#tcg-flip'));
+  showTcgFlipHint(overlay);
 
   // The back starts as an empty placeholder; once something sets a real
   // src on #tcg-back-image (e.g. entry.customImage, an upload flow, etc.)
@@ -10489,6 +10496,309 @@ container.appendChild(s);
 }})();
 
 
+// Guest tips: a guided tour (plus a "?" button to replay it) and small hints
+// inside a couple of pop-ups. Only ever started from the Guest branch of the
+// profile gate below, so User1 never sees any of it. The tour has three
+// parts: the hunts + Shiny Log pages, the Living Dex pages (it navigates
+// there by itself), and a short wrap-up. Guests who open the Living Dex on
+// their own also get the Living Dex part once.
+(function setupGuestTips() {
+var card = document.getElementById('guest-tip');
+var helpBtn = document.getElementById('guest-help-btn');
+if (!card || !helpBtn) return;
+var elStep = document.getElementById('guest-tip-step');
+var elTitle = document.getElementById('guest-tip-title');
+var elText = document.getElementById('guest-tip-text');
+var btnNext = document.getElementById('guest-tip-next');
+var btnBack = document.getElementById('guest-tip-back');
+var btnSkip = document.getElementById('guest-tip-skip');
+var btnExtra = document.getElementById('guest-tip-extra');
+var modelsNudgeBtn = document.getElementById('guest-models-nudge');
+var modelsNudgeReady = false;
+var modelsNudgeDone = false;
+var STEPS = [
+{ sec: 'main', tab: 'hunts', title: 'Welcome, guest!', text: 'This is a shiny-hunting tracker. You are using a practice copy, so tap anything you like - nothing you do here is saved. Tap Next for a quick tour.' },
+{ sec: 'main', tab: 'hunts', sel: '.hunt-card', title: 'Your hunts', text: 'Each card is a shiny hunt in progress: the Pok\u00e9mon, the game, the method and your odds.' },
+{ sec: 'main', tab: 'hunts', sel: '[data-action="toggle-timer"]', title: 'Timer', text: 'Tap \u25b6 to start the timer and \u23f8 to pause it. It keeps track of how long the hunt has taken.' },
+{ sec: 'main', tab: 'hunts', sel: '[data-action="add-encounter"]', title: 'Counting encounters', text: 'Tap +1 every time you meet the Pok\u00e9mon (+5 for a bigger jump, \u22121 to undo a mistake). The odds bar fills up as your count grows.' },
+{ sec: 'main', tab: 'hunts', sel: '[data-action="mark-found"]', title: 'Caught it!', text: 'Press the Pok\u00e9 Ball when the shiny appears. You confirm the catch and it moves to the Shiny Log.' },
+{ sec: 'main', tab: 'hunts', sel: '.hunt-dex-flap-lens, [data-action="new-hunt"]', title: 'Start a new hunt', text: 'Tap the big round lens to start a new hunt. The small lights next to it: red abandons a hunt, yellow adds it to the log, green edits it.' },
+{ sec: 'main', tab: 'collection', sel: '#log-screen-next', title: 'Shiny Log', text: 'Every shiny you have caught lives here. Use the arrows under the screen to flip through them. (On a phone you can also swipe between pages.)' },
+{ sec: 'main', tab: 'collection', sel: '#log-mode-toggle', title: 'Card or Grid', text: 'Card shows one catch at a time, Grid shows them all. The tabs below switch what details you see for the current catch.' },
+{ sec: 'main', tab: 'collection', logPanel: 'overview', sel: '.log-v2-tabs [data-log-tab="overview"]', title: 'Overview tab', text: 'Overview is a Pok\u00e9dex-style entry for the shiny on screen: its category (genus), region, height, weight, abilities, and a short flavor text from the games.' },
+{ sec: 'main', tab: 'collection', logPanel: 'stats', sel: '.log-v2-tabs [data-log-tab="stats"]', title: 'Stats tab', text: 'Stats shows base stats as bars, type matchups (weaknesses and resistances), and extra species facts for the current catch.' },
+{ sec: 'main', tab: 'collection', logPanel: 'log', sel: '.log-v2-tabs [data-log-tab="log"]', title: 'Log tab', text: 'Log is the full list controls - search, sort, and filter your catches. The round button between the arrows opens the Living Dex.' },
+{ sec: 'main', tab: 'collection', logPanel: 'log', sel: '#log-screen-menu', title: 'Living Dex button', text: 'This round button opens the Living Dex, a checklist of every Pok\u00e9mon. First, feel free to explore the Active Hunts and Shiny Log pages. When you are ready, tap this button and I will show you around the Living Dex.' },
+{ sec: 'dex', tab: 'livingdex', sel: '#kalos-top, #dex-closed-cover', title: 'Welcome to the Living Dex', text: 'This is your Pok\u00e9dex checklist. On a phone it starts closed like a real Pok\u00e9dex - tap Next and I will open it for you.' },
+{ sec: 'dex', tab: 'livingdex', openShell: true, sel: '#kalos-mode-toggle, #dex-mode-toggle', title: 'Living or Shiny', text: 'Switch between the Living Dex (every Pok\u00e9mon you have caught) and the Shiny Dex (shinies only). Each side shows your progress.' },
+{ sec: 'dex', tab: 'livingdex', sel: '#kalos-gen-grid, #dex-grid', title: 'Generations', text: 'Pok\u00e9mon are grouped by generation. Swipe sideways (or scroll) to browse them and tap a generation to open it. The percentage shows how much of it you have completed.' },
+{ sec: 'dex', tab: 'livingdex', title: 'Marking Pok\u00e9mon', text: 'Open a generation and tap a Pok\u00e9mon to mark it as caught. Tap it again to unmark it.' },
+{ sec: 'dex', tab: 'livingdex', sel: '#btn-k-search, #dex-search', title: 'Search', text: 'Looking for a specific Pok\u00e9mon? Search for it by name.' },
+{ sec: 'dex', tab: 'livingdex', sel: '#btn-k-sort, #btn-dex-sort', title: 'Sort and filter', text: 'Change the order of the list, or filter by type and by form (like Alolan or Galarian). The reset button clears all filters.' },
+{ sec: 'dex', tab: 'livingdex', sel: '#btn-k-3d-toggle, #btn-dex-3d-toggle', title: '3D View', text: 'Turn on 3D View so tapping a Pok\u00e9mon opens its 3D model instead of marking it caught. (More on that in a short extra guide at the end.)' },
+{ sec: 'dex', tab: 'livingdex', sel: '.dex-toggle-back-btn', title: 'Going back', text: 'Tap the \u2190 button to return to Active Hunts whenever you like. When you finish this guide, a pulsing ? will appear on this page - tap it anytime for a walkthrough of 3D models.' },
+{ sec: 'models', tab: 'livingdex', openShell: true, sel: '#btn-k-3d-toggle, #btn-dex-3d-toggle', title: 'Turn on 3D View', text: 'Tap 3D View so it stays on. On a phone, open the 3D menu and turn on "3D View". While it is on, tapping a sprite opens a model instead of toggling caught.' },
+{ sec: 'models', tab: 'livingdex', sel: '#btn-k-3d-toggle, #k-anim-toggle-option, #btn-dex-anim-filter', title: 'Animated Only', text: 'Optional: turn on Animated Only to hide species that do not have a moving 3D model, so you only see ones that can play an idle animation.' },
+{ sec: 'models', tab: 'livingdex', sel: '#kalos-gen-grid, #dex-grid', title: 'Pick a generation', text: 'Open any generation box so you can see the Pok\u00e9mon list. (If one is already open, you are good.)' },
+{ sec: 'models', tab: 'livingdex', title: 'Open a 3D model', text: 'With 3D View on, tap a Pok\u00e9mon sprite. Its 3D model appears - drag to rotate it. Close it by tapping outside the model. That is the whole flow!' }
+];
+var FIRST_DEX = STEPS.findIndex(function(s) { return s.sec === 'dex'; });
+var FIRST_MODELS = STEPS.findIndex(function(s) { return s.sec === 'models'; });
+var LAST_MAIN = FIRST_DEX - 1;
+var LAST_DEX = FIRST_MODELS - 1;
+var LAST_MODELS = STEPS.length - 1;
+var idx = 0;
+var firstIdx = 0;
+var lastIdx = LAST_MAIN;
+// After the hunts + Shiny Log tour, keep pulsing the way to the Living Dex
+// (a "Shiny Log" pill on the hunts page, the Living Dex button on the log
+// page) until the guest has opened the Living Dex once.
+var nudgeOn = false;
+var nudgePill = document.getElementById('guest-log-nudge');
+var open = false;
+var highlighted = null;
+var token = 0;
+var dexOfferedOnce = false;
+function clearHighlight() {
+if (highlighted) highlighted.classList.remove('guest-tip-highlight');
+highlighted = null;
+}
+function findVisible(sel) {
+var list = document.querySelectorAll(sel);
+for (var i = 0; i < list.length; i++) {
+var r = list[i].getBoundingClientRect();
+if (r.width > 0 && r.height > 0 && r.right > 0 && r.left < window.innerWidth) return list[i];
+}
+return null;
+}
+function goToTab(tab) {
+try { if (tab && typeof activateTab === 'function') activateTab(tab); } catch (e) {}
+}
+// The Living Dex button only exists on screen while the Log tab of the Shiny
+// Log page is selected, so the tour and the pulsing both switch to / point at it.
+function showLogPanel(panel) {
+if (!panel) return;
+var shell = document.getElementById('log-dex-shell');
+var tabBtn = document.querySelector('.log-v2-tabs [data-log-tab="' + panel + '"]');
+if (tabBtn && shell && shell.getAttribute('data-log-tab') !== panel) tabBtn.click();
+}
+function showLogTab() {
+showLogPanel('log');
+}
+function ensureDexOpen() {
+var top = document.getElementById('kalos-top');
+if (top && top.getAttribute('aria-expanded') !== 'true' && top.getBoundingClientRect().width > 0) top.click();
+}
+function render() {
+var step = STEPS[idx];
+var my = ++token;
+clearHighlight();
+if (step.sec === 'dex' || step.sec === 'models') dexOfferedOnce = true;
+elStep.textContent = (idx - firstIdx + 1) + ' / ' + (lastIdx - firstIdx + 1);
+elTitle.textContent = step.title;
+elText.textContent = step.text;
+btnBack.hidden = idx === firstIdx;
+btnNext.textContent = idx === lastIdx ? 'Done' : 'Next';
+// 3D models walkthrough is offered via the pulsing ? after this guide ends.
+if (btnExtra) btnExtra.hidden = true;
+card.classList.add('is-open');
+goToTab(step.tab);
+if (step.logPanel) showLogPanel(step.logPanel);
+else if (step.logTab) showLogTab();
+if (step.openShell) ensureDexOpen();
+// Give the page slide / shell opening a moment to finish before looking
+// for the target.
+setTimeout(function() {
+if (my !== token || !open) return;
+if (!step.sel) return;
+var target = findVisible(step.sel);
+if (!target) return;
+target.classList.add('guest-tip-highlight');
+highlighted = target;
+// The card stays wherever it already is. It only hops to the other
+// edge when it is actually covering the feature being explained.
+function covers() {
+var t = target.getBoundingClientRect();
+var c = card.getBoundingClientRect();
+var m = 8;
+return !(t.right < c.left - m || t.left > c.right + m || t.bottom < c.top - m || t.top > c.bottom + m);
+}
+if (covers()) {
+card.classList.toggle('guest-tip--top');
+if (covers()) card.classList.toggle('guest-tip--top');
+}
+}, step.openShell ? 1000 : 450);
+}
+function currentTab() {
+var clam = document.getElementById('dex-clamshell');
+return clam ? clam.getAttribute('data-active') : null;
+}
+function updateNudge() {
+var menuBtn = document.getElementById('log-screen-menu');
+var logTabBtn = document.querySelector('.log-v2-tabs [data-log-tab="log"]');
+var logShell = document.getElementById('log-dex-shell');
+if (menuBtn) menuBtn.classList.remove('guest-nudge');
+if (logTabBtn) logTabBtn.classList.remove('guest-nudge');
+if (nudgePill) nudgePill.classList.remove('is-on');
+if (!isGuest || !nudgeOn || open) return;
+var tab = currentTab();
+if (tab === 'livingdex') { nudgeOn = false; return; }
+if (tab === 'collection') {
+if (logShell && logShell.getAttribute('data-log-tab') === 'log') {
+if (menuBtn) menuBtn.classList.add('guest-nudge');
+} else if (logTabBtn) {
+logTabBtn.classList.add('guest-nudge');
+}
+} else if (nudgePill) {
+nudgePill.classList.add('is-on');
+}
+}
+function updateModelsNudge() {
+if (!modelsNudgeBtn) return;
+var show = isGuest && modelsNudgeReady && !modelsNudgeDone && !open && onLivingDex();
+modelsNudgeBtn.hidden = !show;
+modelsNudgeBtn.classList.toggle('is-on', show);
+}
+function close() {
+var wasMain = STEPS[idx].sec === 'main';
+var wasDex = STEPS[idx].sec === 'dex';
+var wasModels = STEPS[idx].sec === 'models';
+open = false;
+token++;
+clearHighlight();
+card.classList.remove('is-open');
+if (btnExtra) btnExtra.hidden = true;
+if (wasMain) nudgeOn = true;
+// After the Living Dex guide ends, pulse a ? that starts the 3D models tour.
+if (wasDex) modelsNudgeReady = true;
+if (wasModels) modelsNudgeDone = true;
+updateNudge();
+updateModelsNudge();
+}
+if (nudgePill) nudgePill.addEventListener('click', function() { goToTab('collection'); });
+function startFull() {
+idx = 0;
+firstIdx = 0;
+lastIdx = LAST_MAIN;
+open = true;
+updateNudge();
+render();
+}
+// Living Dex part only (used when a guest opens the Living Dex themselves,
+// and by the ? button while the Living Dex is showing).
+function startDex() {
+idx = FIRST_DEX;
+firstIdx = FIRST_DEX;
+lastIdx = LAST_DEX;
+open = true;
+updateNudge();
+render();
+}
+function startModels() {
+idx = FIRST_MODELS;
+firstIdx = FIRST_MODELS;
+lastIdx = LAST_MODELS;
+open = true;
+updateNudge();
+updateModelsNudge();
+render();
+}
+function onLivingDex() {
+var clam = document.getElementById('dex-clamshell');
+return !!clam && clam.getAttribute('data-active') === 'livingdex';
+}
+btnNext.addEventListener('click', function() {
+if (idx >= lastIdx) { close(); return; }
+idx++;
+render();
+});
+btnBack.addEventListener('click', function() {
+if (idx > firstIdx) { idx--; render(); }
+});
+btnSkip.addEventListener('click', close);
+if (btnExtra) btnExtra.addEventListener('click', function() {
+startModels();
+});
+if (modelsNudgeBtn) modelsNudgeBtn.addEventListener('click', function() {
+startModels();
+});
+helpBtn.addEventListener('click', function() {
+if (onLivingDex()) startDex(); else startFull();
+});
+// Re-point the pulsing when the Overview / Stats / Log tab changes.
+var logShellEl = document.getElementById('log-dex-shell');
+if (logShellEl) {
+new MutationObserver(updateNudge).observe(logShellEl, { attributes: true, attributeFilter: ['data-log-tab'] });
+}
+// First time a guest opens the Living Dex on their own, offer its guide.
+var clamshell = document.getElementById('dex-clamshell');
+if (clamshell) {
+new MutationObserver(function() {
+updateNudge();
+updateModelsNudge();
+if (!isGuest || open || dexOfferedOnce) return;
+if (!onLivingDex()) return;
+dexOfferedOnce = true;
+setTimeout(function() { if (isGuest && !open && onLivingDex()) startDex(); }, 500);
+}).observe(clamshell, { attributes: true, attributeFilter: ['data-active'] });
+}
+window.startGuestTips = startFull;
+})();
+// Profile gate: User1 = normal app. Guest = wait (briefly) for the cloud copy
+// to arrive, take an in-memory duplicate of it, then cut every write path.
+(function setupProfileGate() {
+var gate = document.getElementById('profile-gate');
+if (!gate) return;
+var userBtn = document.getElementById('btn-profile-user1');
+var guestBtn = document.getElementById('btn-profile-guest');
+var sub = document.getElementById('profile-gate-sub');
+function closeGate() {
+gate.classList.add('is-hidden');
+}
+userBtn.addEventListener('click', closeGate);
+guestBtn.addEventListener('click', function() {
+userBtn.disabled = true;
+guestBtn.disabled = true;
+sub.textContent = 'Copying data\u2026';
+var startedAt = Date.now();
+(function waitForData() {
+if (_cloudInitialPullDone || Date.now() - startedAt > 4000) {
+clearTimeout(_cloudSaveTimer);
+_pushPendingAfterPull = false;
+state = JSON.parse(JSON.stringify(state));
+isGuest = true;
+// Belt and braces: detach the live cloud listener, drop the Firestore
+// handles, and make localStorage ignore writes to the real data key, so
+// nothing done as Guest can reach the User1 data even via a code path
+// that doesn't go through save().
+try { if (_cloudUnsubscribe) _cloudUnsubscribe(); } catch (e) {}
+_cloudUnsubscribe = null;
+CLOUD_DOC = null;
+LEGACY_CLOUD_DOC = null;
+HISTORY_COLLECTION = null;
+db = null;
+try {
+var _origSetItem = Storage.prototype.setItem;
+var _origRemoveItem = Storage.prototype.removeItem;
+Storage.prototype.setItem = function(k, v) {
+if (isGuest && k === STORE_KEY) return;
+return _origSetItem.apply(this, arguments);
+};
+Storage.prototype.removeItem = function(k) {
+if (isGuest && k === STORE_KEY) return;
+return _origRemoveItem.apply(this, arguments);
+};
+} catch (e) {}
+document.body.classList.add('is-guest');
+renderAll();
+closeGate();
+setTimeout(function() { if (window.startGuestTips) window.startGuestTips(); }, 350);
+} else {
+setTimeout(waitForData, 100);
+}
+})();
+});
+})();
 // Populate the interface from local state immediately. Cloud sync can return
 // later and repaint once the first snapshot arrives.
 renderAll();
