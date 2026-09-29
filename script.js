@@ -4147,6 +4147,67 @@ return oddsGaugeColors(t * 100);
 // update instead of reflowing the shell. Deliberately NOT a hardcoded guess
 // (that clipped real content before) - it's measured from the actual DOM.
 var HUNT_CARD_LOCKED_HEIGHT = null;
+// ---- Target ring (reticle) builder ----
+// Odds arc: the outermost ring fills to the hunt's cumulative shiny probability
+// (the same number as "Odds So Far"), colored by the same green->red gauge as the
+// progress bar. The gold notch marks the 1x-average point (encounters == odds
+// denominator) and lights up once you're past it. _rtPrevPct remembers each
+// hunt's last drawn value so the arc animates from there (renderHunts rebuilds
+// every card, so a CSS transition needs the old value in the fresh markup).
+var _rtPrevPct = {};
+function huntReticleHtml(hunt, pct, shownPct, color) {
+var live = !!hunt.running;
+var clock = performance.now() / 1000;
+// Shared clock -> animation phase survives the re-render on every +1.
+function ph(dur) { return 'animation-delay:-' + (clock % dur).toFixed(2) + 's;'; }
+var fill = Math.min(pct, 100);
+var shown = Math.min(shownPct, 100);
+var avgDeg = (cumulativeProb(hunt.denom, hunt.denom) * 360).toFixed(1);
+var over = hunt.encounters >= hunt.denom;
+// Solid green until you pass the 1x average, then gold (arc, head dot, ping).
+color = over ? '#ffc23d' : '#63bd41';
+return '<div class="hunt-dex-reticle' + (live ? ' is-live' : '') + '" style="--rt-prog:' + color + ';" aria-hidden="true">' +
+'<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">' +
+'<circle class="rt-prog-track" cx="85" cy="85" r="82.5"/>' +
+'<circle class="rt-prog" cx="85" cy="85" r="82.5" pathLength="100" transform="rotate(-90 85 85)" style="stroke:' + color + ';stroke-dasharray:' + shown + ' 100;"/>' +
+'<g class="rt-avg' + (over ? ' is-over' : '') + '" style="transform:rotate(' + avgDeg + 'deg);"><line x1="85" y1="0" x2="85" y2="7.4"/></g>' +
+'<g class="rt-prog-head" style="transform:rotate(' + (shown * 3.6) + 'deg);"><circle cx="85" cy="2.5" r="2.1" style="fill:' + color + ';"/></g>' +
+'<circle class="rt-scale" cx="85" cy="85" r="79" pathLength="72"/>' +
+'<circle class="rt-scale-major" cx="85" cy="85" r="79" pathLength="12"/>' +
+'<circle class="hunt-dex-reticle-ring" cx="85" cy="85" r="70"/>' +
+'<g class="rt-spin rt-ccw" style="' + ph(live ? 26 : 55) + '"><circle class="rt-brackets" cx="85" cy="85" r="74.5" pathLength="360"/></g>' +
+'<g class="rt-spin rt-cw" style="' + ph(live ? 18 : 40) + '"><circle class="rt-dashes" cx="85" cy="85" r="64" pathLength="360"/></g>' +
+'<g class="rt-spin rt-sweep" style="' + ph(live ? 3.2 : 10) + '">' + '<path class="rt-sweep-arc" style="opacity:.16" d="M131.84 32.98 A70 70 0 0 1 144.36 47.91"/><path class="rt-sweep-arc" style="opacity:.4" d="M144.36 47.91 A70 70 0 0 1 152.29 65.71"/><path class="rt-sweep-arc" style="opacity:.85" d="M152.29 65.71 A70 70 0 0 1 155.0 85.0"/>' + '<circle class="hunt-dex-reticle-dot" cx="155" cy="85" r="2.6"/></g>' +
+'<line class="hunt-dex-reticle-tick" x1="85" y1="6" x2="85" y2="20"/>' +
+'<line class="hunt-dex-reticle-tick" x1="85" y1="150" x2="85" y2="164"/>' +
+'<line class="hunt-dex-reticle-tick" x1="6" y1="85" x2="20" y2="85"/>' +
+'<line class="hunt-dex-reticle-tick" x1="150" y1="85" x2="164" y2="85"/>' +
+'<polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5"/>' +
+'<polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(90 85 85)"/>' +
+'<polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(180 85 85)"/>' +
+'<polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(270 85 85)"/>' +
+'<circle class="rt-pip" cx="134.5" cy="134.5" r="2.1"/><circle class="rt-pip" cx="35.5" cy="134.5" r="2.1"/>' +
+'<circle class="rt-pip" cx="35.5" cy="35.5" r="2.1"/><circle class="rt-pip" cx="134.5" cy="35.5" r="2.1"/>' +
+'</svg>' +
+'</div>';
+}
+// Encounter "ping": a ring pulses out from the sprite each time you add an
+// encounter (three staggered pings for +5). Called right after renderHunts()
+// rebuilds the card, so it finds the fresh reticle by the button's hunt id.
+function pingReticle(id, strong) {
+var btn = document.querySelector('#hunts-list [data-action="add-encounter"][data-id="' + id + '"]');
+var card = btn && btn.closest('.hunt-card');
+var ret = card && card.querySelector('.hunt-dex-reticle');
+if (!ret) return;
+var n = strong ? 3 : 1;
+for (var i = 0; i < n; i++) {
+var p = document.createElement('span');
+p.className = 'rt-ping';
+p.style.animationDelay = (i * 150) + 'ms';
+p.addEventListener('animationend', function() { this.remove(); });
+ret.appendChild(p);
+}
+}
 function renderHunts() {
 var wrap = document.getElementById('hunts-list');
 wrap.innerHTML = '';
@@ -4168,6 +4229,8 @@ var typeHex = primaryType ? (TYPE_COLORS[primaryType] || '#4caf50') : '#4caf50';
 var typeRgb = primaryType ? typeRgbTriple(primaryType) : '76,175,80';
 var screenStyle = '--type-color:' + typeHex + ';--type-rgb:' + typeRgb + ';';
 var barColors = oddsGaugeColors(pct);
+var rtShown = (_rtPrevPct[hunt.id] != null) ? _rtPrevPct[hunt.id] : 0;
+_rtPrevPct[hunt.id] = pct;
 var barStyle = 'width:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';--bar-c2:' + barColors[1] + ';';
 var markerStyle = 'left:' + Math.min(pct, 100) + '%;--bar-c1:' + barColors[0] + ';--bar-c2:' + barColors[1] + ';';
 var typePillsHtml = info && info.types.length ? typeBadges(info.types, 80) : '<span class="tag">Unknown Type</span>';
@@ -4209,9 +4272,7 @@ el.innerHTML =
 '<div class="hunt-dex-portrait">' + spriteMarkup(hunt.pokemon) + '</div>' +
 (hunt.shinyCharm ? '<span class="hunt-dex-charm-badge" title="Shiny Charm">✨</span>' : '') +
 '</div>' +
-'<div class="hunt-dex-reticle' + (hunt.running ? ' is-live' : '') + '" aria-hidden="true">' +
-'<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg"><circle class="rt-scale" cx="85" cy="85" r="79" pathLength="72"/><circle class="rt-scale-major" cx="85" cy="85" r="79" pathLength="12"/><circle class="hunt-dex-reticle-ring" cx="85" cy="85" r="70"/><g class="rt-spin rt-ccw"><circle class="rt-brackets" cx="85" cy="85" r="74.5" pathLength="360"/></g><g class="rt-spin rt-cw"><circle class="rt-dashes" cx="85" cy="85" r="64" pathLength="360"/></g><g class="rt-spin rt-sweep"><path class="rt-sweep-arc" style="opacity:.16" d="M131.84 32.98 A70 70 0 0 1 144.36 47.91"/><path class="rt-sweep-arc" style="opacity:.4" d="M144.36 47.91 A70 70 0 0 1 152.29 65.71"/><path class="rt-sweep-arc" style="opacity:.85" d="M152.29 65.71 A70 70 0 0 1 155.0 85.0"/><circle class="hunt-dex-reticle-dot" cx="155" cy="85" r="2.6"/></g><line class="hunt-dex-reticle-tick" x1="85" y1="6" x2="85" y2="20"/><line class="hunt-dex-reticle-tick" x1="85" y1="150" x2="85" y2="164"/><line class="hunt-dex-reticle-tick" x1="6" y1="85" x2="20" y2="85"/><line class="hunt-dex-reticle-tick" x1="150" y1="85" x2="164" y2="85"/><polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(0 85 85)"/><polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(90 85 85)"/><polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(180 85 85)"/><polygon class="rt-chevron" points="80.5,23 89.5,23 85,29.5" transform="rotate(270 85 85)"/><circle class="rt-pip" cx="134.5" cy="134.5" r="2.1"/><circle class="rt-pip" cx="35.5" cy="134.5" r="2.1"/><circle class="rt-pip" cx="35.5" cy="35.5" r="2.1"/><circle class="rt-pip" cx="134.5" cy="35.5" r="2.1"/></svg>' +
-'</div>' +
+huntReticleHtml(hunt, pct, rtShown, barColors[1]) +
 '</div>' +
 '<div class="hunt-dex-id-block">' +
 '<div class="hunt-dex-type-row">' + typePillsHtml + genChipHtml + '</div>' +
@@ -4274,6 +4335,14 @@ el.innerHTML =
 '<div class="hunt-dex-grille"><span></span><span></span><span></span><span></span><span></span></div>' +
 '</div>';
 wrap.appendChild(el);
+if (rtShown !== pct) {
+var rtP = el.querySelector('.rt-prog'), rtH = el.querySelector('.rt-prog-head');
+if (rtP && rtH) {
+void el.offsetWidth; // flush styles so the change below transitions
+rtP.style.strokeDasharray = Math.min(pct, 100) + ' 100';
+rtH.style.transform = 'rotate(' + (Math.min(pct, 100) * 3.6) + 'deg)';
+}
+}
 fitHuntInfoBar(el.querySelector('.hunt-info-bar'));
 });
 var cardEls = wrap.querySelectorAll('.hunt-card');
@@ -8471,6 +8540,7 @@ hunt.runStart = Date.now();
 spawnSparkle(btn);
 save();
 renderHunts();
+pingReticle(id, action === 'add-encounter-5');
 } else if (action === 'remove-encounter') {
 // Corrects a misclick rather than logging a real encounter, so unlike
 // +1/+5 it doesn't spawn a sparkle or auto-start the timer - and it
