@@ -146,6 +146,7 @@ markInitialPullDone();
 function markInitialPullDone() {
 if (_cloudInitialPullDone) return;
 _cloudInitialPullDone = true;
+setTimeout(function() { if (typeof checkIdleHunts === 'function') checkIdleHunts(); }, 400);
 if (_pushPendingAfterPull) {
 _pushPendingAfterPull = false;
 pushToCloud();
@@ -3154,6 +3155,14 @@ extra = (Date.now() - hunt.runStart) / 1000;
 }
 return (hunt.accumulatedSeconds || 0) + extra;
 }
+// Encounters per hour for the hunt card's "Per Hour" cell. Shows a dash until
+// there is at least a minute of timer to divide by (or nothing counted yet).
+function fmtRate(hunt) {
+var secs = elapsedSeconds(hunt);
+if (!hunt.encounters || secs < 60) return '\u2014';
+var perHour = hunt.encounters / (secs / 3600);
+return (perHour < 10 ? perHour.toFixed(1) : Math.round(perHour)) + '/h';
+}
 function cumulativeProb(n, denom) {
 if (!denom || denom <= 0) return 0;
 var p = 1 - Math.pow(1 - 1 / denom, n);
@@ -4050,7 +4059,8 @@ return [c1, c2];
 var HUNT_READOUT_ICONS = {
 encounters: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5" fill="currentColor" stroke-width="1.5"/></svg>',
 time: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
-odds: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg>'
+odds: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L19 5"/><circle cx="7" cy="7" r="2.2"/><circle cx="17" cy="17" r="2.2"/></svg>',
+pace: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 14h6l-1 7 8-11h-6z"/></svg>'
 };
 // Small glyphs shown inside the Active Hunts tag-row pills (Game/Method/
 // Odds) so each tag is scannable by shape/color before reading its text.
@@ -4263,7 +4273,7 @@ huntReticleHtml(hunt, pct, rtShown, barColors[1]) +
 '<div class="cell cell-hero"><div class="lbl"><span class="cell-icon">' + HUNT_READOUT_ICONS.encounters + '</span>Encounters</div><div class="num">' + hunt.encounters + '</div></div>' +
 '<div class="hdx-side">' +
 '<div class="cell"><div class="lbl"><span class="cell-icon">' + HUNT_READOUT_ICONS.time + '</span>Time Spent</div><div class="num" data-timer-for="' + hunt.id + '">' + fmtTime(elapsedSeconds(hunt)) + '</div></div>' +
-'<div class="cell"><div class="lbl"><span class="cell-icon">' + HUNT_READOUT_ICONS.odds + '</span>Odds So Far</div><div class="num" style="color:' + barColors[1] + '">' + pct + '%</div></div>' +
+'<div class="cell"><div class="lbl"><span class="cell-icon">' + HUNT_READOUT_ICONS.pace + '</span>Per Hour</div><div class="num" data-rate-for="' + hunt.id + '">' + fmtRate(hunt) + '</div></div>' +
 '</div>' +
 '</div>' +
 '<div class="hunt-dex-gauge">' +
@@ -4272,7 +4282,7 @@ huntReticleHtml(hunt, pct, rtShown, barColors[1]) +
 '<div class="hunt-dex-bar-avg' + (hunt.encounters >= hunt.denom ? ' is-over' : '') + '" style="left:' + rtAvgPct + '%;"></div>' +
 '<div class="hunt-dex-bar-marker" style="' + markerStyle + '"></div>' +
 '</div>' +
-'<div class="hunt-dex-bar-caption"><span>P(shiny) BY NOW</span><span>' + hunt.encounters + ' / ' + hunt.denom + ' AVG</span></div>' +
+'<div class="hunt-dex-bar-caption"><span><b class="bar-pct" style="color:' + barColors[1] + '">' + pct + '%</b> BY NOW</span><span>' + hunt.encounters + ' / ' + hunt.denom + ' AVG</span></div>' +
 '</div>' +
 '</div>' +
 '</div>' +
@@ -8456,9 +8466,136 @@ state.hunts.forEach(function(hunt) {
 if (hunt.running) {
 var elNum = document.querySelector('[data-timer-for="' + hunt.id + '"]');
 if (elNum) elNum.textContent = fmtTime(elapsedSeconds(hunt));
+var elRate = document.querySelector('[data-rate-for="' + hunt.id + '"]');
+if (elRate) elRate.textContent = fmtRate(hunt);
 }
 });
 }, 1000);
+/* ---------- forgot-to-pause protection ----------
+   A running timer that hasn't had a count (+1 / +5 / -1), a timer start or an
+   edit for IDLE_PAUSE_MS pauses itself and only counts time up to the last
+   activity. This also covers the app being closed / backgrounded that long. A
+   notice then offers to add the away time back in case the hunt was actually
+   going on in the game. Set IDLE_PROMPT_MS above 0 (and below IDLE_PAUSE_MS) to
+   also ask "Still hunting?" first (on by default: asks at 8 min, pauses at 10). Checked on a timer and whenever the tab
+   comes back into view. */
+var IDLE_PROMPT_MS = 8 * 60 * 1000;
+var IDLE_PAUSE_MS = 10 * 60 * 1000;
+var IDLE_LONG_AWAY_S = 2 * 3600;
+var _idleBoot = Date.now();
+var _idlePrompt = null;
+var _idleDismissed = {};
+var _idleNotices = [];
+function pauseHuntAt(hunt, atMs) {
+var from = hunt.runStart || atMs;
+hunt.accumulatedSeconds = (hunt.accumulatedSeconds || 0) + Math.max(0, (atMs - from) / 1000);
+hunt.running = false;
+hunt.runStart = null;
+}
+function findHuntById(id) {
+return state.hunts.filter(function(h) { return h.id === id; })[0] || null;
+}
+function closeIdlePrompt() {
+if (!_idlePrompt) return;
+clearInterval(_idlePrompt.ticker);
+if (_idlePrompt.overlay.parentNode) _idlePrompt.overlay.remove();
+_idlePrompt = null;
+}
+function showIdlePrompt(hunt) {
+var id = hunt.id;
+var overlay = openModal(
+huntMenuHeadHtml('Still hunting?') +
+'<p class="field-hint"><strong>' + escapeHtml(hunt.pokemon) + '</strong> hasn\'t had a count in ' + Math.round(IDLE_PROMPT_MS / 60000) + ' minutes, but its timer is still running.</p>' +
+'<p class="field-hint" id="idle-countdown"></p>' +
+'<div class="modal-actions"><button class="ghost" id="idle-pause">Pause timer</button><button class="primary" id="idle-keep">Keep hunting</button></div>',
+'modal-idle'
+);
+var countdown = overlay.querySelector('#idle-countdown');
+function tick() {
+var h = findHuntById(id);
+// Backdrop tap or the hunt changing under us: stop asking for this idle stretch.
+if (!document.body.contains(overlay) || !h || !h.running) {
+if (h && h.lastActivity) _idleDismissed[id] = h.lastActivity;
+clearInterval(_idlePrompt && _idlePrompt.ticker);
+_idlePrompt = null;
+return;
+}
+var left = Math.max(0, Math.ceil((IDLE_PAUSE_MS - (Date.now() - h.lastActivity)) / 1000));
+countdown.textContent = 'The timer will pause by itself in ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0') + '.';
+}
+_idlePrompt = { id: id, overlay: overlay, ticker: setInterval(tick, 1000) };
+tick();
+overlay.querySelector('#idle-keep').addEventListener('click', function() {
+var h = findHuntById(id);
+if (h) { h.lastActivity = Date.now(); save(); }
+closeIdlePrompt();
+});
+overlay.querySelector('#idle-pause').addEventListener('click', function() {
+var h = findHuntById(id);
+if (h && h.running) { pauseHuntAt(h, Date.now()); save(); renderHunts(); }
+closeIdlePrompt();
+});
+}
+function showIdleNotices() {
+if (!_idleNotices.length || document.hidden || document.querySelector('.overlay')) return;
+var items = _idleNotices.splice(0);
+var rows = items.map(function(n, i) {
+return '<div class="idle-row"><span class="idle-row-info"><span class="idle-row-name">' + escapeHtml(n.name) + '</span><span class="idle-row-time">' + fmtTime(n.awaySeconds) + ' away' + (n.awaySeconds > IDLE_LONG_AWAY_S ? ' \u00b7 long gap, check before adding' : '') + '</span></span><button class="ghost" data-i="' + i + '">Add back</button></div>';
+}).join('');
+var overlay = openModal(
+huntMenuHeadHtml('Timer paused') +
+'<p class="field-hint">Nothing was counted for a while, so the timer stopped and only kept time up to your last activity. If you were still hunting, add the time back.</p>' +
+rows +
+'<div class="modal-actions"><button class="primary" id="idle-ok">Got it</button></div>',
+'modal-idle'
+);
+overlay.querySelectorAll('.idle-row button').forEach(function(b) {
+b.addEventListener('click', function() {
+var n = items[parseInt(b.dataset.i, 10)];
+var h = n && findHuntById(n.id);
+if (h) {
+h.accumulatedSeconds = (h.accumulatedSeconds || 0) + n.awaySeconds;
+save();
+renderHunts();
+}
+b.textContent = 'Added';
+b.disabled = true;
+});
+});
+overlay.querySelector('#idle-ok').addEventListener('click', function() { overlay.remove(); });
+}
+function checkIdleHunts() {
+// Wait for the first cloud pull so a stale local copy can't pause a hunt that
+// is actively being counted on another device.
+if (!_cloudInitialPullDone && Date.now() - _idleBoot < 8000) return;
+var now = Date.now();
+var changed = false;
+state.hunts.forEach(function(h) {
+if (!h.running) return;
+// Hunts already running from before this feature: start the idle clock now.
+if (!h.lastActivity) { h.lastActivity = now; changed = true; return; }
+if (now - h.lastActivity >= IDLE_PAUSE_MS) {
+var at = Math.max(h.lastActivity, h.runStart || 0);
+pauseHuntAt(h, at);
+_idleNotices.push({ id: h.id, name: h.pokemon, awaySeconds: Math.max(0, Math.round((now - at) / 1000)) });
+if (_idlePrompt && _idlePrompt.id === h.id) closeIdlePrompt();
+changed = true;
+}
+});
+if (changed) { save(); renderHunts(); }
+if (IDLE_PROMPT_MS > 0 && !_idlePrompt && !document.hidden && !document.querySelector('.overlay')) {
+var due = state.hunts.filter(function(h) {
+return h.running && h.lastActivity && now - h.lastActivity >= IDLE_PROMPT_MS && _idleDismissed[h.id] !== h.lastActivity;
+})[0];
+if (due) showIdlePrompt(due);
+}
+showIdleNotices();
+}
+setInterval(checkIdleHunts, 10000);
+document.addEventListener('visibilitychange', function() { if (!document.hidden) checkIdleHunts(); });
+window.addEventListener('focus', checkIdleHunts);
+window.addEventListener('pageshow', checkIdleHunts);
+setTimeout(checkIdleHunts, 8500);
 /* ---------- event delegation for hunt actions ---------- */
 document.getElementById('hunts-list').addEventListener('click', function(e) {
 var btn = e.target.closest('[data-action]');
@@ -8540,6 +8677,7 @@ document.removeEventListener('click', closeTip);
 function runHuntAction(action, hunt, id, btn) {
 if (action === 'add-encounter' || action === 'add-encounter-5') {
 hunt.encounters += (action === 'add-encounter-5' ? 5 : 1);
+hunt.lastActivity = Date.now();
 if (!hunt.running) {
 hunt.running = true;
 hunt.runStart = Date.now();
@@ -8553,6 +8691,7 @@ pingReticle(id, action === 'add-encounter-5');
 // +1/+5 it doesn't spawn a sparkle or auto-start the timer - and it
 // never drops the count below zero.
 hunt.encounters = Math.max(0, hunt.encounters - 1);
+hunt.lastActivity = Date.now();
 save();
 renderHunts();
 } else if (action === 'toggle-timer') {
@@ -8563,6 +8702,7 @@ hunt.runStart = null;
 } else {
 hunt.running = true;
 hunt.runStart = Date.now();
+hunt.lastActivity = hunt.runStart;
 }
 spawnSparkle(btn);
 save();
@@ -9579,6 +9719,7 @@ hunt.accumulatedSeconds = (newHours * 3600) + (newMinutes * 60);
 // long has elapsed since the hunt originally started running.
 if (hunt.running) {
 hunt.runStart = Date.now();
+hunt.lastActivity = hunt.runStart;
 }
 save();
 renderHunts();

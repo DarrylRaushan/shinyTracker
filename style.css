@@ -14607,39 +14607,22 @@ text-transform: uppercase;
 .hunt-dex-readout .cell-hero .num { position: relative; top: 4px; }
 }
 
-/* Readout container: flat info panel printed directly on the LCD - flat solid
-   fill, no inset/sunken shadow. Colors only - spacing and
-   layout are untouched. The Odds So Far value
-   keeps its dynamic green->red color from JS, darkened for contrast. */
+/* Readout container: one soft frosted card on the mint LCD - the panel itself
+   is the container, so no rails, ticks, dividers or inner tiles are needed. The
+   Per Hour value keeps its dynamic green->red color from JS, darkened for
+   contrast. */
 .hunt-dex-readout {
 color: #2b3a2e;
-/* Rails: full-width ink rules top and bottom, short ticks at the four ends */
-background:
-linear-gradient(#2b2320, #2b2320) top / 100% 2px no-repeat,
-linear-gradient(#2b2320, #2b2320) bottom / 100% 2px no-repeat,
-linear-gradient(#2b2320, #2b2320) left top / 2px 8px no-repeat,
-linear-gradient(#2b2320, #2b2320) right top / 2px 8px no-repeat,
-linear-gradient(#2b2320, #2b2320) left bottom / 2px 8px no-repeat,
-linear-gradient(#2b2320, #2b2320) right bottom / 2px 8px no-repeat,
-#cfe5c9;
-box-shadow: none;
-border-radius: 0;
-/* Top rail raised 3px: panel edge moves up by the margin, padding hands the
-   same 3px back so the text and everything below stay where they were */
+background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.46));
+box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7), 0 2px 8px rgba(43, 58, 46, 0.14);
+border-radius: 14px;
 margin-top: 5px;
-padding-top: 11px;
-/* Bottom rail lowered 5px the same way: padding adds the room, negative
-   margin lets the panel extend into the screen's own bottom padding so
-   nothing below it moves */
-padding-bottom: 12px;
 margin-bottom: -5px;
+padding: 11px 14px 12px;
 }
-/* Mobile: the padding trimmed here (3px total) is spent on bigger contents so
-   the rails stay exactly where they are while the text fills the panel */
 @media (max-width: 600px) {
 .hunt-dex-readout {
-padding-top: 4px;
-padding-bottom: 5px;
+padding: 5px 12px 5px;
 }
 .hunt-dex-readout .hdx-side .num { font-size: 11px; }
 .hunt-dex-readout .cell-hero .num { font-size: clamp(14px, 4.4vw, 17px); }
@@ -14649,9 +14632,6 @@ padding-bottom: 5px;
 }
 .hunt-dex-readout::after {
 background: none;
-}
-.hunt-dex-readout .cell-hero {
-border-right: 2px dotted rgba(43, 35, 32, 0.4);
 }
 .hunt-dex-readout .lbl,
 .hunt-dex-readout .hdx-side .lbl {
@@ -14674,7 +14654,7 @@ filter: brightness(0.62) saturate(1.5);
 }
 .hunt-dex-readout .hunt-dex-bar-track {
 background: rgba(43, 35, 32, 0.07);
-border-color: rgba(43, 35, 32, 0.32);
+border-color: rgba(43, 35, 32, 0.28);
 }
 .hunt-dex-readout .hunt-dex-bar-marker {
 background: #2b2320;
@@ -15054,7 +15034,7 @@ text-align: center;
 }
 
 /* --- readout: balanced two-column layout ---
-   Two near-equal columns split by the dotted divider, everything centered in its
+   Two near-equal tiles (see the end of this file), everything centered in its
    column so the empty space is even on both sides. One type scale: labels + gauge
    caption 8px | side values 11px | Encounters hero 18-24px (about 2x the side
    values). Height budget is unchanged: stat area 48 (side stack: 8 label + 3 gap +
@@ -15179,4 +15159,166 @@ letter-spacing: 0.8px;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
+}
+
+/* ---- Hunt card readout: odds now lives on the gauge, side stack is Time + Per Hour ---- */
+.hunt-dex-readout .hdx-side .cell:last-child .num {
+filter: brightness(0.62) saturate(1.5);
+}
+.hunt-dex-readout .hunt-dex-bar-caption .bar-pct {
+font-family: var(--pixel);
+font-size: 11px;
+font-weight: 400;
+letter-spacing: 0;
+line-height: 1;
+filter: brightness(0.55) saturate(1.6);
+margin-right: 2px;
+}
+.hunt-dex-readout .hunt-dex-bar-caption {
+align-items: baseline;
+}
+
+/* ---------- Idle-timer notices ("Still hunting?" / "Timer paused") ---------- */
+.modal.modal-idle {
+max-width: 400px;
+}
+.modal-idle .field-hint {
+font-size: 12.5px;
+line-height: 1.45;
+margin: 0 0 10px;
+}
+.modal-idle .field-hint strong {
+color: var(--ink);
+}
+.modal-idle #idle-countdown {
+font-family: var(--mono);
+font-weight: 700;
+color: var(--red);
+}
+.idle-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+gap: 10px;
+background: #fff;
+border: 2px solid var(--line);
+border-radius: 12px;
+padding: 8px 10px;
+margin-bottom: 8px;
+}
+.idle-row-info {
+display: flex;
+flex-direction: column;
+gap: 2px;
+min-width: 0;
+flex: 1;
+}
+.idle-row-name {
+font-family: var(--hud);
+font-weight: 800;
+font-size: 14px;
+color: var(--ink);
+overflow-wrap: anywhere;
+}
+.idle-row-time {
+font-family: var(--mono);
+font-size: 11px;
+color: var(--ink-dim);
+}
+.idle-row button.ghost {
+flex-shrink: 0;
+padding: 6px 12px;
+font-size: 12px;
+}
+.idle-row button.ghost:disabled {
+opacity: 0.6;
+cursor: default;
+border-color: var(--green-dark);
+color: var(--green-dark);
+}
+
+/* ---------- Hunt readout: no rails/dividers/tiles ----------
+   Last on purpose: beats the balanced two-column block above. The two halves
+   are separated by space alone inside the frosted card. */
+.hunt-dex-readout .hdx-top { gap: 10px; }
+.hunt-dex-readout .cell-hero,
+.hunt-dex-readout .hdx-side { background: none; border-right: none; padding: 0; }
+.hunt-dex-readout .cell-hero { flex: 1 1 46%; }
+.hunt-dex-readout .hdx-side { flex: 1 1 54%; gap: 6px; }
+.hunt-dex-readout .hunt-dex-gauge { margin-top: 6px; }
+@media (max-width: 600px) {
+.hunt-dex-readout .hunt-dex-gauge { margin-top: 3px; }
+}
+
+
+/* ---------- Hunt readout: no container, fills the bottom of the screen ----------
+   The frosted white card is gone. The readout now runs edge to edge across the
+   mint screen: a big Encounters number on the left, Time Spent / Per Hour
+   stacked on the right (both columns centered, spread over the full height of
+   the stat area), and a thicker odds bar spanning the full width underneath.
+   The screen's bottom padding is handed to the readout so nothing is left empty
+   below it. */
+.hunt-dex-readout {
+background: none;
+box-shadow: none;
+border-radius: 0;
+margin: 4px 0 0;
+padding: 6px 0 0;
+}
+.hunt-dex-readout .hdx-top { height: 56px; gap: 8px; align-items: stretch; }
+.hunt-dex-readout .cell-hero {
+flex: 1 1 52%;
+gap: 6px;
+align-items: center;
+justify-content: center;
+text-align: center;
+}
+.hunt-dex-readout .hdx-side {
+flex: 1 1 48%;
+gap: 0;
+justify-content: space-between;
+}
+.hunt-dex-readout .hdx-side .cell {
+gap: 4px;
+align-items: center;
+text-align: center;
+}
+.hunt-dex-readout .lbl,
+.hunt-dex-readout .hdx-side .lbl {
+justify-content: center;
+font-size: 9px;
+line-height: 1;
+letter-spacing: 0.9px;
+gap: 4px;
+white-space: nowrap;
+}
+.hunt-dex-readout .cell-icon,
+.hunt-dex-readout .hdx-side .cell-icon { width: 10px; height: 10px; }
+.hunt-dex-readout .cell-hero .num {
+font-size: clamp(22px, 7vw, 32px);
+line-height: 1;
+padding-left: 0;
+margin-top: 0;
+top: 0;
+}
+.hunt-dex-readout .hdx-side .num {
+font-size: clamp(12px, 3.6vw, 15px);
+line-height: 1;
+padding-left: 0;
+}
+.hunt-dex-readout .hunt-dex-gauge { margin-top: 8px; }
+.hunt-dex-readout .hunt-dex-bar-track { height: 10px; }
+.hunt-dex-readout .hunt-dex-bar-marker { height: 16px; }
+.hunt-dex-readout .hunt-dex-bar-caption {
+margin-top: 5px;
+font-size: 9px;
+line-height: 1;
+letter-spacing: 0.8px;
+}
+.hunt-dex-readout .hunt-dex-bar-caption .bar-pct { font-size: 15px; }
+@media (max-width: 600px) {
+.hunt-dex-screen { padding-bottom: 4px; }
+.hunt-dex-readout { margin: 4px 0 0; padding: 4px 0 0; }
+.hunt-dex-readout .hunt-dex-gauge { margin-top: 6px; }
+.hunt-dex-readout .hunt-dex-bar-caption { margin-top: 4px; }
 }
