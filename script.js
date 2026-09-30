@@ -4120,30 +4120,20 @@ return oddsGaugeColors(t * 100);
 // (that clipped real content before) - it's measured from the actual DOM.
 var HUNT_CARD_LOCKED_HEIGHT = null;
 // ---- Target ring (reticle) builder ----
-// Odds arc: the outermost ring fills to the hunt's cumulative shiny probability
-// (the same number as "Odds So Far"), colored by the same green->red gauge as the
-// progress bar. The gold notch marks the 1x-average point (encounters == odds
-// denominator) and lights up once you're past it. _rtPrevPct remembers each
-// hunt's last drawn value so the arc animates from there (renderHunts rebuilds
-// every card, so a CSS transition needs the old value in the fresh markup).
+// The coloured odds arc, head dot and 1x notch were removed - odds progress is
+// shown by the progress bar below the sprite. The reticle keeps its scale,
+// brackets, sweep and the encounter ping (coloured green, then gold past 1x).
 var _rtPrevPct = {};
 function huntReticleHtml(hunt, pct, shownPct, color) {
 var live = !!hunt.running;
 var clock = performance.now() / 1000;
 // Shared clock -> animation phase survives the re-render on every +1.
 function ph(dur) { return 'animation-delay:-' + (clock % dur).toFixed(2) + 's;'; }
-var fill = Math.min(pct, 100);
-var shown = Math.min(shownPct, 100);
-var avgDeg = (cumulativeProb(hunt.denom, hunt.denom) * 360).toFixed(1);
 var over = hunt.encounters >= hunt.denom;
-// Solid green until you pass the 1x average, then gold (arc, head dot, ping).
+// Ping colour: solid green until you pass the 1x average, then gold.
 color = over ? '#ffc23d' : '#63bd41';
 return '<div class="hunt-dex-reticle' + (live ? ' is-live' : '') + '" style="--rt-prog:' + color + ';" aria-hidden="true">' +
 '<svg viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">' +
-'<circle fill="none" class="rt-prog-track" cx="85" cy="85" r="82.5"/>' +
-'<circle fill="none" class="rt-prog" cx="85" cy="85" r="82.5" pathLength="100" transform="rotate(-90 85 85)" style="stroke:' + color + ';stroke-dasharray:' + shown + ' 100;"/>' +
-'<g class="rt-avg' + (over ? ' is-over' : '') + '" style="transform:rotate(' + avgDeg + 'deg);"><line x1="85" y1="0" x2="85" y2="7.4"/></g>' +
-'<g class="rt-prog-head" style="transform:rotate(' + (shown * 3.6) + 'deg);"><circle cx="85" cy="2.5" r="2.1" style="fill:' + color + ';"/></g>' +
 '<circle fill="none" class="rt-scale" cx="85" cy="85" r="79" pathLength="72"/>' +
 '<circle fill="none" class="rt-scale-major" cx="85" cy="85" r="79" pathLength="12"/>' +
 '<circle fill="none" class="hunt-dex-reticle-ring" cx="85" cy="85" r="70"/>' +
@@ -4327,14 +4317,6 @@ _huntPortraitCache[hunt.id] = { pokemon: hunt.pokemon, node: portraitEl };
 }
 }
 wrap.appendChild(el);
-if (rtShown !== pct) {
-var rtP = el.querySelector('.rt-prog'), rtH = el.querySelector('.rt-prog-head');
-if (rtP && rtH) {
-void el.offsetWidth; // flush styles so the change below transitions
-rtP.style.strokeDasharray = Math.min(pct, 100) + ' 100';
-rtH.style.transform = 'rotate(' + (Math.min(pct, 100) * 3.6) + 'deg)';
-}
-}
 fitHuntInfoBar(el.querySelector('.hunt-info-bar'));
 });
 var cardEls = wrap.querySelectorAll('.hunt-card');
@@ -10524,12 +10506,15 @@ container.appendChild(s);
 }})();
 
 
-// Guest tips: a guided tour (plus a "?" button to replay it) and small hints
-// inside a couple of pop-ups. Only ever started from the Guest branch of the
-// profile gate below, so User1 never sees any of it. The tour has three
-// parts: the hunts + Shiny Log pages, the Living Dex pages (it navigates
-// there by itself), and a short wrap-up. Guests who open the Living Dex on
-// their own also get the Living Dex part once.
+// Guest tips: a short, opt-in guided tour (plus a "?" button to replay it).
+// Only ever started from the Guest branch of the profile gate below, so User1
+// never sees any of it. The tour is kept deliberately small (12 steps total)
+// and has three parts: hunts + Shiny Log (5), the Living Dex (4) and an
+// optional 3D models guide (3). It opens with a welcome card that asks
+// "Quick tour" or "Explore myself" - nothing starts unless the guest says so.
+// The Living Dex guide is never launched automatically: the "?" button
+// pulses the first time a guest opens the Living Dex, and a "3D" button
+// offers the 3D models guide once the Living Dex guide has been seen.
 (function setupGuestTips() {
 var card = document.getElementById('guest-tip');
 var helpBtn = document.getElementById('guest-help-btn');
@@ -10545,31 +10530,21 @@ var modelsNudgeBtn = document.getElementById('guest-models-nudge');
 var modelsNudgeReady = false;
 var modelsNudgeDone = false;
 var STEPS = [
-{ sec: 'main', tab: 'hunts', title: 'Welcome, guest!', text: 'This is a shiny-hunting tracker. You are using a practice copy, so tap anything you like - nothing you do here is saved. Tap Next for a quick tour.' },
-{ sec: 'main', tab: 'hunts', sel: '.hunt-card', title: 'Your hunts', text: 'Each card is a shiny hunt in progress: the Pok\u00e9mon, the game, the method and your odds.' },
-{ sec: 'main', tab: 'hunts', sel: '[data-action="toggle-timer"]', title: 'Timer', text: 'Tap \u25b6 to start the timer and \u23f8 to pause it. It keeps track of how long the hunt has taken.' },
-{ sec: 'main', tab: 'hunts', sel: '[data-action="add-encounter"]', title: 'Counting encounters', text: 'Tap +1 every time you meet the Pok\u00e9mon (+5 for a bigger jump, \u22121 to undo a mistake). The odds bar fills up as your count grows.' },
-{ sec: 'main', tab: 'hunts', sel: '[data-action="mark-found"]', title: 'Caught it!', text: 'Press the Pok\u00e9 Ball when the shiny appears. You confirm the catch and it moves to the Shiny Log.' },
-{ sec: 'main', tab: 'hunts', sel: '.hunt-dex-flap-lens, [data-action="new-hunt"]', title: 'Start a new hunt', text: 'Tap the big round lens to start a new hunt. The small lights next to it: red abandons a hunt, yellow adds it to the log, green edits it.' },
-{ sec: 'main', tab: 'collection', sel: '#log-screen-next', title: 'Shiny Log', text: 'Every shiny you have caught lives here. Use the arrows under the screen to flip through them. (On a phone you can also swipe between pages.)' },
-{ sec: 'main', tab: 'collection', sel: '#log-mode-toggle', title: 'Card or Grid', text: 'Card shows one catch at a time, Grid shows them all. The tabs below switch what details you see for the current catch.' },
-{ sec: 'main', tab: 'collection', logPanel: 'overview', sel: '.log-v2-tabs [data-log-tab="overview"]', title: 'Overview tab', text: 'Overview is a Pok\u00e9dex-style entry for the shiny on screen: its category (genus), region, height, weight, abilities, and a short flavor text from the games.' },
-{ sec: 'main', tab: 'collection', logPanel: 'stats', sel: '.log-v2-tabs [data-log-tab="stats"]', title: 'Stats tab', text: 'Stats shows base stats as bars, type matchups (weaknesses and resistances), and extra species facts for the current catch.' },
-{ sec: 'main', tab: 'collection', logPanel: 'log', sel: '.log-v2-tabs [data-log-tab="log"]', title: 'Log tab', text: 'Log is the full list controls - search, sort, and filter your catches. The round button between the arrows opens the Living Dex.' },
-{ sec: 'main', tab: 'collection', logPanel: 'log', sel: '#log-screen-menu', title: 'Living Dex button', text: 'This round button opens the Living Dex, a checklist of every Pok\u00e9mon. First, feel free to explore the Active Hunts and Shiny Log pages. When you are ready, tap this button and I will show you around the Living Dex.' },
-{ sec: 'dex', tab: 'livingdex', sel: '#kalos-top, #dex-closed-cover', title: 'Welcome to the Living Dex', text: 'This is your Pok\u00e9dex checklist. On a phone it starts closed like a real Pok\u00e9dex - tap Next and I will open it for you.' },
-{ sec: 'dex', tab: 'livingdex', openShell: true, sel: '#kalos-mode-toggle, #dex-mode-toggle', title: 'Living or Shiny', text: 'Switch between the Living Dex (every Pok\u00e9mon you have caught) and the Shiny Dex (shinies only). Each side shows your progress.' },
-{ sec: 'dex', tab: 'livingdex', sel: '#kalos-gen-grid, #dex-grid', title: 'Generations', text: 'Pok\u00e9mon are grouped by generation. Swipe sideways (or scroll) to browse them and tap a generation to open it. The percentage shows how much of it you have completed.' },
-{ sec: 'dex', tab: 'livingdex', title: 'Marking Pok\u00e9mon', text: 'Open a generation and tap a Pok\u00e9mon to mark it as caught. Tap it again to unmark it.' },
-{ sec: 'dex', tab: 'livingdex', sel: '#btn-k-search, #dex-search', title: 'Search', text: 'Looking for a specific Pok\u00e9mon? Search for it by name.' },
-{ sec: 'dex', tab: 'livingdex', sel: '#btn-k-sort, #btn-dex-sort', title: 'Sort and filter', text: 'Change the order of the list, or filter by type and by form (like Alolan or Galarian). The reset button clears all filters.' },
-{ sec: 'dex', tab: 'livingdex', sel: '#btn-k-3d-toggle, #btn-dex-3d-toggle', title: '3D View', text: 'Turn on 3D View so tapping a Pok\u00e9mon opens its 3D model instead of marking it caught. (More on that in a short extra guide at the end.)' },
-{ sec: 'dex', tab: 'livingdex', sel: '.dex-toggle-back-btn', title: 'Going back', text: 'Tap the \u2190 button to return to Active Hunts whenever you like. When you finish this guide, a pulsing ? will appear on this page - tap it anytime for a walkthrough of 3D models.' },
-{ sec: 'models', tab: 'livingdex', openShell: true, sel: '#btn-k-3d-toggle, #btn-dex-3d-toggle', title: 'Turn on 3D View', text: 'Tap 3D View so it stays on. On a phone, open the 3D menu and turn on "3D View". While it is on, tapping a sprite opens a model instead of toggling caught.' },
-{ sec: 'models', tab: 'livingdex', sel: '#btn-k-3d-toggle, #k-anim-toggle-option, #btn-dex-anim-filter', title: 'Animated Only', text: 'Optional: turn on Animated Only to hide species that do not have a moving 3D model, so you only see ones that can play an idle animation.' },
-{ sec: 'models', tab: 'livingdex', sel: '#kalos-gen-grid, #dex-grid', title: 'Pick a generation', text: 'Open any generation box so you can see the Pok\u00e9mon list. (If one is already open, you are good.)' },
-{ sec: 'models', tab: 'livingdex', title: 'Open a 3D model', text: 'With 3D View on, tap a Pok\u00e9mon sprite. Its 3D model appears - drag to rotate it. Close it by tapping outside the model. That is the whole flow!' }
+{ sec: 'main', tab: 'hunts', welcome: true, title: 'Welcome, guest!', text: 'This is a practice copy, so tap anything you like - nothing is saved. Want a quick tour?' },
+{ sec: 'main', tab: 'hunts', sel: '[data-action="add-encounter"]', title: 'Counting a hunt', text: 'Tap +1 for every encounter (\u22121 undoes a mistake). Press the Pok\u00e9 Ball when the shiny appears to move it to your Shiny Log.' },
+{ sec: 'main', tab: 'hunts', sel: '.hunt-dex-flap-lens, [data-action="new-hunt"]', title: 'Start a new hunt', text: 'Tap the big round lens to start a new hunt.' },
+{ sec: 'main', tab: 'collection', sel: '#log-screen-next', title: 'Shiny Log', text: 'Every shiny you catch lives here. Use the arrows to flip through them.' },
+{ sec: 'main', tab: 'collection', sel: '#log-mode-toggle', title: 'Card, Grid and tabs', text: 'Card shows one catch, Grid shows them all. The tabs below switch between Overview, Stats and Log (search, sort, filter).' },
+{ sec: 'main', tab: 'collection', logPanel: 'log', sel: '#log-screen-menu', title: 'Living Dex', text: 'This round button opens the Living Dex, a checklist of every Pok\u00e9mon. Explore first, then tap it - a pulsing ? there will offer a short guide.' },
+{ sec: 'dex', tab: 'livingdex', sel: '#kalos-top, #dex-closed-cover', title: 'Welcome to the Living Dex', text: 'Your Pok\u00e9dex checklist. On a phone it starts closed - tap Next and I will open it for you.' },
+{ sec: 'dex', tab: 'livingdex', openShell: true, sel: '#kalos-mode-toggle, #dex-mode-toggle', title: 'Living or Shiny', text: 'Switch between the Living Dex (everything you have caught) and the Shiny Dex (shinies only).' },
+{ sec: 'dex', tab: 'livingdex', sel: '#kalos-gen-grid, #dex-grid', title: 'Generations', text: 'Tap a generation to open it, then tap a Pok\u00e9mon to mark it as caught (tap again to unmark).' },
+{ sec: 'dex', tab: 'livingdex', sel: '#btn-k-search, #dex-search', title: 'Search, sort and 3D', text: 'Search by name, sort or filter the list, and turn on 3D View to open a Pok\u00e9mon\u2019s 3D model. A pulsing 3D button will guide you when you finish.' },
+{ sec: 'models', tab: 'livingdex', openShell: true, sel: '#btn-k-3d-toggle, #btn-dex-3d-toggle', title: 'Turn on 3D View', text: 'Tap 3D View so it stays on (on a phone, open the 3D menu first). While it is on, tapping a sprite opens its model.' },
+{ sec: 'models', tab: 'livingdex', sel: '#btn-k-3d-toggle, #k-anim-toggle-option, #btn-dex-anim-filter', title: 'Animated Only', text: 'Optional: Animated Only hides species that have no moving 3D model.' },
+{ sec: 'models', tab: 'livingdex', sel: '#kalos-gen-grid, #dex-grid', title: 'Open a 3D model', text: 'Open any generation, then tap a sprite. Drag to rotate the model and tap outside it to close.' }
 ];
+
 var FIRST_DEX = STEPS.findIndex(function(s) { return s.sec === 'dex'; });
 var FIRST_MODELS = STEPS.findIndex(function(s) { return s.sec === 'models'; });
 var LAST_MAIN = FIRST_DEX - 1;
@@ -10622,11 +10597,15 @@ var step = STEPS[idx];
 var my = ++token;
 clearHighlight();
 if (step.sec === 'dex' || step.sec === 'models') dexOfferedOnce = true;
-elStep.textContent = (idx - firstIdx + 1) + ' / ' + (lastIdx - firstIdx + 1);
+// The welcome card is not counted as a step, so the tour reads "1 / 5".
+var base = (STEPS[firstIdx] && STEPS[firstIdx].welcome) ? firstIdx + 1 : firstIdx;
+elStep.style.display = step.welcome ? 'none' : '';
+elStep.textContent = (idx - base + 1) + ' / ' + (lastIdx - base + 1);
 elTitle.textContent = step.title;
 elText.textContent = step.text;
-btnBack.hidden = idx === firstIdx;
-btnNext.textContent = idx === lastIdx ? 'Done' : 'Next';
+btnBack.hidden = idx <= base;
+btnSkip.textContent = step.welcome ? 'Explore myself' : 'Skip';
+btnNext.textContent = step.welcome ? 'Quick tour' : (idx === lastIdx ? 'Done' : 'Next');
 // 3D models walkthrough is offered via the pulsing ? after this guide ends.
 if (btnExtra) btnExtra.hidden = true;
 card.classList.add('is-open');
@@ -10662,6 +10641,7 @@ var clam = document.getElementById('dex-clamshell');
 return clam ? clam.getAttribute('data-active') : null;
 }
 function updateNudge() {
+updateHelpNudge();
 var menuBtn = document.getElementById('log-screen-menu');
 var logTabBtn = document.querySelector('.log-v2-tabs [data-log-tab="log"]');
 var logShell = document.getElementById('log-dex-shell');
@@ -10681,6 +10661,11 @@ logTabBtn.classList.add('guest-nudge');
 nudgePill.classList.add('is-on');
 }
 }
+// The "?" button pulses the first time a guest opens the Living Dex, so the
+// Living Dex guide is offered rather than launched automatically.
+function updateHelpNudge() {
+helpBtn.classList.toggle('guest-nudge', !!(isGuest && !open && !dexOfferedOnce && onLivingDex()));
+}
 function updateModelsNudge() {
 if (!modelsNudgeBtn) return;
 var show = isGuest && modelsNudgeReady && !modelsNudgeDone && !open && onLivingDex();
@@ -10688,7 +10673,7 @@ modelsNudgeBtn.hidden = !show;
 modelsNudgeBtn.classList.toggle('is-on', show);
 }
 function close() {
-var wasMain = STEPS[idx].sec === 'main';
+var wasMain = STEPS[idx].sec === 'main' && !STEPS[idx].welcome;
 var wasDex = STEPS[idx].sec === 'dex';
 var wasModels = STEPS[idx].sec === 'models';
 open = false;
@@ -10704,9 +10689,10 @@ updateNudge();
 updateModelsNudge();
 }
 if (nudgePill) nudgePill.addEventListener('click', function() { goToTab('collection'); });
-function startFull() {
-idx = 0;
-firstIdx = 0;
+function startFull(skipWelcome) {
+var first = skipWelcome === true ? 1 : 0;
+idx = first;
+firstIdx = first;
 lastIdx = LAST_MAIN;
 open = true;
 updateNudge();
@@ -10751,26 +10737,22 @@ if (modelsNudgeBtn) modelsNudgeBtn.addEventListener('click', function() {
 startModels();
 });
 helpBtn.addEventListener('click', function() {
-if (onLivingDex()) startDex(); else startFull();
+if (onLivingDex()) startDex(); else startFull(true);
 });
 // Re-point the pulsing when the Overview / Stats / Log tab changes.
 var logShellEl = document.getElementById('log-dex-shell');
 if (logShellEl) {
 new MutationObserver(updateNudge).observe(logShellEl, { attributes: true, attributeFilter: ['data-log-tab'] });
 }
-// First time a guest opens the Living Dex on their own, offer its guide.
+// When the Living Dex is opened, updateNudge() pulses the ? button (once) to offer its guide.
 var clamshell = document.getElementById('dex-clamshell');
 if (clamshell) {
 new MutationObserver(function() {
 updateNudge();
 updateModelsNudge();
-if (!isGuest || open || dexOfferedOnce) return;
-if (!onLivingDex()) return;
-dexOfferedOnce = true;
-setTimeout(function() { if (isGuest && !open && onLivingDex()) startDex(); }, 500);
 }).observe(clamshell, { attributes: true, attributeFilter: ['data-active'] });
 }
-window.startGuestTips = startFull;
+window.startGuestTips = function() { startFull(false); };
 })();
 // Profile gate: User1 = normal app. Guest = wait (briefly) for the cloud copy
 // to arrive, take an in-memory duplicate of it, then cut every write path.

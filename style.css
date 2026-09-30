@@ -1242,41 +1242,7 @@ transform-origin: 85px 85px;
 .hunt-dex-reticle,
 .hunt-dex-reticle .rt-spin { animation: none !important; }
 }
-/* ---- Odds arc, average notch, encounter ping ---- */
-.rt-prog-track {
-fill: none;
-stroke: #63bd41;
-stroke-width: 1.2;
-opacity: 0.25;
-}
-.rt-prog {
-fill: none;
-stroke-width: 2.4;
-stroke-linecap: butt;
-transition: stroke-dasharray 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.rt-prog-head,
-.rt-avg {
-transform-box: view-box;
-transform-origin: 85px 85px;
-}
-.rt-prog-head {
-transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.rt-prog-head circle {
-stroke: #eaf7e2;
-stroke-width: 1.2;
-}
-.rt-avg line {
-stroke: #b9a24a;
-stroke-width: 1.8;
-opacity: 0.75;
-}
-.rt-avg.is-over line {
-stroke: #ffc23d;
-opacity: 1;
-filter: drop-shadow(0 0 2px #ffc23d);
-}
+/* ---- Encounter ping ---- */
 .rt-ping {
 position: absolute;
 left: 10.4%;
@@ -1295,7 +1261,6 @@ animation: huntDexReticlePing 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) both;
 100% { transform: scale(1.12); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-.rt-prog, .rt-prog-head { transition: none; }
 .rt-ping { display: none; }
 }
 @keyframes huntDexReticleSpin {
